@@ -1,1 +1,10 @@
 project_id = "oxpcittprwflilbmtlqn"
+
+[functions.knowledge-search]
+verify_jwt = true
+
+[functions.gameplan-generate]
+verify_jwt = true
+
+[functions.media-signed-url]
+verify_jwt = true
