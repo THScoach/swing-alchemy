@@ -9,18 +9,18 @@ import { useNavigate } from "react-router-dom";
 
 export default function Analyze() {
   const [uploading, setUploading] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is authenticated
+    // Get current user
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
         navigate("/auth");
       } else {
-        setUser(session.user);
+        setUserId(session.user.id);
       }
     });
   }, [navigate]);
@@ -29,7 +29,7 @@ export default function Analyze() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
+    // Check if video file
     if (!file.type.startsWith('video/')) {
       toast({
         title: "Invalid File",
@@ -39,60 +39,50 @@ export default function Analyze() {
       return;
     }
 
-    // Validate file size (max 100MB)
-    if (file.size > 100 * 1024 * 1024) {
-      toast({
-        title: "File Too Large",
-        description: "Video must be less than 100MB",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setUploading(true);
 
     try {
-      // First, check if user has a player profile
+      // First, ensure user has a player profile (or create one)
       const { data: players, error: playerError } = await supabase
         .from('players')
         .select('id')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .limit(1);
 
       if (playerError) throw playerError;
 
-      let playerId;
-      
+      let playerId: string;
+
       if (!players || players.length === 0) {
         // Create a default player profile
         const { data: newPlayer, error: createError } = await supabase
           .from('players')
           .insert({
-            user_id: user.id,
-            name: user.email?.split('@')[0] || 'Player',
+            user_id: userId,
+            name: 'Default Player',
             sport: 'Baseball',
+            bats: 'Right',
+            throws: 'Right',
           })
-          .select()
+          .select('id')
           .single();
 
         if (createError) throw createError;
         playerId = newPlayer.id;
-
-        toast({
-          title: "Profile Created",
-          description: "Created your player profile",
-        });
       } else {
         playerId = players[0].id;
       }
 
       // Upload video to storage
       const fileExt = file.name.split('.').pop();
-      const fileName = `${playerId}/${Date.now()}.${fileExt}`;
+      const fileName = `${userId}/${Date.now()}.${fileExt}`;
       
       const { error: uploadError } = await supabase.storage
         .from('swing-videos')
-        .upload(fileName, file);
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
       if (uploadError) throw uploadError;
 
@@ -113,8 +103,8 @@ export default function Analyze() {
       if (analysisError) throw analysisError;
 
       toast({
-        title: "Video Uploaded!",
-        description: "Your swing is being analyzed. This takes about 30-60 seconds.",
+        title: "Upload Successful!",
+        description: "Your video is being analyzed. This usually takes 30-60 seconds.",
       });
 
       // Simulate processing time
@@ -122,18 +112,18 @@ export default function Analyze() {
         setUploading(false);
         toast({
           title: "Analysis Complete!",
-          description: "Check your Feed to view results",
+          description: "Your swing analysis is ready to view.",
         });
       }, 3000);
 
     } catch (error: any) {
       console.error('Upload error:', error);
-      setUploading(false);
       toast({
         title: "Upload Failed",
         description: error.message || "Failed to upload video",
         variant: "destructive",
       });
+      setUploading(false);
     }
   };
 
@@ -143,14 +133,10 @@ export default function Analyze() {
 
   const handleRecordClick = () => {
     toast({
-      title: "Coming Soon",
+      title: "Camera Recording",
       description: "Camera recording will be available in the next update",
     });
   };
-
-  if (!user) {
-    return null;
-  }
 
   return (
     <Layout>
@@ -162,6 +148,7 @@ export default function Analyze() {
           </p>
         </div>
 
+        {/* Hidden file input */}
         <input
           ref={fileInputRef}
           type="file"
@@ -182,7 +169,8 @@ export default function Analyze() {
           </Card>
         ) : (
           <>
-            <Card className="border-2 border-dashed border-primary/30 hover:border-primary/50 transition-colors cursor-pointer">
+            <Card className="border-2 border-dashed border-primary/30 hover:border-primary/50 transition-colors cursor-pointer"
+                  onClick={handleRecordClick}>
               <CardHeader>
                 <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4 mx-auto">
                   <Camera className="h-8 w-8 text-primary" />
@@ -194,7 +182,6 @@ export default function Analyze() {
               </CardHeader>
               <CardContent>
                 <Button 
-                  onClick={handleRecordClick} 
                   className="w-full"
                   size="lg"
                 >
@@ -203,7 +190,8 @@ export default function Analyze() {
               </CardContent>
             </Card>
 
-            <Card className="border-2 border-dashed border-muted hover:border-muted-foreground/30 transition-colors cursor-pointer">
+            <Card className="border-2 border-dashed border-muted hover:border-muted-foreground/30 transition-colors cursor-pointer"
+                  onClick={handleImportClick}>
               <CardHeader>
                 <div className="flex items-center justify-center w-16 h-16 rounded-full bg-secondary mb-4 mx-auto">
                   <Upload className="h-8 w-8 text-secondary-foreground" />
@@ -215,7 +203,6 @@ export default function Analyze() {
               </CardHeader>
               <CardContent>
                 <Button 
-                  onClick={handleImportClick} 
                   variant="outline" 
                   className="w-full"
                   size="lg"
@@ -234,7 +221,6 @@ export default function Analyze() {
                 <p>• Ensure good lighting and clear visibility</p>
                 <p>• Capture the full swing from load to follow-through</p>
                 <p>• Keep the camera stable during recording</p>
-                <p>• Maximum file size: 100MB</p>
               </CardContent>
             </Card>
           </>
