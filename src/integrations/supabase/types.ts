@@ -448,6 +448,65 @@ export type Database = {
         }
         Relationships: []
       }
+      events: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          end_time: string
+          event_type: string
+          id: string
+          is_recurring: boolean | null
+          location: string | null
+          organization_id: string
+          recurrence_rule: string | null
+          start_time: string
+          title: string
+          updated_at: string
+          zoom_link: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_time: string
+          event_type?: string
+          id?: string
+          is_recurring?: boolean | null
+          location?: string | null
+          organization_id: string
+          recurrence_rule?: string | null
+          start_time: string
+          title: string
+          updated_at?: string
+          zoom_link?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_time?: string
+          event_type?: string
+          id?: string
+          is_recurring?: boolean | null
+          location?: string | null
+          organization_id?: string
+          recurrence_rule?: string | null
+          start_time?: string
+          title?: string
+          updated_at?: string
+          zoom_link?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fourb_scores: {
         Row: {
           analysis_id: string | null
@@ -630,6 +689,47 @@ export type Database = {
         }
         Relationships: []
       }
+      player_points: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          last_activity_date: string | null
+          level: string
+          player_id: string
+          streak: number
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          last_activity_date?: string | null
+          level?: string
+          player_id: string
+          streak?: number
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          last_activity_date?: string | null
+          level?: string
+          player_id?: string
+          streak?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_points_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: true
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       players: {
         Row: {
           bats: string | null
@@ -759,6 +859,41 @@ export type Database = {
             columns: ["video_analysis_id"]
             isOneToOne: false
             referencedRelation: "video_analyses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      points_history: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          player_id: string
+          points: number
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          player_id: string
+          points: number
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          player_id?: string
+          points?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "points_history_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
             referencedColumns: ["id"]
           },
         ]
@@ -1013,6 +1148,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "video_analyses_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      weekly_checkins: {
+        Row: {
+          created_at: string
+          id: string
+          player_id: string
+          responses: Json
+          updated_at: string
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          player_id: string
+          responses: Json
+          updated_at?: string
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          player_id?: string
+          responses?: Json
+          updated_at?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_checkins_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"

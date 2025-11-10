@@ -19,13 +19,42 @@ export default function MyProgress() {
   }, []);
 
   const fetchProgress = async () => {
-    // TODO: Fetch actual player stats from database
-    setStats({
-      points: 750,
-      level: "Bronze",
-      streak: 7,
-      nextMilestone: 1000
-    });
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Get player
+      const { data: players } = await supabase
+        .from('players')
+        .select('id')
+        .eq('profile_id', user.id)
+        .limit(1);
+      
+      if (players && players.length > 0) {
+        const { data: points } = await supabase
+          .from('player_points')
+          .select('*')
+          .eq('player_id', players[0].id)
+          .maybeSingle();
+        
+        if (points) {
+          const levelThresholds = { Bronze: 1000, Silver: 2500, Gold: 5000, Platinum: 10000 };
+          const nextLevel = points.level === 'Bronze' ? 'Silver' :
+                           points.level === 'Silver' ? 'Gold' :
+                           points.level === 'Gold' ? 'Platinum' : 'Hall of Fame';
+          const nextMilestone = levelThresholds[nextLevel as keyof typeof levelThresholds] || 15000;
+          
+          setStats({
+            points: points.balance,
+            level: points.level,
+            streak: points.streak,
+            nextMilestone
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching progress:', error);
+    }
   };
 
   const progressPercent = (stats.points / stats.nextMilestone) * 100;

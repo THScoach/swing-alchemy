@@ -16,11 +16,58 @@ export default function Team() {
   }, []);
 
   const fetchTeamData = async () => {
-    // TODO: Fetch actual team data
-    setRoster([
-      { id: 1, name: "John Smith", position: "OF", lastActive: "2 hours ago" },
-      { id: 2, name: "Mike Johnson", position: "IF", lastActive: "1 day ago" }
-    ]);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Get user's organization
+      const { data: members } = await supabase
+        .from('organization_members')
+        .select('organization_id')
+        .eq('user_id', user.id)
+        .limit(1);
+      
+      if (members && members.length > 0) {
+        // Get team players
+        const { data: players } = await supabase
+          .from('players')
+          .select(`
+            id,
+            name,
+            position,
+            profile_id,
+            profiles!inner(last_active_at)
+          `)
+          .eq('organization_id', members[0].organization_id);
+        
+        if (players) {
+          // Check weekly check-in status for each
+          const weekStart = new Date();
+          weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+          
+          const { data: checkIns } = await supabase
+            .from('weekly_checkins')
+            .select('player_id')
+            .eq('week_start', weekStart.toISOString().split('T')[0]);
+          
+          const checkInMap = new Set(checkIns?.map(c => c.player_id));
+          
+          const rosterData = players.map(p => ({
+            id: p.id,
+            name: p.name,
+            position: p.position || 'N/A',
+            lastActive: p.profiles?.last_active_at 
+              ? new Date(p.profiles.last_active_at).toLocaleDateString()
+              : 'Never',
+            hasCheckedIn: checkInMap.has(p.id)
+          }));
+          
+          setRoster(rosterData);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching team data:', error);
+    }
   };
 
   return (
@@ -54,8 +101,21 @@ export default function Team() {
                         <div className="font-medium">{player.name}</div>
                         <div className="text-sm text-muted-foreground">{player.position}</div>
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        Active {player.lastActive}
+                      <div className="flex items-center gap-4">
+                        <div className="text-sm text-muted-foreground">
+                          Active {player.lastActive}
+                        </div>
+                        {player.hasCheckedIn ? (
+                          <Badge className="bg-green-500">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Checked In
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary">
+                            <Clock className="h-3 w-3 mr-1" />
+                            Pending
+                          </Badge>
+                        )}
                       </div>
                     </div>
                   ))}

@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Trophy, Gift, TrendingUp } from "lucide-react";
+import { Plus, Trophy, Gift } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -12,19 +14,56 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function AdminGamification() {
-  const leaderboard = [
-    { rank: 1, player: "John Smith", points: 2450, level: "Silver" },
-    { rank: 2, player: "Mike Johnson", points: 2100, level: "Bronze" },
-    { rank: 3, player: "Sarah Williams", points: 1850, level: "Bronze" }
-  ];
+  const navigate = useNavigate();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
 
-  const rewards = [
-    { id: 1, name: "Custom Bat Wrap", cost: 500, redeemed: 23 },
-    { id: 2, name: "1-on-1 Session", cost: 2000, redeemed: 8 },
-    { id: 3, name: "THS Gear Pack", cost: 1000, redeemed: 15 }
-  ];
+  useEffect(() => {
+    checkAdminAccess();
+  }, []);
+
+  const checkAdminAccess = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+
+    const { data: hasAdminRole } = await supabase.rpc("has_role", {
+      _user_id: user.id,
+      _role: "admin",
+    });
+
+    if (!hasAdminRole) {
+      navigate("/feed");
+      return;
+    }
+
+    setIsAdmin(true);
+    await fetchLeaderboard();
+    setLoading(false);
+  };
+
+  const fetchLeaderboard = async () => {
+    try {
+      const { data } = await supabase
+        .from('player_points')
+        .select(`
+          *,
+          players!inner(name)
+        `)
+        .order('balance', { ascending: false })
+        .limit(10);
+      
+      setLeaderboard(data || []);
+    } catch (error) {
+      console.error('Error fetching leaderboard:', error);
+    }
+  };
 
   const pointRules = [
     { action: "Upload Swing", points: 50 },
@@ -32,6 +71,16 @@ export default function AdminGamification() {
     { action: "7-Day Streak", points: 250 },
     { action: "Course Completion", points: 500 }
   ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) return null;
 
   return (
     <AppLayout>
@@ -65,19 +114,29 @@ export default function AdminGamification() {
                       <TableHead>Player</TableHead>
                       <TableHead>Points</TableHead>
                       <TableHead>Level</TableHead>
+                      <TableHead>Streak</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {leaderboard.map((entry) => (
-                      <TableRow key={entry.rank}>
-                        <TableCell className="font-medium">#{entry.rank}</TableCell>
-                        <TableCell>{entry.player}</TableCell>
-                        <TableCell>{entry.points}</TableCell>
-                        <TableCell>
-                          <Badge>{entry.level}</Badge>
+                    {leaderboard.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center text-muted-foreground">
+                          No players yet
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : (
+                      leaderboard.map((player, index) => (
+                        <TableRow key={player.id}>
+                          <TableCell>{index + 1}</TableCell>
+                          <TableCell>{player.players?.name || 'Unknown'}</TableCell>
+                          <TableCell>{player.balance}</TableCell>
+                          <TableCell>
+                            <Badge>{player.level}</Badge>
+                          </TableCell>
+                          <TableCell>{player.streak} days</TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -91,26 +150,18 @@ export default function AdminGamification() {
                 Add Reward
               </Button>
             </div>
-            <div className="grid gap-4">
-              {rewards.map((reward) => (
-                <Card key={reward.id}>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Gift className="h-5 w-5 text-primary" />
-                        <div>
-                          <CardTitle>{reward.name}</CardTitle>
-                          <CardDescription>
-                            {reward.cost} points • {reward.redeemed} redeemed
-                          </CardDescription>
-                        </div>
-                      </div>
-                      <Button variant="outline" size="sm">Edit</Button>
-                    </div>
-                  </CardHeader>
-                </Card>
-              ))}
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Gift className="h-5 w-5" />
+                  Rewards Catalog
+                </CardTitle>
+                <CardDescription>Configure rewards that players can redeem</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">No rewards configured yet</p>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="points" className="space-y-4">
