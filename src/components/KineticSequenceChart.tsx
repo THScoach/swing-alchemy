@@ -1,37 +1,25 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
 
-// Mock data for kinetic sequence - in production this would come from video analysis
-const generateKineticData = () => {
-  const data = [];
-  for (let i = 0; i <= 100; i++) {
-    const time = i / 100; // 0 to 1 seconds
-    
-    // Pelvis peaks first (around 0.3s)
-    const pelvis = Math.max(0, 1200 * Math.exp(-Math.pow((time - 0.3) / 0.08, 2)));
-    
-    // Torso peaks second (around 0.4s)
-    const torso = Math.max(0, 1400 * Math.exp(-Math.pow((time - 0.4) / 0.08, 2)));
-    
-    // Arms peak third (around 0.5s)
-    const arms = Math.max(0, 1600 * Math.exp(-Math.pow((time - 0.5) / 0.08, 2)));
-    
-    // Bat peaks last (around 0.6s)
-    const bat = Math.max(0, 1800 * Math.exp(-Math.pow((time - 0.6) / 0.08, 2)));
-    
-    data.push({
-      time: time.toFixed(2),
-      pelvis: Math.round(pelvis),
-      torso: Math.round(torso),
-      arms: Math.round(arms),
-      bat: Math.round(bat),
-    });
+interface KineticSequenceChartProps {
+  data?: any;
+}
+
+export const KineticSequenceChart = ({ data: kineticData }: KineticSequenceChartProps) => {
+  if (!kineticData || !kineticData.data || kineticData.data.length === 0) {
+    return (
+      <Alert>
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription>
+          Kinetic sequence data is not yet available for this analysis. This data will be populated once video processing is complete.
+        </AlertDescription>
+      </Alert>
+    );
   }
-  return data;
-};
 
-export const KineticSequenceChart = () => {
-  const data = generateKineticData();
+  const data = kineticData.data;
 
   return (
     <div className="space-y-6">
@@ -102,23 +90,27 @@ export const KineticSequenceChart = () => {
         </ResponsiveContainer>
       </div>
 
-      <Card className="bg-muted/50">
-        <CardHeader>
-          <CardTitle className="text-base">Sequence Score: 8.5/10</CardTitle>
-          <CardDescription>
-            <span className="inline-flex items-center gap-1 text-success font-medium">
-              ● Optimal
-            </span>
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          <p>
-            Your kinetic sequence shows excellent timing. The pelvis initiates rotation first, 
-            followed by torso, arms, and finally the bat. This sequential pattern maximizes 
-            power transfer and bat speed at contact.
-          </p>
-        </CardContent>
-      </Card>
+      {kineticData.score && (
+        <Card className="bg-muted/50">
+          <CardHeader>
+            <CardTitle className="text-base">Sequence Score: {kineticData.score}/10</CardTitle>
+            <CardDescription>
+              <span className={`inline-flex items-center gap-1 font-medium ${
+                kineticData.score >= 8 ? 'text-success' : 
+                kineticData.score >= 6 ? 'text-warning' : 
+                'text-destructive'
+              }`}>
+                ● {kineticData.score >= 8 ? 'Optimal' : kineticData.score >= 6 ? 'Good' : 'Needs Work'}
+              </span>
+            </CardDescription>
+          </CardHeader>
+          {kineticData.analysis && (
+            <CardContent className="text-sm text-muted-foreground">
+              <p>{kineticData.analysis}</p>
+            </CardContent>
+          )}
+        </Card>
+      )}
     </div>
   );
 };

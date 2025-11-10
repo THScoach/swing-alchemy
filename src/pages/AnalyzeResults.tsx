@@ -415,7 +415,7 @@ export default function AnalyzeResults() {
                 <CardDescription>Velocity curves showing power generation through the swing</CardDescription>
               </CardHeader>
               <CardContent>
-                <KineticSequenceChart />
+                <KineticSequenceChart data={analysis.kinetic_sequence} />
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <Card className="bg-muted/50">
