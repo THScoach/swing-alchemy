@@ -23,13 +23,22 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { KineticSequenceChart } from "@/components/KineticSequenceChart";
+import { FourBDashboard } from "@/components/fourb/FourBDashboard";
+import { PlayerLevel } from "@/lib/fourb/types";
 
 export default function AnalyzeResults() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [analysis, setAnalysis] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedTab, setSelectedTab] = useState("overview");
+  const [selectedTab, setSelectedTab] = useState("fourb");
+  const [player, setPlayer] = useState<any>(null);
+  const [fourbData, setFourbData] = useState<any>({
+    brain: null,
+    body: null,
+    bat: null,
+    ball: null,
+  });
 
   useEffect(() => {
     fetchAnalysis();
@@ -39,12 +48,30 @@ export default function AnalyzeResults() {
     try {
       const { data, error } = await supabase
         .from('video_analyses')
-        .select('*')
+        .select('*, players(*)')
         .eq('id', id)
         .single();
 
       if (error) throw error;
       setAnalysis(data);
+      setPlayer(data.players);
+
+      // Fetch 4B data
+      if (data.player_id) {
+        const [brainRes, bodyRes, batRes, ballRes] = await Promise.all([
+          supabase.from('brain_data').select('*').eq('player_id', data.player_id).order('created_at', { ascending: false }).limit(1).single(),
+          supabase.from('body_data').select('*').eq('player_id', data.player_id).order('created_at', { ascending: false }).limit(1).single(),
+          supabase.from('bat_data').select('*').eq('player_id', data.player_id).order('created_at', { ascending: false }).limit(1).single(),
+          supabase.from('ball_data').select('*').eq('player_id', data.player_id).order('created_at', { ascending: false }).limit(1).single(),
+        ]);
+
+        setFourbData({
+          brain: brainRes.data,
+          body: bodyRes.data,
+          bat: batRes.data,
+          ball: ballRes.data,
+        });
+      }
     } catch (error) {
       console.error('Error fetching analysis:', error);
     } finally {
@@ -121,7 +148,8 @@ export default function AnalyzeResults() {
         </div>
 
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
+            <TabsTrigger value="fourb">4B Dashboard</TabsTrigger>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="brain">Brain</TabsTrigger>
             <TabsTrigger value="body">Body</TabsTrigger>
@@ -129,6 +157,18 @@ export default function AnalyzeResults() {
             <TabsTrigger value="ball">Ball</TabsTrigger>
             <TabsTrigger value="video">Video</TabsTrigger>
           </TabsList>
+
+          {/* 4B Dashboard Tab */}
+          <TabsContent value="fourb" className="space-y-6">
+            <FourBDashboard
+              playerId={analysis.player_id}
+              playerLevel={(player?.player_level || 'Other') as PlayerLevel}
+              brainData={fourbData.brain}
+              bodyData={fourbData.body}
+              batData={fourbData.bat}
+              ballData={fourbData.ball}
+            />
+          </TabsContent>
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
