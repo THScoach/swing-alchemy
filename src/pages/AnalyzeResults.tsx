@@ -29,6 +29,7 @@ export default function AnalyzeResults() {
   const navigate = useNavigate();
   const [analysis, setAnalysis] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedTab, setSelectedTab] = useState("overview");
 
   useEffect(() => {
     fetchAnalysis();
@@ -119,7 +120,7 @@ export default function AnalyzeResults() {
           </div>
         </div>
 
-        <Tabs defaultValue="overview" className="space-y-6">
+        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="brain">Brain</TabsTrigger>
@@ -174,7 +175,10 @@ export default function AnalyzeResults() {
 
             {/* 4B Scores Grid */}
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="bg-gradient-to-br from-success/10 to-success/5">
+              <Card 
+                className="bg-gradient-to-br from-success/10 to-success/5 cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => setSelectedTab("brain")}
+              >
                 <CardHeader>
                   <div className="flex items-center gap-2">
                     <Brain className="h-5 w-5 text-success" />
@@ -195,7 +199,10 @@ export default function AnalyzeResults() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
+              <Card 
+                className="bg-gradient-to-br from-primary/10 to-primary/5 cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => setSelectedTab("body")}
+              >
                 <CardHeader>
                   <div className="flex items-center gap-2">
                     <User className="h-5 w-5 text-primary" />
@@ -216,7 +223,10 @@ export default function AnalyzeResults() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-warning/10 to-warning/5">
+              <Card 
+                className="bg-gradient-to-br from-warning/10 to-warning/5 cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => setSelectedTab("bat")}
+              >
                 <CardHeader>
                   <div className="flex items-center gap-2">
                     <Activity className="h-5 w-5 text-warning" />
@@ -237,7 +247,10 @@ export default function AnalyzeResults() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-destructive/10 to-destructive/5">
+              <Card 
+                className="bg-gradient-to-br from-destructive/10 to-destructive/5 cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => setSelectedTab("ball")}
+              >
                 <CardHeader>
                   <div className="flex items-center gap-2">
                     <Target className="h-5 w-5 text-destructive" />
