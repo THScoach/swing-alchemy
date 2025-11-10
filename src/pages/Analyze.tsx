@@ -12,6 +12,7 @@ import { Camera, Upload, Loader2, AlertTriangle, CheckCircle2, X, FileVideo } fr
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { CameraRecorder } from "@/components/CameraRecorder";
 
 export default function Analyze() {
   const [uploading, setUploading] = useState(false);
@@ -476,22 +477,8 @@ export default function Analyze() {
               </CardContent>
             </Card>
 
-            {/* Camera Recording (Coming Soon) */}
-            <Card className="border-2 border-dashed border-muted/50 opacity-75">
-              <CardContent className="py-8">
-                <div className="flex flex-col items-center justify-center text-center space-y-4">
-                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
-                    <Camera className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  <div className="space-y-2">
-                    <h3 className="text-lg font-semibold">Record Video</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Direct camera recording coming soon
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Camera Recording */}
+            <CameraRecorder onRecordingComplete={handleFileSelect} />
           </div>
         )}
       </div>

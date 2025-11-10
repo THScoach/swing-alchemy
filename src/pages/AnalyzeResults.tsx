@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
+import { KineticSequenceChart } from "@/components/KineticSequenceChart";
 
 export default function AnalyzeResults() {
   const { id } = useParams();
@@ -411,11 +412,10 @@ export default function AnalyzeResults() {
             <Card>
               <CardHeader>
                 <CardTitle>💪 BODY - Biomechanics & Kinematic Sequence</CardTitle>
+                <CardDescription>Velocity curves showing power generation through the swing</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="aspect-video bg-muted rounded-lg flex items-center justify-center mb-6">
-                  <p className="text-muted-foreground">Kinetic Sequence Chart Placeholder</p>
-                </div>
+                <KineticSequenceChart />
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <Card className="bg-muted/50">
