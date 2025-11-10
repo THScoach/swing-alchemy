@@ -23,6 +23,7 @@ export const CameraRecorder = ({ onRecordingComplete }: CameraRecorderProps) => 
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: {
+          facingMode: "environment", // Use back camera
           width: { ideal: 1920 },
           height: { ideal: 1080 },
           frameRate: { ideal: 240, min: 30 }
