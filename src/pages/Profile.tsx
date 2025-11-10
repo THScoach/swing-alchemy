@@ -1,4 +1,4 @@
-import { Layout } from "@/components/Layout";
+import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -26,7 +26,7 @@ export default function Profile() {
   ];
 
   return (
-    <Layout>
+    <AppLayout>
       <div className="p-4 space-y-4">
         {/* Profile Header */}
         <Card className="border-none shadow-none bg-gradient-to-br from-primary/10 to-primary/5">
@@ -136,6 +136,6 @@ export default function Profile() {
           </CardContent>
         </Card>
       </div>
-    </Layout>
+    </AppLayout>
   );
 }

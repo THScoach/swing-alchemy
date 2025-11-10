@@ -1,4 +1,4 @@
-import { Layout } from "@/components/Layout";
+import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -9,7 +9,7 @@ export default function Feed() {
   const navigate = useNavigate();
 
   return (
-    <Layout>
+    <AppLayout>
       <div className="p-4 space-y-4">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold">Feed</h1>
@@ -134,6 +134,6 @@ export default function Feed() {
           </Card>
         </div>
       </div>
-    </Layout>
+    </AppLayout>
   );
 }

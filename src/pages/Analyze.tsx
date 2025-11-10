@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Layout } from "@/components/Layout";
+import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Camera, Upload, Loader2 } from "lucide-react";
@@ -46,7 +46,7 @@ export default function Analyze() {
       const { data: players, error: playerError } = await supabase
         .from('players')
         .select('id')
-        .eq('user_id', userId)
+        .eq('profile_id', userId)
         .limit(1);
 
       if (playerError) throw playerError;
@@ -58,7 +58,7 @@ export default function Analyze() {
         const { data: newPlayer, error: createError } = await supabase
           .from('players')
           .insert({
-            user_id: userId,
+            profile_id: userId,
             name: 'Default Player',
             sport: 'Baseball',
             bats: 'Right',
@@ -139,7 +139,7 @@ export default function Analyze() {
   };
 
   return (
-    <Layout>
+    <AppLayout>
       <div className="p-4 space-y-4">
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">Analyze Swing</h1>
@@ -226,6 +226,6 @@ export default function Analyze() {
           </>
         )}
       </div>
-    </Layout>
+    </AppLayout>
   );
 }

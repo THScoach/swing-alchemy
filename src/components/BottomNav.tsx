@@ -1,4 +1,4 @@
-import { Home, Video, BookOpen, User } from "lucide-react";
+import { Home, Video, BookOpen, ShoppingBag, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -6,6 +6,7 @@ const navItems = [
   { icon: Home, label: "Feed", path: "/feed" },
   { icon: Video, label: "Analyze", path: "/analyze" },
   { icon: BookOpen, label: "Courses", path: "/courses" },
+  { icon: ShoppingBag, label: "Store", path: "/store" },
   { icon: User, label: "Profile", path: "/profile" },
 ];
 
@@ -13,8 +14,8 @@ export const BottomNav = () => {
   const location = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50">
-      <div className="flex justify-around items-center h-16 max-w-lg mx-auto">
+    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 lg:hidden">
+      <div className="flex justify-around items-center h-16">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;

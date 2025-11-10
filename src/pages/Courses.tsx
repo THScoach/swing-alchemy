@@ -1,4 +1,4 @@
-import { Layout } from "@/components/Layout";
+import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -59,7 +59,7 @@ const getLevelColor = (level: string) => {
 
 export default function Courses() {
   return (
-    <Layout>
+    <AppLayout>
       <div className="p-4 space-y-4">
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">Courses</h1>
@@ -113,6 +113,6 @@ export default function Courses() {
           ))}
         </div>
       </div>
-    </Layout>
+    </AppLayout>
   );
 }
