@@ -25,6 +25,7 @@ export default function Profile() {
   const [players, setPlayers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [analysisCount, setAnalysisCount] = useState(0);
+  const [analyses, setAnalyses] = useState<any[]>([]);
 
   useEffect(() => {
     loadProfile();
@@ -69,13 +70,17 @@ export default function Profile() {
 
       setPlayers(playersData || []);
 
-      // Count analyses
+      // Load analyses with player data
       if (playersData && playersData.length > 0) {
-        const { count } = await supabase
+        const { data: analysesData } = await supabase
           .from("video_analyses")
-          .select("*", { count: "exact", head: true })
-          .in("player_id", playersData.map((p) => p.id));
-        setAnalysisCount(count || 0);
+          .select("*, players(name)")
+          .in("player_id", playersData.map((p) => p.id))
+          .order("created_at", { ascending: false })
+          .limit(10);
+        
+        setAnalyses(analysesData || []);
+        setAnalysisCount(analysesData?.length || 0);
       }
     } else {
       // User viewing their own profile
@@ -101,13 +106,17 @@ export default function Profile() {
 
       setPlayers(playersData || []);
 
-      // Count analyses
+      // Load analyses with player data
       if (playersData && playersData.length > 0) {
-        const { count } = await supabase
+        const { data: analysesData } = await supabase
           .from("video_analyses")
-          .select("*", { count: "exact", head: true })
-          .in("player_id", playersData.map((p) => p.id));
-        setAnalysisCount(count || 0);
+          .select("*, players(name)")
+          .in("player_id", playersData.map((p) => p.id))
+          .order("created_at", { ascending: false })
+          .limit(10);
+        
+        setAnalyses(analysesData || []);
+        setAnalysisCount(analysesData?.length || 0);
       }
     }
 
@@ -186,7 +195,7 @@ export default function Profile() {
           {stats.map((stat) => {
             const Icon = stat.icon;
             return (
-              <Card key={stat.label}>
+              <Card key={stat.label} className="cursor-pointer hover:bg-accent/50 transition-colors">
                 <CardContent className="pt-4 text-center">
                   <Icon className="h-5 w-5 text-primary mx-auto mb-2" />
                   <div className="text-2xl font-bold mb-1">{stat.value}</div>
@@ -196,6 +205,53 @@ export default function Profile() {
             );
           })}
         </div>
+
+        {/* Recent Analyses */}
+        {analyses.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Recent Analyses</CardTitle>
+              <CardDescription>Click any analysis to view the full report</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {analyses.map((analysis) => (
+                <div
+                  key={analysis.id}
+                  onClick={() => navigate(`/analyze/${analysis.id}`)}
+                  className="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer transition-colors"
+                >
+                  <div className="h-16 w-16 bg-muted rounded-lg flex items-center justify-center overflow-hidden">
+                    {analysis.thumbnail_url ? (
+                      <img src={analysis.thumbnail_url} alt="Analysis" className="w-full h-full object-cover" />
+                    ) : (
+                      <Video className="h-6 w-6 text-muted-foreground" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{analysis.players?.name || "Unknown Player"}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(analysis.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    {analysis.ball_scores && typeof analysis.ball_scores === 'object' && (
+                      <Badge variant="outline" className="text-xs">
+                        Ball: {typeof analysis.ball_scores === 'number' ? analysis.ball_scores : 
+                              analysis.ball_scores.overall || 'N/A'}
+                      </Badge>
+                    )}
+                    {analysis.bat_scores && typeof analysis.bat_scores === 'object' && (
+                      <Badge variant="outline" className="text-xs">
+                        Bat: {typeof analysis.bat_scores === 'number' ? analysis.bat_scores : 
+                             analysis.bat_scores.overall || 'N/A'}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Player Info */}
         {firstPlayer && (
