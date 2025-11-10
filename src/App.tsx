@@ -7,7 +7,9 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import Landing from "./pages/Landing";
 import Feed from "./pages/Feed";
 import Analyze from "./pages/Analyze";
+import AnalyzeResults from "./pages/AnalyzeResults";
 import Courses from "./pages/Courses";
+import CourseDetail from "./pages/CourseDetail";
 import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
 import PricingPage from "./pages/PricingPage";
@@ -37,7 +39,9 @@ const App = () => (
           {/* Protected routes */}
           <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
           <Route path="/analyze" element={<ProtectedRoute><Analyze /></ProtectedRoute>} />
+          <Route path="/analyze/:id" element={<ProtectedRoute><AnalyzeResults /></ProtectedRoute>} />
           <Route path="/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
+          <Route path="/courses/:id" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
           <Route path="/store" element={<ProtectedRoute><Store /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           
