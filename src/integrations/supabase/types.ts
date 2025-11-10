@@ -164,10 +164,10 @@ export type Database = {
           id: string
           name: string
           position: string | null
+          profile_id: string | null
           sport: string
           throws: string | null
           updated_at: string
-          user_id: string
         }
         Insert: {
           bats?: string | null
@@ -177,10 +177,10 @@ export type Database = {
           id?: string
           name: string
           position?: string | null
+          profile_id?: string | null
           sport?: string
           throws?: string | null
           updated_at?: string
-          user_id: string
         }
         Update: {
           bats?: string | null
@@ -190,12 +190,20 @@ export type Database = {
           id?: string
           name?: string
           position?: string | null
+          profile_id?: string | null
           sport?: string
           throws?: string | null
           updated_at?: string
-          user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "players_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pocket_radar_readings: {
         Row: {
@@ -241,6 +249,72 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      profiles: {
+        Row: {
+          avatar: string | null
+          created_at: string | null
+          date_of_birth: string | null
+          dominant_hand: string | null
+          gender: string | null
+          height: number | null
+          id: string
+          last_active_at: string | null
+          name: string
+          phone: string | null
+          stripe_customer_id: string | null
+          subscription_tier: string | null
+        }
+        Insert: {
+          avatar?: string | null
+          created_at?: string | null
+          date_of_birth?: string | null
+          dominant_hand?: string | null
+          gender?: string | null
+          height?: number | null
+          id: string
+          last_active_at?: string | null
+          name: string
+          phone?: string | null
+          stripe_customer_id?: string | null
+          subscription_tier?: string | null
+        }
+        Update: {
+          avatar?: string | null
+          created_at?: string | null
+          date_of_birth?: string | null
+          dominant_hand?: string | null
+          gender?: string | null
+          height?: number | null
+          id?: string
+          last_active_at?: string | null
+          name?: string
+          phone?: string | null
+          stripe_customer_id?: string | null
+          subscription_tier?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
       }
       video_analyses: {
         Row: {
@@ -309,10 +383,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "user" | "coach" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -439,6 +519,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["user", "coach", "admin"],
+    },
   },
 } as const
