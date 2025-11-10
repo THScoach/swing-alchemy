@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          organization_id: string
+          resource_id: string | null
+          resource_type: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          organization_id: string
+          resource_id?: string | null
+          resource_type: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          organization_id?: string
+          resource_id?: string | null
+          resource_type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ball_data: {
         Row: {
           analysis_id: string | null
@@ -530,6 +574,62 @@ export type Database = {
         }
         Relationships: []
       }
+      organization_members: {
+        Row: {
+          created_at: string
+          id: string
+          organization_id: string
+          role: Database["public"]["Enums"]["org_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id: string
+          role?: Database["public"]["Enums"]["org_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string
+          role?: Database["public"]["Enums"]["org_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          subscription_tier: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          subscription_tier?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          subscription_tier?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       players: {
         Row: {
           bats: string | null
@@ -542,11 +642,13 @@ export type Database = {
           id: string
           name: string
           organization: string | null
+          organization_id: string | null
           player_level: Database["public"]["Enums"]["player_level"] | null
           position: string | null
           profile_id: string | null
           s2_report_url: string | null
           sport: string
+          team_id: string | null
           throws: string | null
           updated_at: string
         }
@@ -561,11 +663,13 @@ export type Database = {
           id?: string
           name: string
           organization?: string | null
+          organization_id?: string | null
           player_level?: Database["public"]["Enums"]["player_level"] | null
           position?: string | null
           profile_id?: string | null
           s2_report_url?: string | null
           sport?: string
+          team_id?: string | null
           throws?: string | null
           updated_at?: string
         }
@@ -580,20 +684,36 @@ export type Database = {
           id?: string
           name?: string
           organization?: string | null
+          organization_id?: string | null
           player_level?: Database["public"]["Enums"]["player_level"] | null
           position?: string | null
           profile_id?: string | null
           s2_report_url?: string | null
           sport?: string
+          team_id?: string | null
           throws?: string | null
           updated_at?: string
         }
         Relationships: [
           {
+            foreignKeyName: "players_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "players_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "players_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
@@ -738,6 +858,73 @@ export type Database = {
           },
         ]
       }
+      signed_urls: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          media_id: string
+          organization_id: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          media_id: string
+          organization_id: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          media_id?: string
+          organization_id?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signed_urls_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teams_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -845,12 +1032,25 @@ export type Database = {
         }
         Returns: boolean
       }
+      user_has_org_access: {
+        Args: { _org_id: string; _user_id: string }
+        Returns: boolean
+      }
+      user_has_org_role: {
+        Args: {
+          _org_id: string
+          _role: Database["public"]["Enums"]["org_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "user" | "coach" | "admin"
       content_topic: "Brain" | "Body" | "Bat" | "Ball"
       content_type: "Video" | "Audio" | "Article" | "Course" | "Drill" | "Note"
       context_tag: "Game" | "Practice" | "Drill"
+      org_role: "admin" | "coach" | "player" | "viewer"
       player_level: "Youth (10-13)" | "HS (14-18)" | "College" | "Pro" | "Other"
       source_platform: "Membership.io" | "YouTube" | "Upload" | "Manual"
     }
@@ -984,6 +1184,7 @@ export const Constants = {
       content_topic: ["Brain", "Body", "Bat", "Ball"],
       content_type: ["Video", "Audio", "Article", "Course", "Drill", "Note"],
       context_tag: ["Game", "Practice", "Drill"],
+      org_role: ["admin", "coach", "player", "viewer"],
       player_level: ["Youth (10-13)", "HS (14-18)", "College", "Pro", "Other"],
       source_platform: ["Membership.io", "YouTube", "Upload", "Manual"],
     },

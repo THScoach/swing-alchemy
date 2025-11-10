@@ -13,7 +13,30 @@ serve(async (req) => {
   }
 
   try {
-    const { query, topic, level, limit = 3 } = await req.json();
+    // Authenticate user
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { query, topic, level, limit = 3, organizationId } = await req.json();
 
     if (!query) {
       return new Response(
@@ -25,9 +48,22 @@ serve(async (req) => {
       );
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Verify org access if organizationId provided
+    if (organizationId) {
+      const { data: membership } = await supabase
+        .from("organization_members")
+        .select("role, organizations(subscription_tier)")
+        .eq("organization_id", organizationId)
+        .eq("user_id", user.id)
+        .single();
+
+      if (!membership) {
+        return new Response(
+          JSON.stringify({ error: "Access denied" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
 
     // Build query
     let dbQuery = supabase.from("notes").select("*");
@@ -92,6 +128,17 @@ serve(async (req) => {
       .filter((note) => note.relevance_score > 0)
       .sort((a, b) => b.relevance_score - a.relevance_score)
       .slice(0, limit);
+
+    // Log the search (if org provided)
+    if (organizationId) {
+      await supabase.from("audit_logs").insert({
+        organization_id: organizationId,
+        user_id: user.id,
+        action: "knowledge_searched",
+        resource_type: "knowledge_base",
+        metadata: { query, topic, level, result_count: scoredNotes.length },
+      });
+    }
 
     return new Response(
       JSON.stringify({
