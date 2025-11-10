@@ -1,26 +1,156 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Camera, Upload, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 export default function Analyze() {
   const [uploading, setUploading] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
-  const handleUpload = (method: "record" | "import") => {
+  useEffect(() => {
+    // Check if user is authenticated
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        navigate("/auth");
+      } else {
+        setUser(session.user);
+      }
+    });
+  }, [navigate]);
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('video/')) {
+      toast({
+        title: "Invalid File",
+        description: "Please select a video file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (max 100MB)
+    if (file.size > 100 * 1024 * 1024) {
+      toast({
+        title: "File Too Large",
+        description: "Video must be less than 100MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setUploading(true);
-    
-    // Simulate upload process
-    setTimeout(() => {
+
+    try {
+      // First, check if user has a player profile
+      const { data: players, error: playerError } = await supabase
+        .from('players')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1);
+
+      if (playerError) throw playerError;
+
+      let playerId;
+      
+      if (!players || players.length === 0) {
+        // Create a default player profile
+        const { data: newPlayer, error: createError } = await supabase
+          .from('players')
+          .insert({
+            user_id: user.id,
+            name: user.email?.split('@')[0] || 'Player',
+            sport: 'Baseball',
+          })
+          .select()
+          .single();
+
+        if (createError) throw createError;
+        playerId = newPlayer.id;
+
+        toast({
+          title: "Profile Created",
+          description: "Created your player profile",
+        });
+      } else {
+        playerId = players[0].id;
+      }
+
+      // Upload video to storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${playerId}/${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('swing-videos')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('swing-videos')
+        .getPublicUrl(fileName);
+
+      // Create video analysis record
+      const { error: analysisError } = await supabase
+        .from('video_analyses')
+        .insert({
+          player_id: playerId,
+          video_url: publicUrl,
+          processing_status: 'processing',
+        });
+
+      if (analysisError) throw analysisError;
+
+      toast({
+        title: "Video Uploaded!",
+        description: "Your swing is being analyzed. This takes about 30-60 seconds.",
+      });
+
+      // Simulate processing time
+      setTimeout(() => {
+        setUploading(false);
+        toast({
+          title: "Analysis Complete!",
+          description: "Check your Feed to view results",
+        });
+      }, 3000);
+
+    } catch (error: any) {
+      console.error('Upload error:', error);
       setUploading(false);
       toast({
-        title: "Upload Started",
-        description: `${method === "record" ? "Recording" : "Import"} initiated successfully`,
+        title: "Upload Failed",
+        description: error.message || "Failed to upload video",
+        variant: "destructive",
       });
-    }, 1500);
+    }
   };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleRecordClick = () => {
+    toast({
+      title: "Coming Soon",
+      description: "Camera recording will be available in the next update",
+    });
+  };
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <Layout>
@@ -31,6 +161,14 @@ export default function Analyze() {
             Upload or record a video to analyze your hitting mechanics
           </p>
         </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="video/*"
+          onChange={handleFileSelect}
+          className="hidden"
+        />
 
         {uploading ? (
           <Card>
@@ -56,7 +194,7 @@ export default function Analyze() {
               </CardHeader>
               <CardContent>
                 <Button 
-                  onClick={() => handleUpload("record")} 
+                  onClick={handleRecordClick} 
                   className="w-full"
                   size="lg"
                 >
@@ -77,7 +215,7 @@ export default function Analyze() {
               </CardHeader>
               <CardContent>
                 <Button 
-                  onClick={() => handleUpload("import")} 
+                  onClick={handleImportClick} 
                   variant="outline" 
                   className="w-full"
                   size="lg"
@@ -96,6 +234,7 @@ export default function Analyze() {
                 <p>• Ensure good lighting and clear visibility</p>
                 <p>• Capture the full swing from load to follow-through</p>
                 <p>• Keep the camera stable during recording</p>
+                <p>• Maximum file size: 100MB</p>
               </CardContent>
             </Card>
           </>
