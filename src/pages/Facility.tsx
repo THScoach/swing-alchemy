@@ -204,11 +204,11 @@ export default function Facility() {
             <Card>
               <CardHeader>
                 <BarChart3 className="h-8 w-8 text-primary mb-2" />
-                <CardTitle>Force Plates</CardTitle>
+                <CardTitle>3D Biomechanics</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground text-sm">
-                  Ground reaction force measurement for analyzing weight transfer and power generation.
+                  Advanced motion capture technology for comprehensive biomechanical analysis and movement optimization.
                 </p>
               </CardContent>
             </Card>
