@@ -23,6 +23,14 @@ import AdminPlayers from "./pages/AdminPlayers";
 import AdminTeams from "./pages/AdminTeams";
 import AdminNotebook from "./pages/AdminNotebook";
 import AdminSubscriptions from "./pages/AdminSubscriptions";
+import AdminMessaging from "./pages/AdminMessaging";
+import AdminAutomations from "./pages/AdminAutomations";
+import AdminContent from "./pages/AdminContent";
+import AdminGamification from "./pages/AdminGamification";
+import MyProgress from "./pages/MyProgress";
+import Calendar from "./pages/Calendar";
+import KnowledgeBase from "./pages/KnowledgeBase";
+import Team from "./pages/Team";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +56,10 @@ const App = () => (
           <Route path="/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
           <Route path="/courses/:id" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
           <Route path="/store" element={<ProtectedRoute><Store /></ProtectedRoute>} />
+          <Route path="/my-progress" element={<ProtectedRoute><MyProgress /></ProtectedRoute>} />
+          <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
+          <Route path="/knowledge-base" element={<ProtectedRoute><KnowledgeBase /></ProtectedRoute>} />
+          <Route path="/team" element={<ProtectedRoute><Team /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/profile/:userId" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           
@@ -55,7 +67,11 @@ const App = () => (
           <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
           <Route path="/admin/players" element={<ProtectedRoute><AdminPlayers /></ProtectedRoute>} />
           <Route path="/admin/teams" element={<ProtectedRoute><AdminTeams /></ProtectedRoute>} />
+          <Route path="/admin/messaging" element={<ProtectedRoute><AdminMessaging /></ProtectedRoute>} />
+          <Route path="/admin/automations" element={<ProtectedRoute><AdminAutomations /></ProtectedRoute>} />
+          <Route path="/admin/content" element={<ProtectedRoute><AdminContent /></ProtectedRoute>} />
           <Route path="/admin/notebook" element={<ProtectedRoute><AdminNotebook /></ProtectedRoute>} />
+          <Route path="/admin/gamification" element={<ProtectedRoute><AdminGamification /></ProtectedRoute>} />
           <Route path="/admin/subscriptions" element={<ProtectedRoute><AdminSubscriptions /></ProtectedRoute>} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

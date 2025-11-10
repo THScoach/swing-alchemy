@@ -1,12 +1,12 @@
-import { Home, Video, BookOpen, ShoppingBag, User } from "lucide-react";
+import { Home, Video, TrendingUp, Library, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { icon: Home, label: "Feed", path: "/feed" },
   { icon: Video, label: "Analyze", path: "/analyze" },
-  { icon: BookOpen, label: "Courses", path: "/courses" },
-  { icon: ShoppingBag, label: "Store", path: "/store" },
+  { icon: TrendingUp, label: "Progress", path: "/my-progress" },
+  { icon: Library, label: "KB", path: "/knowledge-base" },
   { icon: User, label: "Profile", path: "/profile" },
 ];
 
