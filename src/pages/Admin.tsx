@@ -4,7 +4,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, Building2, CreditCard, TrendingUp, Activity, DollarSign } from "lucide-react";
+import { Users, Building2, CreditCard, TrendingUp, Activity, DollarSign, BookOpen } from "lucide-react";
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -88,6 +88,7 @@ export default function Admin() {
   const quickActions = [
     { label: "View All Users", path: "/admin/players" },
     { label: "View All Teams", path: "/admin/teams" },
+    { label: "Coach Rick's Notebook", path: "/admin/notebook" },
     { label: "Manage Subscriptions", path: "/admin/subscriptions" },
   ];
 
@@ -121,7 +122,7 @@ export default function Admin() {
           {/* Quick Actions */}
           <Card className="p-6">
             <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
               {quickActions.map((action) => (
                 <Button
                   key={action.label}

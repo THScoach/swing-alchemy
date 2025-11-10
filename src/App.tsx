@@ -21,6 +21,7 @@ import Store from "./pages/Store";
 import Admin from "./pages/Admin";
 import AdminPlayers from "./pages/AdminPlayers";
 import AdminTeams from "./pages/AdminTeams";
+import AdminNotebook from "./pages/AdminNotebook";
 import AdminSubscriptions from "./pages/AdminSubscriptions";
 
 const queryClient = new QueryClient();
@@ -54,6 +55,7 @@ const App = () => (
           <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
           <Route path="/admin/players" element={<ProtectedRoute><AdminPlayers /></ProtectedRoute>} />
           <Route path="/admin/teams" element={<ProtectedRoute><AdminTeams /></ProtectedRoute>} />
+          <Route path="/admin/notebook" element={<ProtectedRoute><AdminNotebook /></ProtectedRoute>} />
           <Route path="/admin/subscriptions" element={<ProtectedRoute><AdminSubscriptions /></ProtectedRoute>} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -482,6 +482,54 @@ export type Database = {
           },
         ]
       }
+      notes: {
+        Row: {
+          body: string
+          content_type: Database["public"]["Enums"]["content_type"] | null
+          created_at: string
+          created_by: string | null
+          id: string
+          level_tags: Database["public"]["Enums"]["player_level"][] | null
+          source: Database["public"]["Enums"]["source_platform"] | null
+          source_url: string | null
+          subtopics: string[] | null
+          tags: string[] | null
+          title: string | null
+          topic: Database["public"]["Enums"]["content_topic"] | null
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          content_type?: Database["public"]["Enums"]["content_type"] | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          level_tags?: Database["public"]["Enums"]["player_level"][] | null
+          source?: Database["public"]["Enums"]["source_platform"] | null
+          source_url?: string | null
+          subtopics?: string[] | null
+          tags?: string[] | null
+          title?: string | null
+          topic?: Database["public"]["Enums"]["content_topic"] | null
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          content_type?: Database["public"]["Enums"]["content_type"] | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          level_tags?: Database["public"]["Enums"]["player_level"][] | null
+          source?: Database["public"]["Enums"]["source_platform"] | null
+          source_url?: string | null
+          subtopics?: string[] | null
+          tags?: string[] | null
+          title?: string | null
+          topic?: Database["public"]["Enums"]["content_topic"] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       players: {
         Row: {
           bats: string | null
@@ -800,8 +848,11 @@ export type Database = {
     }
     Enums: {
       app_role: "user" | "coach" | "admin"
+      content_topic: "Brain" | "Body" | "Bat" | "Ball"
+      content_type: "Video" | "Audio" | "Article" | "Course" | "Drill" | "Note"
       context_tag: "Game" | "Practice" | "Drill"
       player_level: "Youth (10-13)" | "HS (14-18)" | "College" | "Pro" | "Other"
+      source_platform: "Membership.io" | "YouTube" | "Upload" | "Manual"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -930,8 +981,11 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["user", "coach", "admin"],
+      content_topic: ["Brain", "Body", "Bat", "Ball"],
+      content_type: ["Video", "Audio", "Article", "Course", "Drill", "Note"],
       context_tag: ["Game", "Practice", "Drill"],
       player_level: ["Youth (10-13)", "HS (14-18)", "College", "Pro", "Other"],
+      source_platform: ["Membership.io", "YouTube", "Upload", "Manual"],
     },
   },
 } as const

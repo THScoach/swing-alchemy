@@ -25,6 +25,7 @@ import { formatDistanceToNow } from "date-fns";
 import { KineticSequenceChart } from "@/components/KineticSequenceChart";
 import { FourBDashboard } from "@/components/fourb/FourBDashboard";
 import { PlayerLevel } from "@/lib/fourb/types";
+import { CoachRickAvatar } from "@/components/CoachRickAvatar";
 
 export default function AnalyzeResults() {
   const { id } = useParams();
@@ -623,6 +624,24 @@ export default function AnalyzeResults() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Coach Rick Avatar */}
+      <CoachRickAvatar
+        playerLevel={player?.player_level || "HS (14-18)"}
+        currentTab={selectedTab === "fourb" ? "brain" : selectedTab as any}
+        weakMetrics={[]}
+        contextTip={
+          selectedTab === "brain"
+            ? "Work on cognitive training to improve pitch recognition and decision-making speed."
+            : selectedTab === "body"
+            ? "Focus on kinematic efficiency and movement patterns for better power transfer."
+            : selectedTab === "bat"
+            ? "Improve bat path mechanics and consistency for better contact quality."
+            : selectedTab === "ball"
+            ? "Optimize launch angles and exit velocity for better outcomes."
+            : "Check out your complete 4B Dashboard to see where to focus your training."
+        }
+      />
     </AppLayout>
   );
 }
