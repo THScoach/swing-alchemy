@@ -18,6 +18,10 @@ import Facility from "./pages/Facility";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 import Store from "./pages/Store";
+import Admin from "./pages/Admin";
+import AdminPlayers from "./pages/AdminPlayers";
+import AdminTeams from "./pages/AdminTeams";
+import AdminSubscriptions from "./pages/AdminSubscriptions";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +48,12 @@ const App = () => (
           <Route path="/courses/:id" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
           <Route path="/store" element={<ProtectedRoute><Store /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          
+          {/* Admin routes */}
+          <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+          <Route path="/admin/players" element={<ProtectedRoute><AdminPlayers /></ProtectedRoute>} />
+          <Route path="/admin/teams" element={<ProtectedRoute><AdminTeams /></ProtectedRoute>} />
+          <Route path="/admin/subscriptions" element={<ProtectedRoute><AdminSubscriptions /></ProtectedRoute>} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
