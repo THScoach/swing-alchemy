@@ -14,6 +14,255 @@ export type Database = {
   }
   public: {
     Tables: {
+      ball_data: {
+        Row: {
+          analysis_id: string | null
+          barrel_like_rate: number | null
+          context_tag: Database["public"]["Enums"]["context_tag"] | null
+          created_at: string
+          ev90: number | null
+          exit_velocities: number[] | null
+          hard_hit_rate: number | null
+          id: string
+          la_sd: number | null
+          la90: number | null
+          launch_angles: number[] | null
+          player_id: string
+          source_system: string | null
+          updated_at: string
+        }
+        Insert: {
+          analysis_id?: string | null
+          barrel_like_rate?: number | null
+          context_tag?: Database["public"]["Enums"]["context_tag"] | null
+          created_at?: string
+          ev90?: number | null
+          exit_velocities?: number[] | null
+          hard_hit_rate?: number | null
+          id?: string
+          la_sd?: number | null
+          la90?: number | null
+          launch_angles?: number[] | null
+          player_id: string
+          source_system?: string | null
+          updated_at?: string
+        }
+        Update: {
+          analysis_id?: string | null
+          barrel_like_rate?: number | null
+          context_tag?: Database["public"]["Enums"]["context_tag"] | null
+          created_at?: string
+          ev90?: number | null
+          exit_velocities?: number[] | null
+          hard_hit_rate?: number | null
+          id?: string
+          la_sd?: number | null
+          la90?: number | null
+          launch_angles?: number[] | null
+          player_id?: string
+          source_system?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ball_data_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "video_analyses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ball_data_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bat_data: {
+        Row: {
+          analysis_id: string | null
+          attack_angle_avg: number | null
+          attack_angle_sd: number | null
+          avg_bat_speed: number | null
+          bat_speed_sd: number | null
+          blast_report_url: string | null
+          context_tag: Database["public"]["Enums"]["context_tag"] | null
+          created_at: string
+          id: string
+          player_id: string
+          time_in_zone_ms: number | null
+          updated_at: string
+        }
+        Insert: {
+          analysis_id?: string | null
+          attack_angle_avg?: number | null
+          attack_angle_sd?: number | null
+          avg_bat_speed?: number | null
+          bat_speed_sd?: number | null
+          blast_report_url?: string | null
+          context_tag?: Database["public"]["Enums"]["context_tag"] | null
+          created_at?: string
+          id?: string
+          player_id: string
+          time_in_zone_ms?: number | null
+          updated_at?: string
+        }
+        Update: {
+          analysis_id?: string | null
+          attack_angle_avg?: number | null
+          attack_angle_sd?: number | null
+          avg_bat_speed?: number | null
+          bat_speed_sd?: number | null
+          blast_report_url?: string | null
+          context_tag?: Database["public"]["Enums"]["context_tag"] | null
+          created_at?: string
+          id?: string
+          player_id?: string
+          time_in_zone_ms?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bat_data_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "video_analyses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bat_data_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      body_data: {
+        Row: {
+          analysis_id: string | null
+          back_leg_lift_time: number | null
+          com_forward_movement_pct: number | null
+          contact_time: number | null
+          context_tag: Database["public"]["Enums"]["context_tag"] | null
+          created_at: string
+          head_movement_inches: number | null
+          id: string
+          player_id: string
+          reboot_report_url: string | null
+          sequence_correct: boolean | null
+          spine_angle_var_deg: number | null
+          spine_stability_score: number | null
+          updated_at: string
+        }
+        Insert: {
+          analysis_id?: string | null
+          back_leg_lift_time?: number | null
+          com_forward_movement_pct?: number | null
+          contact_time?: number | null
+          context_tag?: Database["public"]["Enums"]["context_tag"] | null
+          created_at?: string
+          head_movement_inches?: number | null
+          id?: string
+          player_id: string
+          reboot_report_url?: string | null
+          sequence_correct?: boolean | null
+          spine_angle_var_deg?: number | null
+          spine_stability_score?: number | null
+          updated_at?: string
+        }
+        Update: {
+          analysis_id?: string | null
+          back_leg_lift_time?: number | null
+          com_forward_movement_pct?: number | null
+          contact_time?: number | null
+          context_tag?: Database["public"]["Enums"]["context_tag"] | null
+          created_at?: string
+          head_movement_inches?: number | null
+          id?: string
+          player_id?: string
+          reboot_report_url?: string | null
+          sequence_correct?: boolean | null
+          spine_angle_var_deg?: number | null
+          spine_stability_score?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "body_data_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "video_analyses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "body_data_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brain_data: {
+        Row: {
+          analysis_id: string | null
+          created_at: string
+          decision_making: number | null
+          id: string
+          impulse_control: number | null
+          overall_percentile: number | null
+          player_id: string
+          processing_speed: number | null
+          s2_report_url: string | null
+          tracking_focus: number | null
+          updated_at: string
+        }
+        Insert: {
+          analysis_id?: string | null
+          created_at?: string
+          decision_making?: number | null
+          id?: string
+          impulse_control?: number | null
+          overall_percentile?: number | null
+          player_id: string
+          processing_speed?: number | null
+          s2_report_url?: string | null
+          tracking_focus?: number | null
+          updated_at?: string
+        }
+        Update: {
+          analysis_id?: string | null
+          created_at?: string
+          decision_making?: number | null
+          id?: string
+          impulse_control?: number | null
+          overall_percentile?: number | null
+          player_id?: string
+          processing_speed?: number | null
+          s2_report_url?: string | null
+          tracking_focus?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brain_data_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "video_analyses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brain_data_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_modules: {
         Row: {
           action_items: string[] | null
@@ -155,42 +404,138 @@ export type Database = {
         }
         Relationships: []
       }
+      fourb_scores: {
+        Row: {
+          analysis_id: string | null
+          ball_score: number | null
+          ball_state: string | null
+          bat_score: number | null
+          bat_state: string | null
+          body_score: number | null
+          body_state: string | null
+          brain_score: number | null
+          brain_state: string | null
+          created_at: string
+          focus_area: string | null
+          id: string
+          overall_score: number | null
+          overall_state: string | null
+          player_id: string
+          session_date: string | null
+          strongest_area: string | null
+          updated_at: string
+        }
+        Insert: {
+          analysis_id?: string | null
+          ball_score?: number | null
+          ball_state?: string | null
+          bat_score?: number | null
+          bat_state?: string | null
+          body_score?: number | null
+          body_state?: string | null
+          brain_score?: number | null
+          brain_state?: string | null
+          created_at?: string
+          focus_area?: string | null
+          id?: string
+          overall_score?: number | null
+          overall_state?: string | null
+          player_id: string
+          session_date?: string | null
+          strongest_area?: string | null
+          updated_at?: string
+        }
+        Update: {
+          analysis_id?: string | null
+          ball_score?: number | null
+          ball_state?: string | null
+          bat_score?: number | null
+          bat_state?: string | null
+          body_score?: number | null
+          body_state?: string | null
+          brain_score?: number | null
+          brain_state?: string | null
+          created_at?: string
+          focus_area?: string | null
+          id?: string
+          overall_score?: number | null
+          overall_state?: string | null
+          player_id?: string
+          session_date?: string | null
+          strongest_area?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fourb_scores_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "video_analyses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fourb_scores_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       players: {
         Row: {
           bats: string | null
+          contact: string | null
           created_at: string
           date_of_birth: string | null
+          has_coach_rick_avatar: boolean | null
+          has_reboot_report: boolean | null
           height: number | null
           id: string
           name: string
+          organization: string | null
+          player_level: Database["public"]["Enums"]["player_level"] | null
           position: string | null
           profile_id: string | null
+          s2_report_url: string | null
           sport: string
           throws: string | null
           updated_at: string
         }
         Insert: {
           bats?: string | null
+          contact?: string | null
           created_at?: string
           date_of_birth?: string | null
+          has_coach_rick_avatar?: boolean | null
+          has_reboot_report?: boolean | null
           height?: number | null
           id?: string
           name: string
+          organization?: string | null
+          player_level?: Database["public"]["Enums"]["player_level"] | null
           position?: string | null
           profile_id?: string | null
+          s2_report_url?: string | null
           sport?: string
           throws?: string | null
           updated_at?: string
         }
         Update: {
           bats?: string | null
+          contact?: string | null
           created_at?: string
           date_of_birth?: string | null
+          has_coach_rick_avatar?: boolean | null
+          has_reboot_report?: boolean | null
           height?: number | null
           id?: string
           name?: string
+          organization?: string | null
+          player_level?: Database["public"]["Enums"]["player_level"] | null
           position?: string | null
           profile_id?: string | null
+          s2_report_url?: string | null
           sport?: string
           throws?: string | null
           updated_at?: string
@@ -295,6 +640,56 @@ export type Database = {
         }
         Relationships: []
       }
+      progression_history: {
+        Row: {
+          ball_score: number | null
+          bat_score: number | null
+          body_score: number | null
+          brain_score: number | null
+          context_tag: Database["public"]["Enums"]["context_tag"] | null
+          created_at: string
+          date: string
+          id: string
+          notes: string | null
+          overall_4b_score: number | null
+          player_id: string
+        }
+        Insert: {
+          ball_score?: number | null
+          bat_score?: number | null
+          body_score?: number | null
+          brain_score?: number | null
+          context_tag?: Database["public"]["Enums"]["context_tag"] | null
+          created_at?: string
+          date: string
+          id?: string
+          notes?: string | null
+          overall_4b_score?: number | null
+          player_id: string
+        }
+        Update: {
+          ball_score?: number | null
+          bat_score?: number | null
+          body_score?: number | null
+          brain_score?: number | null
+          context_tag?: Database["public"]["Enums"]["context_tag"] | null
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          overall_4b_score?: number | null
+          player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "progression_history_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -322,13 +717,17 @@ export type Database = {
           bat_scores: Json | null
           body_scores: Json | null
           brain_scores: Json | null
+          context_tag: Database["public"]["Enums"]["context_tag"] | null
           created_at: string
           id: string
           kinetic_sequence: Json | null
+          pitch_type: string | null
+          pitch_velocity: number | null
           player_id: string
           processing_status: string | null
           session_notes: string | null
           skeleton_data: Json | null
+          source_system: string | null
           swing_phases: Json | null
           thumbnail_url: string | null
           updated_at: string
@@ -339,13 +738,17 @@ export type Database = {
           bat_scores?: Json | null
           body_scores?: Json | null
           brain_scores?: Json | null
+          context_tag?: Database["public"]["Enums"]["context_tag"] | null
           created_at?: string
           id?: string
           kinetic_sequence?: Json | null
+          pitch_type?: string | null
+          pitch_velocity?: number | null
           player_id: string
           processing_status?: string | null
           session_notes?: string | null
           skeleton_data?: Json | null
+          source_system?: string | null
           swing_phases?: Json | null
           thumbnail_url?: string | null
           updated_at?: string
@@ -356,13 +759,17 @@ export type Database = {
           bat_scores?: Json | null
           body_scores?: Json | null
           brain_scores?: Json | null
+          context_tag?: Database["public"]["Enums"]["context_tag"] | null
           created_at?: string
           id?: string
           kinetic_sequence?: Json | null
+          pitch_type?: string | null
+          pitch_velocity?: number | null
           player_id?: string
           processing_status?: string | null
           session_notes?: string | null
           skeleton_data?: Json | null
+          source_system?: string | null
           swing_phases?: Json | null
           thumbnail_url?: string | null
           updated_at?: string
@@ -393,6 +800,8 @@ export type Database = {
     }
     Enums: {
       app_role: "user" | "coach" | "admin"
+      context_tag: "Game" | "Practice" | "Drill"
+      player_level: "Youth (10-13)" | "HS (14-18)" | "College" | "Pro" | "Other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -521,6 +930,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["user", "coach", "admin"],
+      context_tag: ["Game", "Practice", "Drill"],
+      player_level: ["Youth (10-13)", "HS (14-18)", "College", "Pro", "Other"],
     },
   },
 } as const
