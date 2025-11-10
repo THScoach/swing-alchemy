@@ -164,7 +164,11 @@ export default function AdminPlayers() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button size="sm" variant="ghost">
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={() => navigate(`/profile/${user.id}`)}
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
                         <Button size="sm" variant="ghost">
