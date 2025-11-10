@@ -8,20 +8,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
-import { Camera, Upload, Loader2, AlertTriangle, CheckCircle2, X, FileVideo } from "lucide-react";
+import { Camera, Upload, Loader2, AlertTriangle, CheckCircle2, X, FileVideo, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { CameraRecorder } from "@/components/CameraRecorder";
+import { GamePlanModal } from "@/components/GamePlanModal";
 
 export default function Analyze() {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
+  const [playerId, setPlayerId] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [fps, setFps] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [gamePlanModalOpen, setGamePlanModalOpen] = useState(false);
   
   // Form state
   const [swingType, setSwingType] = useState<string>("");
@@ -35,13 +38,27 @@ export default function Analyze() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const fetchUserData = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         navigate("/auth");
       } else {
         setUserId(session.user.id);
+        
+        // Fetch player ID
+        const { data: playerData } = await supabase
+          .from('players')
+          .select('id')
+          .eq('profile_id', session.user.id)
+          .single();
+        
+        if (playerData) {
+          setPlayerId(playerData.id);
+        }
       }
-    });
+    };
+    
+    fetchUserData();
   }, [navigate]);
 
   const checkVideoFPS = async (file: File): Promise<number> => {
@@ -234,11 +251,24 @@ export default function Analyze() {
   return (
     <AppLayout>
       <div className="mx-auto max-w-4xl p-4 md:p-6 lg:p-8">
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">Upload Your Swing</h1>
-          <p className="text-muted-foreground text-lg">
-            Record or import a video for AI-powered analysis
-          </p>
+        {/* Header with Game-Plan Generator */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold mb-2">Upload Your Swing</h1>
+            <p className="text-muted-foreground text-lg">
+              Record or import a video for AI-powered analysis
+            </p>
+          </div>
+          {playerId && (
+            <Button 
+              onClick={() => setGamePlanModalOpen(true)}
+              size="lg"
+              className="bg-gradient-to-r from-primary to-primary/80 w-full md:w-auto"
+            >
+              <Sparkles className="mr-2 h-5 w-5" />
+              Generate Game-Plan
+            </Button>
+          )}
         </div>
 
         {/* Hidden file input */}
@@ -482,6 +512,15 @@ export default function Analyze() {
           </div>
         )}
       </div>
+
+      {/* Game-Plan Modal */}
+      {playerId && (
+        <GamePlanModal 
+          open={gamePlanModalOpen} 
+          onOpenChange={setGamePlanModalOpen}
+          playerId={playerId}
+        />
+      )}
     </AppLayout>
   );
 }

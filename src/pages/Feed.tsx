@@ -64,9 +64,49 @@ export default function Feed() {
     return "text-destructive";
   };
 
+  // Check if it's Sunday (day for Check-In reminder)
+  const isSunday = new Date().getDay() === 0;
+
   return (
     <AppLayout>
       <div className="mx-auto max-w-7xl p-4 md:p-6 lg:p-8">
+        {/* Weekly Check-In Banner (Sunday Only) */}
+        {isSunday && (
+          <Card className="mb-6 bg-gradient-to-r from-orange-500/20 to-orange-600/10 border-orange-500/30">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center">
+                    <Activity className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Weekly Check-In Due</CardTitle>
+                    <CardDescription>Complete before Monday Zoom session</CardDescription>
+                  </div>
+                </div>
+                <Button onClick={() => navigate("/team")}>
+                  Complete Now
+                </Button>
+              </div>
+            </CardHeader>
+          </Card>
+        )}
+
+        {/* Recent Achievement Banner */}
+        <Card className="mb-6 bg-gradient-to-r from-green-500/20 to-green-600/10 border-green-500/30">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
+                <Target className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">🎉 Achievement Unlocked!</CardTitle>
+                <CardDescription>You earned 100 THS Points for uploading your swing</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+
         {/* Upload CTA Card */}
         <Card className="mb-8 bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5 border-primary/30">
           <CardHeader className="pb-4">
