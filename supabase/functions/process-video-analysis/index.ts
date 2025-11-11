@@ -66,7 +66,8 @@ serve(async (req) => {
     // Use provided level or fall back to player level
     const effectiveLevel = level || (analysis.players?.player_level as string) || 'Other';
     const effectiveHandedness = handedness || analysis.hitter_side || analysis.players?.bats || 'R';
-    const effectiveFps = fps_confirmed || analysis.fps_confirmed || 60;
+    // fps_confirmed (param) or analysis.fps (numeric value) - NOT analysis.fps_confirmed (boolean)
+    const effectiveFps = fps_confirmed || analysis.fps || 60;
     
     // Level-based target adjustments
     const levelMultipliers: Record<PlayerLevel, number> = {
@@ -359,7 +360,8 @@ serve(async (req) => {
       updateData.mode = 'model';
       updateData.level = effectiveLevel;
       updateData.handedness = effectiveHandedness;
-      updateData.fps_confirmed = effectiveFps;
+      updateData.fps = effectiveFps;
+      updateData.fps_confirmed = true;
       updateData.is_pro_model = true;
       
       if (metricsReboot) {
@@ -387,7 +389,8 @@ serve(async (req) => {
         .from('pro_swings')
         .update({
           has_analysis: true,
-          fps_confirmed: effectiveFps,
+          fps: effectiveFps,
+          fps_confirmed: true,
           metrics_reboot: metricsReboot,
           weirdness_flags: weirdnessFlags,
         })

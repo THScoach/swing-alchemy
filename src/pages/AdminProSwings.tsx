@@ -175,7 +175,8 @@ export default function AdminProSwings() {
                 height_inches: newSwing.height_inches ? Number(newSwing.height_inches) : null,
                 weight_lbs: newSwing.weight_lbs ? Number(newSwing.weight_lbs) : null,
                 is_model: true,
-                fps_confirmed: fpsConfirmed,
+                fps: fpsConfirmed,
+                fps_confirmed: true,
                 organization_id: orgMember?.organization_id ?? null,
                 created_by: user.id,
               })
@@ -213,7 +214,8 @@ export default function AdminProSwings() {
             height_inches: newSwing.height_inches ? Number(newSwing.height_inches) : null,
             weight_lbs: newSwing.weight_lbs ? Number(newSwing.weight_lbs) : null,
             is_model: true,
-            fps_confirmed: fpsConfirmed,
+            fps: fpsConfirmed,
+            fps_confirmed: true,
             organization_id: orgMember?.organization_id ?? null,
             created_by: user.id,
           })

@@ -993,6 +993,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string | null
+          fps: number | null
           fps_confirmed: number | null
           handedness: string | null
           has_analysis: boolean | null
@@ -1015,6 +1016,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          fps?: number | null
           fps_confirmed?: number | null
           handedness?: string | null
           has_analysis?: boolean | null
@@ -1037,6 +1039,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          fps?: number | null
           fps_confirmed?: number | null
           handedness?: string | null
           has_analysis?: boolean | null
