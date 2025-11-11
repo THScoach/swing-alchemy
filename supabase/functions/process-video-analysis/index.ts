@@ -506,14 +506,12 @@ serve(async (req) => {
     // Add model-specific fields if in model mode
     if (analysisMode === 'model') {
       updateData.mode = 'model';
-      updateData.level = effectiveLevel;
-      updateData.handedness = effectiveHandedness;
       updateData.fps = effectiveFps;
-      updateData.fps_confirmed = true;
       updateData.is_pro_model = true;
       
       if (metricsReboot) {
         updateData.metrics_reboot = metricsReboot;
+        updateData.weirdness_flags = metricsReboot.weirdness;
       }
     }
 
