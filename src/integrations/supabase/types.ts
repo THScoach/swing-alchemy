@@ -987,6 +987,41 @@ export type Database = {
         }
         Relationships: []
       }
+      progress_email_subscriptions: {
+        Row: {
+          created_at: string
+          email: string
+          frequency: string
+          id: string
+          player_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          frequency?: string
+          id?: string
+          player_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          frequency?: string
+          id?: string
+          player_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "progress_email_subscriptions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: true
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       progression_history: {
         Row: {
           ball_score: number | null

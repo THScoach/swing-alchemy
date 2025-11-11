@@ -76,6 +76,8 @@ export function AdvancedVideoPlayer({
   const [markers, setMarkers] = useState<{ frame: number; label: string; x: number; y: number }[]>([]);
   const [drawingColor] = useState('#FFD700');
   const [ghostOpacity, setGhostOpacity] = useState(0.5);
+  const [templateMode, setTemplateMode] = useState<'posture' | 'base' | 'hip-shoulder' | 'bat-plane' | null>(null);
+  const [templatePoints, setTemplatePoints] = useState<{ x: number; y: number }[]>([]);
 
   useEffect(() => {
     const video = videoRef.current;
