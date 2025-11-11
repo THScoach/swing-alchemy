@@ -60,13 +60,13 @@ export default function AnalyzeResults() {
       setAnalysis(data);
       setPlayer(data.players);
 
-      // Fetch 4B data
-      if (data.player_id) {
+      // Fetch 4B data for this specific analysis
+      if (data.id) {
         const [brainRes, bodyRes, batRes, ballRes] = await Promise.all([
-          supabase.from('brain_data').select('*').eq('player_id', data.player_id).order('created_at', { ascending: false }).limit(1).single(),
-          supabase.from('body_data').select('*').eq('player_id', data.player_id).order('created_at', { ascending: false }).limit(1).single(),
-          supabase.from('bat_data').select('*').eq('player_id', data.player_id).order('created_at', { ascending: false }).limit(1).single(),
-          supabase.from('ball_data').select('*').eq('player_id', data.player_id).order('created_at', { ascending: false }).limit(1).single(),
+          supabase.from('brain_data').select('*').eq('analysis_id', data.id).maybeSingle(),
+          supabase.from('body_data').select('*').eq('analysis_id', data.id).maybeSingle(),
+          supabase.from('bat_data').select('*').eq('analysis_id', data.id).maybeSingle(),
+          supabase.from('ball_data').select('*').eq('analysis_id', data.id).maybeSingle(),
         ]);
 
         setFourbData({
