@@ -24,6 +24,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { EquipmentSetupModal } from "@/components/EquipmentSetupModal";
 import { CoachUploadModal } from "@/components/CoachUploadModal";
 import { FourBHistoryChart } from "@/components/FourBHistoryChart";
+import { ProgressEmailSettings } from "@/components/player/ProgressEmailSettings";
 import { cn } from "@/lib/utils";
 
 export default function Profile() {
@@ -632,6 +633,16 @@ export default function Profile() {
             }
           }}
         />
+
+        {/* Progress Email Settings - Admin Only */}
+        {isCoachOrAdmin && firstPlayer && (
+          <div className="mt-6">
+            <ProgressEmailSettings
+              playerId={firstPlayer.id}
+              playerEmail={profile?.email}
+            />
+          </div>
+        )}
 
         {firstPlayer && (
           <EquipmentSetupModal

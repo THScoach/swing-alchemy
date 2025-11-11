@@ -33,6 +33,8 @@ export function ComparisonModal({ isOpen, onClose, currentAnalysisId, playerId }
   const [compareScores, setCompareScores] = useState<any>(null);
   const [ghostMode, setGhostMode] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [proSwings, setProSwings] = useState<any[]>([]);
+  const [syncPlay, setSyncPlay] = useState(true);
   
   const currentVideoRef = useRef<HTMLVideoElement | null>(null);
   const compareVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -41,14 +43,72 @@ export function ComparisonModal({ isOpen, onClose, currentAnalysisId, playerId }
     if (isOpen) {
       loadAnalyses();
       loadCurrentAnalysis();
+      loadProSwings();
     }
   }, [isOpen, currentAnalysisId, playerId]);
 
+  const loadProSwings = async () => {
+    const { data } = await supabase
+      .from("pro_swings")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    setProSwings(data || []);
+  };
+
+  const handlePlayPause = () => {
+    const current = currentVideoRef.current;
+    const compare = compareVideoRef.current;
+
+    if (!current) return;
+
+    if (isPlaying) {
+      current.pause();
+      if (syncPlay && compare) compare.pause();
+      setIsPlaying(false);
+    } else {
+      current.play();
+      if (syncPlay && compare) compare.play();
+      setIsPlaying(true);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (!syncPlay) return;
+    const current = currentVideoRef.current;
+    const compare = compareVideoRef.current;
+    if (!current || !compare) return;
+
+    const delta = Math.abs(compare.currentTime - current.currentTime);
+    if (delta > 0.05) {
+      compare.currentTime = current.currentTime;
+    }
+  };
+
   useEffect(() => {
-    if (selectedCompareId) {
+    if (!selectedCompareId) {
+      setCompareAnalysis(null);
+      setCompareScores(null);
+      return;
+    }
+
+    if (selectedCompareId.startsWith("pro:")) {
+      const id = selectedCompareId.replace("pro:", "");
+      const swing = proSwings.find((s) => s.id === id);
+      if (swing) {
+        setCompareAnalysis({
+          id,
+          video_url: swing.video_url,
+          is_pro_swing: true,
+          label: swing.label,
+          created_at: swing.created_at,
+        });
+        setCompareScores(null);
+      }
+    } else {
       loadCompareAnalysis(selectedCompareId);
     }
-  }, [selectedCompareId]);
+  }, [selectedCompareId, proSwings]);
 
   const loadAnalyses = async () => {
     const { data } = await supabase
@@ -163,20 +223,39 @@ export function ComparisonModal({ isOpen, onClose, currentAnalysisId, playerId }
               <SelectValue placeholder="Choose an analysis..." />
             </SelectTrigger>
             <SelectContent>
-              {analyses.map((analysis) => (
-                <SelectItem key={analysis.id} value={analysis.id}>
-                  {new Date(analysis.created_at).toLocaleDateString()} - {analysis.context_tag || 'N/A'}
-                </SelectItem>
-              ))}
+              {analyses.length > 0 && (
+                <>
+                  <div className="px-2 py-1 text-xs text-muted-foreground">
+                    Player History
+                  </div>
+                  {analyses.map((analysis) => (
+                    <SelectItem key={analysis.id} value={analysis.id}>
+                      {new Date(analysis.created_at).toLocaleDateString()} • {analysis.context_tag || 'Session'}
+                    </SelectItem>
+                  ))}
+                </>
+              )}
+              {proSwings.length > 0 && (
+                <>
+                  <div className="px-2 py-1 text-xs text-muted-foreground">
+                    Pro / Model Swings
+                  </div>
+                  {proSwings.map((swing) => (
+                    <SelectItem key={swing.id} value={`pro:${swing.id}`}>
+                      {swing.label} {swing.level ? `• ${swing.level}` : ""} {swing.handedness ? `• ${swing.handedness}` : ""}
+                    </SelectItem>
+                  ))}
+                </>
+              )}
             </SelectContent>
           </Select>
         </div>
 
         {compareAnalysis && (
           <>
-            {/* Ghost Mode Toggle */}
+            {/* Ghost Mode Toggle & Playback Controls */}
             <Card className="mb-4 p-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Ghost className="h-5 w-5 text-muted-foreground" />
                   <Label htmlFor="ghost-mode">Ghost Overlay Mode</Label>
@@ -187,9 +266,21 @@ export function ComparisonModal({ isOpen, onClose, currentAnalysisId, playerId }
                   onCheckedChange={setGhostMode}
                 />
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Overlay the comparison video semi-transparently over the current video
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">
+                  Overlay the comparison video semi-transparently over the current video
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePlayPause}
+                  disabled={!currentAnalysis?.video_url}
+                  className="gap-2"
+                >
+                  {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                  {isPlaying ? "Pause" : "Play Both"}
+                </Button>
+              </div>
             </Card>
 
             {/* Video Comparison */}
@@ -207,17 +298,20 @@ export function ComparisonModal({ isOpen, onClose, currentAnalysisId, playerId }
                     <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
                       {currentAnalysis?.video_url && (
                         <video 
+                          ref={currentVideoRef}
                           src={currentAnalysis.video_url} 
-                          controls 
-                          className="absolute inset-0 w-full h-full"
+                          onTimeUpdate={handleTimeUpdate}
+                          controls={false}
+                          className="absolute inset-0 w-full h-full opacity-70"
                         />
                       )}
                       {compareAnalysis?.video_url && (
                         <video 
+                          ref={compareVideoRef}
                           src={compareAnalysis.video_url} 
                           muted
-                          className="absolute inset-0 w-full h-full opacity-40 pointer-events-none"
-                          style={{ mixBlendMode: 'screen' }}
+                          controls={false}
+                          className="absolute inset-0 w-full h-full opacity-40 pointer-events-none mix-blend-screen"
                         />
                       )}
                     </div>
@@ -236,7 +330,9 @@ export function ComparisonModal({ isOpen, onClose, currentAnalysisId, playerId }
                       </div>
                       {currentAnalysis?.video_url ? (
                         <video 
+                          ref={currentVideoRef}
                           src={currentAnalysis.video_url} 
+                          onTimeUpdate={handleTimeUpdate}
                           controls 
                           className="w-full aspect-video bg-black rounded-lg"
                         />
@@ -251,13 +347,20 @@ export function ComparisonModal({ isOpen, onClose, currentAnalysisId, playerId }
                   <Card>
                     <CardContent className="p-4">
                       <div className="mb-2 flex items-center justify-between">
-                        <Badge variant="outline">Comparison</Badge>
+                        <Badge variant="outline">
+                          {compareAnalysis?.is_pro_swing ? "Pro / Model Swing" : "Comparison"}
+                        </Badge>
                         <span className="text-sm text-muted-foreground">
-                          {new Date(compareAnalysis.created_at).toLocaleDateString()}
+                          {compareAnalysis?.label 
+                            ? compareAnalysis.label 
+                            : compareAnalysis?.created_at
+                            ? new Date(compareAnalysis.created_at).toLocaleDateString()
+                            : ""}
                         </span>
                       </div>
                       {compareAnalysis.video_url ? (
                         <video 
+                          ref={compareVideoRef}
                           src={compareAnalysis.video_url} 
                           controls 
                           className="w-full aspect-video bg-black rounded-lg"

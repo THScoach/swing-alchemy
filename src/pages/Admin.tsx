@@ -81,6 +81,13 @@ export default function Admin() {
       color: "text-green-500"
     },
     {
+      title: "Teams Overview",
+      description: "View 4B trends across all teams",
+      icon: Building2,
+      path: "/admin/teams-overview",
+      color: "text-emerald-500"
+    },
+    {
       title: "Pro Swing Library",
       description: "Manage reference swings for comparison",
       icon: Video,

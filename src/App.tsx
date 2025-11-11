@@ -28,6 +28,8 @@ import AdminAutomations from "./pages/AdminAutomations";
 import AdminContent from "./pages/AdminContent";
 import AdminGamification from "./pages/AdminGamification";
 import AdminBookings from "./pages/AdminBookings";
+import AdminProSwings from "./pages/AdminProSwings";
+import AdminTeamsOverview from "./pages/AdminTeamsOverview";
 import MyProgress from "./pages/MyProgress";
 import Calendar from "./pages/Calendar";
 import KnowledgeBase from "./pages/KnowledgeBase";
@@ -76,6 +78,8 @@ const App = () => (
           <Route path="/admin/gamification" element={<ProtectedRoute><AdminGamification /></ProtectedRoute>} />
           <Route path="/admin/subscriptions" element={<ProtectedRoute><AdminSubscriptions /></ProtectedRoute>} />
           <Route path="/admin/bookings" element={<ProtectedRoute><AdminBookings /></ProtectedRoute>} />
+          <Route path="/admin/pro-swings" element={<ProtectedRoute><AdminProSwings /></ProtectedRoute>} />
+          <Route path="/admin/teams-overview" element={<ProtectedRoute><AdminTeamsOverview /></ProtectedRoute>} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
