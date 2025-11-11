@@ -15,9 +15,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AdminGamification() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
@@ -155,7 +157,7 @@ export default function AdminGamification() {
 
           <TabsContent value="rewards" className="space-y-4">
             <div className="flex justify-end">
-              <Button>
+              <Button onClick={() => toast({ title: "Add Reward", description: "Reward configuration dialog would open here" })}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Reward
               </Button>
@@ -182,7 +184,10 @@ export default function AdminGamification() {
                     <CardTitle>Point Rules</CardTitle>
                     <CardDescription>Configure how players earn THS Points</CardDescription>
                   </div>
-                  <Button variant="outline">
+                  <Button 
+                    variant="outline"
+                    onClick={() => toast({ title: "Add Point Rule", description: "Point rule configuration dialog would open here" })}
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Rule
                   </Button>
@@ -203,7 +208,13 @@ export default function AdminGamification() {
                         <TableCell>{rule.action}</TableCell>
                         <TableCell className="font-medium">+{rule.points}</TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="sm">Edit</Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => toast({ title: "Edit Point Rule", description: `Editing "${rule.action}"` })}
+                          >
+                            Edit
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}

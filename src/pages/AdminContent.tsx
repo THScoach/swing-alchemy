@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Plus, Upload, Video, FileText, BookOpen, ArrowLeft } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AdminContent() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const content = [
     {
       id: 1,
@@ -45,7 +47,7 @@ export default function AdminContent() {
             <h1 className="text-3xl font-bold">Content Management</h1>
             <p className="text-muted-foreground">Upload drills, lessons, and knowledge base materials</p>
           </div>
-          <Button>
+          <Button onClick={() => toast({ title: "Upload Content", description: "Content upload dialog would open here" })}>
             <Plus className="h-4 w-4 mr-2" />
             Upload Content
           </Button>
@@ -85,9 +87,31 @@ export default function AdminContent() {
                   </CardHeader>
                   <CardContent>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm">Edit</Button>
-                      <Button variant="outline" size="sm">Publish</Button>
-                      <Button variant="outline" size="sm">Delete</Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => toast({ title: "Edit Content", description: `Editing "${item.title}"` })}
+                      >
+                        Edit
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => toast({ title: "Published", description: `"${item.title}" has been published` })}
+                      >
+                        Publish
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          if (confirm(`Delete "${item.title}"?`)) {
+                            toast({ title: "Deleted", description: `"${item.title}" has been removed`, variant: "destructive" });
+                          }
+                        }}
+                      >
+                        Delete
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
