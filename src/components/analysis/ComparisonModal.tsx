@@ -40,11 +40,15 @@ export function ComparisonModal({ isOpen, onClose, currentAnalysisId, playerId }
   const compareVideoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
-    if (isOpen) {
-      loadAnalyses();
-      loadCurrentAnalysis();
-      loadProSwings();
-    }
+    if (!isOpen) return;
+    loadAnalyses();
+    loadCurrentAnalysis();
+    loadProSwings();
+    setSelectedCompareId("");
+    setCompareAnalysis(null);
+    setCompareScores(null);
+    setGhostMode(false);
+    setIsPlaying(false);
   }, [isOpen, currentAnalysisId, playerId]);
 
   const loadProSwings = async () => {
@@ -124,36 +128,36 @@ export function ComparisonModal({ isOpen, onClose, currentAnalysisId, playerId }
 
   const loadCurrentAnalysis = async () => {
     const { data: analysis } = await supabase
-      .from('video_analyses')
-      .select('*')
-      .eq('id', currentAnalysisId)
+      .from("video_analyses")
+      .select("*")
+      .eq("id", currentAnalysisId)
       .single();
 
     const { data: scores } = await supabase
-      .from('fourb_scores')
-      .select('*')
-      .eq('analysis_id', currentAnalysisId)
+      .from("fourb_scores")
+      .select("*")
+      .eq("analysis_id", currentAnalysisId)
       .maybeSingle();
 
-    setCurrentAnalysis(analysis);
-    setCurrentScores(scores);
+    setCurrentAnalysis(analysis || null);
+    setCurrentScores(scores || null);
   };
 
-  const loadCompareAnalysis = async (compareId: string) => {
+  const loadCompareAnalysis = async (id: string) => {
     const { data: analysis } = await supabase
-      .from('video_analyses')
-      .select('*')
-      .eq('id', compareId)
+      .from("video_analyses")
+      .select("*")
+      .eq("id", id)
       .single();
 
     const { data: scores } = await supabase
-      .from('fourb_scores')
-      .select('*')
-      .eq('analysis_id', compareId)
+      .from("fourb_scores")
+      .select("*")
+      .eq("analysis_id", id)
       .maybeSingle();
 
-    setCompareAnalysis(analysis);
-    setCompareScores(scores);
+    setCompareAnalysis(analysis || null);
+    setCompareScores(scores || null);
   };
 
   const getScoreColor = (score: number | null | undefined): string => {
@@ -219,30 +223,34 @@ export function ComparisonModal({ isOpen, onClose, currentAnalysisId, playerId }
         <div className="mb-4">
           <label className="text-sm font-medium mb-2 block">Select Analysis to Compare</label>
           <Select value={selectedCompareId} onValueChange={setSelectedCompareId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Choose an analysis..." />
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select analysis or pro swing to compare" />
             </SelectTrigger>
             <SelectContent>
               {analyses.length > 0 && (
                 <>
-                  <div className="px-2 py-1 text-xs text-muted-foreground">
+                  <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">
                     Player History
                   </div>
                   {analyses.map((analysis) => (
                     <SelectItem key={analysis.id} value={analysis.id}>
-                      {new Date(analysis.created_at).toLocaleDateString()} • {analysis.context_tag || 'Session'}
+                      {new Date(analysis.created_at).toLocaleDateString()} •{" "}
+                      {analysis.context_tag || "Session"}
                     </SelectItem>
                   ))}
                 </>
               )}
+
               {proSwings.length > 0 && (
                 <>
-                  <div className="px-2 py-1 text-xs text-muted-foreground">
+                  <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">
                     Pro / Model Swings
                   </div>
                   {proSwings.map((swing) => (
                     <SelectItem key={swing.id} value={`pro:${swing.id}`}>
-                      {swing.label} {swing.level ? `• ${swing.level}` : ""} {swing.handedness ? `• ${swing.handedness}` : ""}
+                      {swing.label}
+                      {swing.level ? ` • ${swing.level}` : ""}
+                      {swing.handedness ? ` • ${swing.handedness}` : ""}
                     </SelectItem>
                   ))}
                 </>
@@ -254,127 +262,110 @@ export function ComparisonModal({ isOpen, onClose, currentAnalysisId, playerId }
         {compareAnalysis && (
           <>
             {/* Ghost Mode Toggle & Playback Controls */}
-            <Card className="mb-4 p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Ghost className="h-5 w-5 text-muted-foreground" />
-                  <Label htmlFor="ghost-mode">Ghost Overlay Mode</Label>
-                </div>
+            <div className="flex items-center justify-between mt-4 mb-2 gap-4">
+              <div className="flex items-center gap-3">
                 <Switch
                   id="ghost-mode"
                   checked={ghostMode}
                   onCheckedChange={setGhostMode}
+                  disabled={!compareAnalysis?.video_url}
                 />
+                <Label htmlFor="ghost-mode" className="flex items-center gap-2 text-xs">
+                  <Ghost className="w-4 h-4" />
+                  Ghost Overlay Mode
+                </Label>
+
+                <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                  <Switch
+                    id="sync-play"
+                    checked={syncPlay}
+                    onCheckedChange={setSyncPlay}
+                  />
+                  <Label htmlFor="sync-play">Sync Playback</Label>
+                </div>
               </div>
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">
-                  Overlay the comparison video semi-transparently over the current video
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handlePlayPause}
-                  disabled={!currentAnalysis?.video_url}
-                  className="gap-2"
-                >
-                  {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                  {isPlaying ? "Pause" : "Play Both"}
-                </Button>
-              </div>
-            </Card>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePlayPause}
+                disabled={!currentAnalysis?.video_url}
+                className="gap-2"
+              >
+                {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                {isPlaying ? "Pause" : "Play Both"}
+              </Button>
+            </div>
 
             {/* Video Comparison */}
-            <div className={ghostMode ? "mb-6" : "grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"}>
-              {ghostMode ? (
-                // Ghost overlay mode - single video with overlay
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="mb-2 flex items-center justify-between">
-                      <Badge variant="outline">Current with Ghost Overlay</Badge>
-                      <span className="text-sm text-muted-foreground">
-                        {new Date(currentAnalysis?.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
-                      {currentAnalysis?.video_url && (
-                        <video 
-                          ref={currentVideoRef}
-                          src={currentAnalysis.video_url} 
-                          onTimeUpdate={handleTimeUpdate}
-                          controls={false}
-                          className="absolute inset-0 w-full h-full opacity-70"
-                        />
-                      )}
-                      {compareAnalysis?.video_url && (
-                        <video 
-                          ref={compareVideoRef}
-                          src={compareAnalysis.video_url} 
-                          muted
-                          controls={false}
-                          className="absolute inset-0 w-full h-full opacity-40 pointer-events-none mix-blend-screen"
-                        />
+            {ghostMode && currentAnalysis?.video_url && compareAnalysis?.video_url ? (
+              <div className="relative mt-2 bg-black rounded-xl overflow-hidden">
+                <video
+                  ref={currentVideoRef}
+                  src={currentAnalysis.video_url}
+                  className="w-full opacity-70"
+                  onTimeUpdate={handleTimeUpdate}
+                  controls={false}
+                />
+                <video
+                  ref={compareVideoRef}
+                  src={compareAnalysis.video_url}
+                  className="w-full absolute inset-0 mix-blend-screen opacity-40 pointer-events-none"
+                  controls={false}
+                />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+                <Card className="bg-black/90">
+                  <CardContent className="p-3 space-y-2">
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                      <span>Current</span>
+                      {currentAnalysis && (
+                        <span>{new Date(currentAnalysis.created_at).toLocaleDateString()}</span>
                       )}
                     </div>
+                    {currentAnalysis?.video_url ? (
+                      <video
+                        ref={currentVideoRef}
+                        src={currentAnalysis.video_url}
+                        className="w-full rounded-md"
+                        onTimeUpdate={handleTimeUpdate}
+                        controls
+                      />
+                    ) : (
+                      <div className="text-xs text-muted-foreground">No video</div>
+                    )}
                   </CardContent>
                 </Card>
-              ) : (
-                // Side-by-side mode
-                <>
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="mb-2 flex items-center justify-between">
-                        <Badge variant="outline">Current</Badge>
-                        <span className="text-sm text-muted-foreground">
-                          {new Date(currentAnalysis?.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                      {currentAnalysis?.video_url ? (
-                        <video 
-                          ref={currentVideoRef}
-                          src={currentAnalysis.video_url} 
-                          onTimeUpdate={handleTimeUpdate}
-                          controls 
-                          className="w-full aspect-video bg-black rounded-lg"
-                        />
-                      ) : (
-                        <div className="w-full aspect-video bg-muted rounded-lg flex items-center justify-center">
-                          <p className="text-muted-foreground">No video</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
 
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="mb-2 flex items-center justify-between">
-                        <Badge variant="outline">
-                          {compareAnalysis?.is_pro_swing ? "Pro / Model Swing" : "Comparison"}
-                        </Badge>
-                        <span className="text-sm text-muted-foreground">
-                          {compareAnalysis?.label 
-                            ? compareAnalysis.label 
-                            : compareAnalysis?.created_at
-                            ? new Date(compareAnalysis.created_at).toLocaleDateString()
-                            : ""}
-                        </span>
+                <Card className="bg-black/90">
+                  <CardContent className="p-3 space-y-2">
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                      <span>{compareAnalysis?.is_pro_swing ? "Pro / Model Swing" : "Comparison"}</span>
+                      <span>
+                        {compareAnalysis?.label
+                          ? compareAnalysis.label
+                          : compareAnalysis?.created_at
+                          ? new Date(compareAnalysis.created_at).toLocaleDateString()
+                          : ""}
+                      </span>
+                    </div>
+                    {compareAnalysis?.video_url ? (
+                      <video
+                        ref={compareVideoRef}
+                        src={compareAnalysis.video_url}
+                        className="w-full rounded-md"
+                        controls
+                      />
+                    ) : (
+                      <div className="text-xs text-muted-foreground">
+                        {selectedCompareId ? "No video for selection" : "Select an analysis or pro swing above"}
                       </div>
-                      {compareAnalysis.video_url ? (
-                        <video 
-                          ref={compareVideoRef}
-                          src={compareAnalysis.video_url} 
-                          controls 
-                          className="w-full aspect-video bg-black rounded-lg"
-                        />
-                      ) : (
-                        <div className="w-full aspect-video bg-muted rounded-lg flex items-center justify-center">
-                          <p className="text-muted-foreground">No video</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </>
-              )}
-            </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            )}
 
             {/* 4B Scores Comparison */}
             <Card>
