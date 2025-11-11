@@ -29,9 +29,6 @@ export const MarketingNav = () => {
             <Link to="/about" className="text-foreground hover:text-primary transition-colors font-medium">
               About
             </Link>
-            <Link to="/facility" className="text-foreground hover:text-primary transition-colors font-medium">
-              Facility
-            </Link>
             <Link to="/contact" className="text-foreground hover:text-primary transition-colors font-medium">
               Contact
             </Link>
@@ -79,13 +76,6 @@ export const MarketingNav = () => {
               onClick={() => setMobileMenuOpen(false)}
             >
               About
-            </Link>
-            <Link
-              to="/facility"
-              className="block text-foreground hover:text-primary transition-colors font-medium"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Facility
             </Link>
             <Link
               to="/contact"

@@ -67,7 +67,7 @@ export default function Feed() {
           <p className="text-muted-foreground">Your activity and notifications</p>
         </div>
 
-        {!hasCheckedIn && playerId && (
+        {!hasCheckedIn && playerId && new Date().getDay() === 0 && (
           <Card className="bg-primary/10 border-primary">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
