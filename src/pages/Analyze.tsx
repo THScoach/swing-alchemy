@@ -415,9 +415,9 @@ export default function Analyze() {
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="game">Game</SelectItem>
-                        <SelectItem value="practice">Practice</SelectItem>
-                        <SelectItem value="drill">Drill</SelectItem>
+                        <SelectItem value="Game">Game</SelectItem>
+                        <SelectItem value="Practice">Practice</SelectItem>
+                        <SelectItem value="Drill">Drill</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
