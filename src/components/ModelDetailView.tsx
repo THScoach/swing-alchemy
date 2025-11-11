@@ -59,14 +59,22 @@ export const ModelDetailView = ({ model, open, onOpenChange, onDelete }: ModelDe
         .eq('user_id', user.id)
         .maybeSingle();
 
-      // Create or find model player
+      // Create or find model player (use null org if no org membership)
+      const orgId = orgMember?.organization_id || null;
+      
       let modelPlayerId = null;
-      const { data: existingPlayer } = await supabase
+      let query = supabase
         .from('players')
         .select('id')
-        .eq('name', `MODEL_${model.player_name}`)
-        .eq('organization_id', orgMember?.organization_id)
-        .maybeSingle();
+        .eq('name', `MODEL_${model.player_name}`);
+      
+      if (orgId) {
+        query = query.eq('organization_id', orgId);
+      } else {
+        query = query.is('organization_id', null);
+      }
+      
+      const { data: existingPlayer } = await query.maybeSingle();
 
       if (existingPlayer) {
         modelPlayerId = existingPlayer.id;
@@ -80,11 +88,11 @@ export const ModelDetailView = ({ model, open, onOpenChange, onDelete }: ModelDe
           'MiLB': 'Pro',
         };
 
-        const { data: newPlayer } = await supabase
+        const { data: newPlayer, error: playerError } = await supabase
           .from('players')
           .insert([{
             name: `MODEL_${model.player_name}`,
-            organization_id: orgMember?.organization_id,
+            organization_id: orgId,
             profile_id: user.id,
             player_level: levelMap[model.level] || 'Other',
             bats: model.handedness,
@@ -93,10 +101,15 @@ export const ModelDetailView = ({ model, open, onOpenChange, onDelete }: ModelDe
           .select('id')
           .single();
         
+        if (playerError) {
+          console.error('Player creation error:', playerError);
+          throw new Error(`Failed to create model player: ${playerError.message}`);
+        }
+        
         if (newPlayer) modelPlayerId = newPlayer.id;
       }
 
-      if (!modelPlayerId) throw new Error("Failed to create model player");
+      if (!modelPlayerId) throw new Error("Could not get model player ID");
 
       // Create video_analysis record
       const { data: analysisRecord, error: analysisInsertError } = await supabase
@@ -115,7 +128,10 @@ export const ModelDetailView = ({ model, open, onOpenChange, onDelete }: ModelDe
         .select()
         .single();
 
-      if (analysisInsertError) throw analysisInsertError;
+      if (analysisInsertError) {
+        console.error('Analysis record error:', analysisInsertError);
+        throw new Error(`Failed to create analysis: ${analysisInsertError.message}`);
+      }
 
       // Trigger analysis
       const { error: analysisError } = await supabase.functions.invoke('process-video-analysis', {
@@ -130,7 +146,10 @@ export const ModelDetailView = ({ model, open, onOpenChange, onDelete }: ModelDe
         }
       });
       
-      if (analysisError) throw analysisError;
+      if (analysisError) {
+        console.error('Analysis invocation error:', analysisError);
+        throw new Error(`Analysis failed: ${analysisError.message}`);
+      }
 
       toast({
         title: "Analysis Started",
