@@ -44,7 +44,6 @@ export default function AdminProSwings() {
     description: '',
     handedness: 'R',
     level: '',
-    video_url: '',
     player_name: '',
     team: '',
     height_inches: '',
@@ -99,10 +98,10 @@ export default function AdminProSwings() {
       return;
     }
 
-    if (!newSwing.video_url && files.length === 0) {
+    if (files.length === 0) {
       toast({
         title: "Video Required",
-        description: "Add a video URL or upload video file(s).",
+        description: "Please upload at least one video file.",
         variant: "destructive",
       });
       return;
@@ -130,9 +129,8 @@ export default function AdminProSwings() {
         .eq('user_id', user.id)
         .maybeSingle();
 
-      // Handle multiple files or single URL
-      const filesToUpload = files.length > 0 ? files : [];
-      const urlToUse = !filesToUpload.length ? newSwing.video_url?.trim() : "";
+      // Handle file uploads only
+      const filesToUpload = files;
 
       if (filesToUpload.length > 0) {
         // Upload multiple files
@@ -198,36 +196,6 @@ export default function AdminProSwings() {
           title: "Pro Swings Added",
           description: `Successfully added ${successCount} of ${filesToUpload.length} swing(s).`,
         });
-      } else if (urlToUse) {
-        // Single URL upload
-        const { data: proSwingData, error: insertError } = await supabase
-          .from('pro_swings')
-          .insert({
-            label: newSwing.label,
-            description: newSwing.description,
-            handedness: newSwing.handedness,
-            level: newSwing.level,
-            video_url: urlToUse,
-            player_name: newSwing.player_name || newSwing.label,
-            team: newSwing.team || null,
-            height_inches: newSwing.height_inches ? Number(newSwing.height_inches) : null,
-            weight_lbs: newSwing.weight_lbs ? Number(newSwing.weight_lbs) : null,
-            is_model: true,
-            fps: fpsConfirmed,
-            organization_id: orgMember?.organization_id ?? null,
-            created_by: user.id,
-          })
-          .select()
-          .single();
-
-        if (insertError) {
-          throw insertError;
-        }
-
-        toast({
-          title: "Pro Swing Added",
-          description: "Model swing added to the library.",
-        });
       }
 
       // Reset form
@@ -236,7 +204,6 @@ export default function AdminProSwings() {
         description: '',
         handedness: 'R',
         level: '',
-        video_url: '',
         player_name: '',
         team: '',
         height_inches: '',
@@ -469,22 +436,8 @@ export default function AdminProSwings() {
               />
             </div>
 
-            <div>
-              <Label htmlFor="video_url">Video URL</Label>
-              <Input
-                id="video_url"
-                type="url"
-                placeholder="https://..."
-                value={newSwing.video_url}
-                onChange={(e) => setNewSwing({ ...newSwing, video_url: e.target.value })}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Paste a public URL, <strong>or</strong> upload a file below.
-              </p>
-            </div>
-
             <div className="space-y-2">
-              <Label htmlFor="video_file">Or Upload Video File(s)</Label>
+              <Label htmlFor="video_file">Upload Video File(s) *</Label>
               <Input
                 id="video_file"
                 type="file"
