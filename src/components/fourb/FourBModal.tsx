@@ -65,20 +65,18 @@ export function FourBModal({ isOpen, onClose, tileName, score, state, data }: Fo
         <DialogHeader>
           <div className="flex items-center gap-3">
             <Icon className={`h-8 w-8 ${config.color}`} />
-            <div>
+            <div className="flex-1">
               <DialogTitle className="text-2xl">{config.title}</DialogTitle>
-              <DialogDescription>
-                {score !== undefined ? (
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-3xl font-bold">{Math.round(score)}</span>
-                    <Badge variant={state === 'synced' ? 'default' : state === 'developing' ? 'secondary' : 'destructive'}>
-                      {state}
-                    </Badge>
-                  </div>
-                ) : (
-                  <span className="text-muted-foreground">No data available yet</span>
-                )}
-              </DialogDescription>
+              {score !== undefined ? (
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-3xl font-bold">{Math.round(score)}</span>
+                  <Badge variant={state === 'synced' ? 'default' : state === 'developing' ? 'secondary' : 'destructive'}>
+                    {state}
+                  </Badge>
+                </div>
+              ) : (
+                <DialogDescription>No data available yet</DialogDescription>
+              )}
             </div>
           </div>
         </DialogHeader>
