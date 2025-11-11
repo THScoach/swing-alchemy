@@ -88,6 +88,9 @@ export const ModelDetailView = ({ model, open, onOpenChange, onDelete }: ModelDe
           'MiLB': 'Pro',
         };
 
+        // Map handedness to bats field (L/R -> Left/Right)
+        const batsValue = model.handedness === 'L' ? 'Left' : 'Right';
+
         const { data: newPlayer, error: playerError } = await supabase
           .from('players')
           .insert([{
@@ -95,7 +98,7 @@ export const ModelDetailView = ({ model, open, onOpenChange, onDelete }: ModelDe
             organization_id: orgId,
             profile_id: user.id,
             player_level: levelMap[model.level] || 'Other',
-            bats: model.handedness,
+            bats: batsValue,
             sport: 'Baseball',
           }])
           .select('id')

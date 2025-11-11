@@ -185,18 +185,26 @@ export const ModelUploadWizard = ({ open, onOpenChange, onComplete, existingMode
                 'MiLB': 'Pro',
               };
 
-              const { data: newPlayer } = await supabase
+              // Map handedness to bats field (L/R -> Left/Right)
+              const batsValue = modelProfile.handedness === 'L' ? 'Left' : 'Right';
+
+              const { data: newPlayer, error: playerError } = await supabase
                 .from('players')
                 .insert([{
                   name: `MODEL_${modelProfile.player_name}`,
                   organization_id: orgMember?.organization_id,
                   profile_id: user.id,
                   player_level: levelMap[modelProfile.level] || 'Other',
-                  bats: modelProfile.handedness,
+                  bats: batsValue,
                   sport: 'Baseball',
                 }])
                 .select('id')
                 .single();
+              
+              if (playerError) {
+                console.error('Player creation error:', playerError);
+                continue;
+              }
               
               if (newPlayer) modelPlayerId = newPlayer.id;
             }
