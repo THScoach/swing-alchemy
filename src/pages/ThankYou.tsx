@@ -177,9 +177,9 @@ export default function ThankYou() {
                     <span className="text-xs font-bold text-primary">1</span>
                   </div>
                   <div>
-                    <p className="font-medium">Check Your Email</p>
+                    <p className="font-medium">Create Your Account</p>
                     <p className="text-sm text-muted-foreground">
-                      A confirmation email has been sent to {transaction?.customer_email}
+                      Set up your account to access your personalized training dashboard
                     </p>
                   </div>
                 </div>
@@ -188,9 +188,9 @@ export default function ThankYou() {
                     <span className="text-xs font-bold text-primary">2</span>
                   </div>
                   <div>
-                    <p className="font-medium">Upload Your Video</p>
+                    <p className="font-medium">Upload Your First Swing</p>
                     <p className="text-sm text-muted-foreground">
-                      Get ready for your session by uploading swing footage
+                      Get instant AI analysis and see your 4B metrics
                     </p>
                   </div>
                 </div>
@@ -199,14 +199,32 @@ export default function ThankYou() {
                     <span className="text-xs font-bold text-primary">3</span>
                   </div>
                   <div>
-                    <p className="font-medium">Prepare Your Equipment</p>
+                    <p className="font-medium">Start Training</p>
                     <p className="text-sm text-muted-foreground">
-                      Make sure you have everything ready for your session
+                      Follow your personalized training plan and track progress
                     </p>
                   </div>
                 </div>
               </div>
             </div>
+
+            {/* Account Creation CTA */}
+            <Card className="bg-primary text-primary-foreground border-0">
+              <CardContent className="p-6 text-center space-y-3">
+                <h3 className="text-xl font-bold">Welcome to The Hitting Skool!</h3>
+                <p className="opacity-90">
+                  Create your account now to access your training dashboard
+                </p>
+                <Button 
+                  size="lg" 
+                  variant="secondary"
+                  onClick={() => navigate(`/auth?email=${transaction?.customer_email || ''}&name=${transaction?.customer_name || ''}`)}
+                  className="w-full"
+                >
+                  Create My Account
+                </Button>
+              </CardContent>
+            </Card>
 
             <div className="flex flex-col sm:flex-row gap-3 pt-4">
               <Button onClick={() => navigate("/analyze")} className="flex-1 gap-2">

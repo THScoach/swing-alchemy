@@ -29,7 +29,7 @@ export default function Landing() {
                 The smarter it gets, the better your drill recommendations become.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/auth">
+                <Link to="/offer/free-tempo">
                   <Button size="lg" className="w-full sm:w-auto text-lg px-8">
                     Start Free Trial
                   </Button>

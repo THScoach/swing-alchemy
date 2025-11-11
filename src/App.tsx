@@ -37,6 +37,7 @@ import KnowledgeBase from "./pages/KnowledgeBase";
 import Team from "./pages/Team";
 import Brain from "./pages/Brain";
 import ThankYou from "./pages/ThankYou";
+import Offer from "./pages/Offer";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ const App = () => (
           {/* Public routes */}
           <Route path="/" element={<Landing />} />
           <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/offer/:plan" element={<Offer />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/auth" element={<Auth />} />

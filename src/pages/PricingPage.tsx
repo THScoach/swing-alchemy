@@ -11,6 +11,7 @@ const tiers = [
     name: "Free",
     price: "$0",
     description: "Try before you buy",
+    offerPath: "/offer/free-tempo",
     features: [
       { text: "1 video upload (lifetime)", included: true },
       { text: "View-only 4B dashboard", included: true },
@@ -30,6 +31,7 @@ const tiers = [
     price: "$29",
     period: "/mo",
     description: "Fix your swing fast — without overpaying for lessons",
+    offerPath: "/offer/self-service",
     features: [
       { text: "Instant 4B + Tempo analysis", included: true },
       { text: "Drill recommendations that match your swing", included: true },
@@ -49,6 +51,7 @@ const tiers = [
     price: "$99",
     period: "/mo",
     description: "Train with Coach Rick — anywhere in the world",
+    offerPath: "/offer/group-coaching",
     features: [
       { text: "Everything in Remote Starter", included: true },
       { text: "2 personalized swing reviews per month", included: true },
@@ -67,6 +70,7 @@ const tiers = [
     price: "$997",
     period: " one-time",
     description: "Full-access training experience — the complete hitting transformation used with pro players",
+    offerPath: "/offer/winter-program",
     features: [
       { text: "Complete biomechanical evaluation", included: true },
       { text: "Weekly live sessions with Coach Rick", included: true },
@@ -84,6 +88,7 @@ const tiers = [
     price: "$499",
     period: "/mo",
     description: "For coaches & teams",
+    offerPath: "/auth",
     features: [
       { text: "Everything in Self-Service", included: true },
       { text: "Unlimited players", included: true },
@@ -100,6 +105,7 @@ const tiers = [
     name: "Enterprise",
     price: "Custom",
     description: "For large organizations",
+    offerPath: "/contact",
     features: [
       { text: "Everything in Team", included: true },
       { text: "Multiple teams", included: true },
@@ -276,7 +282,7 @@ export default function PricingPage() {
                       </li>
                     ))}
                   </ul>
-                  <Link to="/auth" className="w-full">
+                  <Link to={tier.offerPath} className="w-full">
                     <Button
                       className="w-full"
                       variant={tier.highlighted ? "default" : "outline"}
@@ -381,7 +387,7 @@ export default function PricingPage() {
                 <p className="mb-6 opacity-90">
                   You don't need more swings. You need better feedback. Start today for $29 and know exactly what's holding your swing back.
                 </p>
-                <Link to="/auth" className="block">
+                <Link to="/offer/self-service" className="block">
                   <Button size="lg" variant="outline" className="w-full">
                     Start Remote Training
                   </Button>
