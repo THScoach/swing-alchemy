@@ -993,42 +993,51 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string | null
+          fps_confirmed: number | null
           handedness: string | null
           has_analysis: boolean | null
           id: string
           label: string
           level: string | null
+          metrics_reboot: Json | null
           organization_id: string | null
           updated_at: string
           video_url: string
+          weirdness_flags: Json | null
         }
         Insert: {
           analysis_id?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
+          fps_confirmed?: number | null
           handedness?: string | null
           has_analysis?: boolean | null
           id?: string
           label: string
           level?: string | null
+          metrics_reboot?: Json | null
           organization_id?: string | null
           updated_at?: string
           video_url: string
+          weirdness_flags?: Json | null
         }
         Update: {
           analysis_id?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
+          fps_confirmed?: number | null
           handedness?: string | null
           has_analysis?: boolean | null
           id?: string
           label?: string
           level?: string | null
+          metrics_reboot?: Json | null
           organization_id?: string | null
           updated_at?: string
           video_url?: string
+          weirdness_flags?: Json | null
         }
         Relationships: [
           {
@@ -1371,6 +1380,7 @@ export type Database = {
           updated_at: string
           uploaded_by: string | null
           video_url: string
+          weirdness_flags: Json | null
         }
         Insert: {
           ball_scores?: Json | null
@@ -1404,6 +1414,7 @@ export type Database = {
           updated_at?: string
           uploaded_by?: string | null
           video_url: string
+          weirdness_flags?: Json | null
         }
         Update: {
           ball_scores?: Json | null
@@ -1437,6 +1448,7 @@ export type Database = {
           updated_at?: string
           uploaded_by?: string | null
           video_url?: string
+          weirdness_flags?: Json | null
         }
         Relationships: [
           {
