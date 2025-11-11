@@ -310,7 +310,7 @@ export const CoachUploadModal = ({ open, onOpenChange, playerId, playerName }: C
                 </div>
 
                 <div className="flex flex-wrap gap-1">
-                  {[300, 240, 120, 90, 60, 30].map((v) => (
+                  {[480, 300, 240, 120, 90, 60, 30].map((v) => (
                     <button
                       key={v}
                       type="button"
