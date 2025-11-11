@@ -23,9 +23,15 @@ export default function Auth() {
 
   useEffect(() => {
     // Check if user is already logged in
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
-        navigate("/feed");
+        // Check if user is admin
+        const { data: hasAdminRole } = await supabase.rpc("has_role", {
+          _user_id: session.user.id,
+          _role: "admin",
+        });
+        
+        navigate(hasAdminRole ? "/admin" : "/feed");
       }
       setCheckingAuth(false);
     });
@@ -33,7 +39,15 @@ export default function Auth() {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session && event === "SIGNED_IN") {
-        navigate("/feed");
+        // Defer role check to avoid blocking the auth state change
+        setTimeout(async () => {
+          const { data: hasAdminRole } = await supabase.rpc("has_role", {
+            _user_id: session.user.id,
+            _role: "admin",
+          });
+          
+          navigate(hasAdminRole ? "/admin" : "/feed");
+        }, 0);
       }
     });
 
