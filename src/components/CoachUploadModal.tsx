@@ -28,8 +28,13 @@ export const CoachUploadModal = ({ open, onOpenChange, playerId, playerName }: C
   const [contextTag, setContextTag] = useState<string>("Practice");
   const [hitterSide, setHitterSide] = useState<string>("");
   const [cameraAngle, setCameraAngle] = useState<string>("");
-  const [fps, setFps] = useState<string>("60");
+  
+  // FPS confirmation flow
   const [detectedFps, setDetectedFps] = useState<number | null>(null);
+  const [manualFps, setManualFps] = useState<string>("");
+  const [confirmedFps, setConfirmedFps] = useState<number | null>(null);
+  const [hasConfirmedFps, setHasConfirmedFps] = useState(false);
+  
   const [notes, setNotes] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -79,9 +84,11 @@ export const CoachUploadModal = ({ open, onOpenChange, playerId, playerName }: C
     setPreviewUrl(url);
     setShowRecorder(false);
 
-    // Reset FPS state for new file
+    // Reset FPS confirmation state for new file
     setDetectedFps(null);
-    setFps("60");
+    setManualFps("");
+    setConfirmedFps(null);
+    setHasConfirmedFps(false);
 
     // Use off-DOM video element for FPS detection
     const probe = document.createElement('video');
@@ -91,13 +98,20 @@ export const CoachUploadModal = ({ open, onOpenChange, playerId, playerName }: C
     probe.onloadedmetadata = async () => {
       try {
         const guess = await tryDetectFps(probe, file.name);
-        if (guess && guess > 0) {
-          const rounded = Math.round(guess);
-          setDetectedFps(rounded);
-          setFps(String(rounded));
+        let fallback = 60;
+        
+        // If very short video (<1s), default to 240fps
+        if (probe.duration > 0 && probe.duration < 1) {
+          fallback = 240;
         }
+        
+        const detected = guess && guess > 0 ? Math.round(guess) : fallback;
+        setDetectedFps(detected);
+        setManualFps(String(detected));
       } catch (e) {
         console.warn("FPS detection failed, defaulting to 60fps", e);
+        setDetectedFps(60);
+        setManualFps("60");
       }
     };
   };
@@ -106,8 +120,41 @@ export const CoachUploadModal = ({ open, onOpenChange, playerId, playerName }: C
     handleFileSelect(file);
   };
 
+  const handleConfirmFps = () => {
+    const chosen = manualFps ? Number(manualFps) : detectedFps;
+    
+    if (!chosen || chosen <= 0) {
+      toast({
+        title: "Invalid Frame Rate",
+        description: "Please enter or confirm a valid frame rate.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Warn for low FPS
+    if (chosen < 30) {
+      toast({
+        title: "Low Frame Rate Warning",
+        description: "For accurate body/sequence metrics, use ≥120 fps if possible.",
+        variant: "destructive",
+      });
+    }
+
+    // Clamp to max 480
+    const clamped = Math.min(chosen, 480);
+    
+    setConfirmedFps(clamped);
+    setHasConfirmedFps(true);
+    
+    toast({
+      title: "FPS Confirmed",
+      description: `Frame rate set to ${clamped} fps`,
+    });
+  };
+
   const handleSubmit = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile || !hasConfirmedFps || !confirmedFps) return;
 
     setUploading(true);
     setUploadProgress(0);
@@ -138,9 +185,7 @@ export const CoachUploadModal = ({ open, onOpenChange, playerId, playerName }: C
         .from('swing-videos')
         .getPublicUrl(fileName);
 
-      const finalFps = (fps && Number(fps)) || detectedFps || 60;
-
-      // Create analysis record
+      // Create analysis record with confirmed FPS
       const { error: analysisError } = await supabase
         .from('video_analyses')
         .insert({
@@ -151,8 +196,8 @@ export const CoachUploadModal = ({ open, onOpenChange, playerId, playerName }: C
           context_tag: contextTag as any,
           hitter_side: hitterSide || null,
           camera_angle: cameraAngle || null,
-          fps: Math.round(finalFps),
-          raw_fps_guess: detectedFps ? Math.round(detectedFps) : null,
+          fps: confirmedFps,
+          raw_fps_guess: detectedFps,
           session_notes: notes || null,
         });
 
@@ -190,8 +235,10 @@ export const CoachUploadModal = ({ open, onOpenChange, playerId, playerName }: C
     setContextTag("Practice");
     setHitterSide("");
     setCameraAngle("");
-    setFps("60");
     setDetectedFps(null);
+    setManualFps("");
+    setConfirmedFps(null);
+    setHasConfirmedFps(false);
     setNotes("");
     setUploading(false);
     setUploadProgress(0);
@@ -277,11 +324,10 @@ export const CoachUploadModal = ({ open, onOpenChange, playerId, playerName }: C
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label>Frame Rate (FPS)</Label>
+              <div className="space-y-2 col-span-2">
+                <Label>Frame Rate (FPS) *</Label>
                 <p className="text-xs text-muted-foreground">
-                  Auto-detected where possible. If recorded in slow motion (e.g. 240 or 300 fps),
-                  set it here so all timing and kinematic metrics are accurate.
+                  Detected: <strong>{detectedFps ?? '—'} fps</strong> (please confirm or override)
                 </p>
 
                 <div className="flex items-center gap-2">
@@ -289,24 +335,20 @@ export const CoachUploadModal = ({ open, onOpenChange, playerId, playerName }: C
                     type="number"
                     min={10}
                     max={480}
-                    value={fps}
-                    onChange={(e) => {
-                      const val = parseInt(e.target.value || "0", 10);
-                      if (e.target.value === "") {
-                        setFps("");
-                        return;
-                      }
-                      if (!isNaN(val) && val >= 10 && val <= 480) {
-                        setFps(String(val));
-                      }
-                    }}
-                    className="w-24"
+                    placeholder="Enter actual FPS (e.g. 120, 240, 300)"
+                    value={manualFps}
+                    onChange={(e) => setManualFps(e.target.value)}
+                    disabled={hasConfirmedFps}
+                    className="flex-1"
                   />
-                  <span className="text-xs text-muted-foreground">
-                    {detectedFps
-                      ? `Detected: ${detectedFps} fps (you can override)`
-                      : "Defaulting to 60 fps unless overridden"}
-                  </span>
+                  <Button
+                    type="button"
+                    onClick={handleConfirmFps}
+                    disabled={hasConfirmedFps}
+                    variant={hasConfirmedFps ? "secondary" : "default"}
+                  >
+                    {hasConfirmedFps ? `✓ Confirmed (${confirmedFps} fps)` : "Confirm FPS"}
+                  </Button>
                 </div>
 
                 <div className="flex flex-wrap gap-1">
@@ -314,9 +356,10 @@ export const CoachUploadModal = ({ open, onOpenChange, playerId, playerName }: C
                     <button
                       key={v}
                       type="button"
-                      onClick={() => setFps(String(v))}
-                      className={`px-2 py-1 rounded text-xs border transition-colors ${
-                        fps === String(v)
+                      onClick={() => setManualFps(String(v))}
+                      disabled={hasConfirmedFps}
+                      className={`px-2 py-1 rounded text-xs border transition-colors disabled:opacity-50 ${
+                        manualFps === String(v)
                           ? "bg-primary text-primary-foreground border-primary"
                           : "border-border text-muted-foreground hover:bg-accent"
                       }`}
@@ -325,6 +368,12 @@ export const CoachUploadModal = ({ open, onOpenChange, playerId, playerName }: C
                     </button>
                   ))}
                 </div>
+
+                {hasConfirmedFps && confirmedFps && confirmedFps < 120 && (
+                  <p className="text-xs text-yellow-600 dark:text-yellow-500">
+                    ⚠️ For Reboot-style analysis, ≥120 fps recommended (ideally 240+)
+                  </p>
+                )}
               </div>
             </div>
 
@@ -338,8 +387,13 @@ export const CoachUploadModal = ({ open, onOpenChange, playerId, playerName }: C
               />
             </div>
 
-            <Button onClick={handleSubmit} className="w-full" size="lg">
-              Upload & Analyze
+            <Button 
+              onClick={handleSubmit} 
+              className="w-full" 
+              size="lg"
+              disabled={!hasConfirmedFps}
+            >
+              {hasConfirmedFps ? "Upload & Analyze" : "Confirm FPS First"}
             </Button>
           </div>
         ) : showRecorder ? (
