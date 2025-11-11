@@ -28,11 +28,41 @@ export const CoachUploadModal = ({ open, onOpenChange, playerId, playerName }: C
   const [contextTag, setContextTag] = useState<string>("Practice");
   const [hitterSide, setHitterSide] = useState<string>("");
   const [cameraAngle, setCameraAngle] = useState<string>("");
-  const [fps, setFps] = useState<string>("");
+  const [fps, setFps] = useState<string>("60");
+  const [detectedFps, setDetectedFps] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  const tryDetectFps = async (video: HTMLVideoElement, filename: string): Promise<number | null> => {
+    const name = filename.toLowerCase();
+
+    // 1) Filename hints
+    if (name.includes("300fps") || name.includes("300-fps") || name.includes("@300")) return 300;
+    if (name.includes("240fps") || name.includes("240-fps") || name.includes("@240")) return 240;
+    if (name.includes("120fps") || name.includes("120-fps") || name.includes("@120")) return 120;
+    if (name.includes("90fps") || name.includes("90-fps") || name.includes("@90")) return 90;
+    if (name.includes("60fps") || name.includes("60-fps") || name.includes("@60")) return 60;
+    if (name.includes("30fps") || name.includes("30-fps") || name.includes("@30")) return 30;
+
+    // 2) Stream metadata (browser support dependent)
+    try {
+      // @ts-ignore - captureStream may not be available in all browsers
+      const stream = video.captureStream?.();
+      const track = stream?.getVideoTracks?.()[0];
+      const fr = track?.getSettings?.().frameRate;
+
+      if (typeof fr === "number" && fr > 10 && fr < 500) {
+        return fr;
+      }
+    } catch (err) {
+      console.warn("captureStream FPS detection failed", err);
+    }
+
+    // 3) Fallback: unknown -> caller will default
+    return null;
+  };
 
   const handleFileSelect = (file: File) => {
     if (!file.type.startsWith('video/')) {
@@ -49,30 +79,27 @@ export const CoachUploadModal = ({ open, onOpenChange, playerId, playerName }: C
     setPreviewUrl(url);
     setShowRecorder(false);
 
-    // Auto-detect frame rate
-    const video = document.createElement('video');
-    video.preload = 'metadata';
-    video.src = url;
-    video.onloadedmetadata = () => {
-      // Try to get frame rate from video
-      // Most videos don't expose frame rate directly, so we estimate from common standards
-      // or use 60fps as a reasonable default for sports video
-      const detectedFps = estimateFrameRate(video);
-      setFps(detectedFps.toString());
-      URL.revokeObjectURL(url);
-    };
-  };
+    // Reset FPS state for new file
+    setDetectedFps(null);
+    setFps("60");
 
-  const estimateFrameRate = (video: HTMLVideoElement): number => {
-    // For high-quality sports video, default to 60fps
-    // Most phone cameras shoot at 60fps in slow-mo or 30fps in normal mode
-    const duration = video.duration;
-    
-    // If video is very short (< 1 second), likely high-speed capture
-    if (duration < 1) return 240;
-    
-    // Default to 60fps for sports video (common for swing analysis)
-    return 60;
+    // Use off-DOM video element for FPS detection
+    const probe = document.createElement('video');
+    probe.preload = 'metadata';
+    probe.src = url;
+
+    probe.onloadedmetadata = async () => {
+      try {
+        const guess = await tryDetectFps(probe, file.name);
+        if (guess && guess > 0) {
+          const rounded = Math.round(guess);
+          setDetectedFps(rounded);
+          setFps(String(rounded));
+        }
+      } catch (e) {
+        console.warn("FPS detection failed, defaulting to 60fps", e);
+      }
+    };
   };
 
   const handleRecordingComplete = (file: File) => {
@@ -111,6 +138,8 @@ export const CoachUploadModal = ({ open, onOpenChange, playerId, playerName }: C
         .from('swing-videos')
         .getPublicUrl(fileName);
 
+      const finalFps = (fps && Number(fps)) || detectedFps || 60;
+
       // Create analysis record
       const { error: analysisError } = await supabase
         .from('video_analyses')
@@ -122,7 +151,8 @@ export const CoachUploadModal = ({ open, onOpenChange, playerId, playerName }: C
           context_tag: contextTag as any,
           hitter_side: hitterSide || null,
           camera_angle: cameraAngle || null,
-          fps: fps ? parseInt(fps) : null,
+          fps: Math.round(finalFps),
+          raw_fps_guess: detectedFps ? Math.round(detectedFps) : null,
           session_notes: notes || null,
         });
 
@@ -160,7 +190,8 @@ export const CoachUploadModal = ({ open, onOpenChange, playerId, playerName }: C
     setContextTag("Practice");
     setHitterSide("");
     setCameraAngle("");
-    setFps("");
+    setFps("60");
+    setDetectedFps(null);
     setNotes("");
     setUploading(false);
     setUploadProgress(0);
@@ -248,23 +279,51 @@ export const CoachUploadModal = ({ open, onOpenChange, playerId, playerName }: C
 
               <div className="space-y-2">
                 <Label>Frame Rate (FPS)</Label>
-                <div className="relative">
+                <p className="text-xs text-muted-foreground">
+                  Auto-detected where possible. If recorded in slow motion (e.g. 240 or 300 fps),
+                  set it here so all timing and kinematic metrics are accurate.
+                </p>
+
+                <div className="flex items-center gap-2">
                   <Input
-                    value={fps ? `${fps} fps` : 'Detecting...'}
-                    readOnly
-                    className="bg-muted"
+                    type="number"
+                    min={10}
+                    max={480}
+                    value={fps}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value || "0", 10);
+                      if (e.target.value === "") {
+                        setFps("");
+                        return;
+                      }
+                      if (!isNaN(val) && val >= 10 && val <= 480) {
+                        setFps(String(val));
+                      }
+                    }}
+                    className="w-24"
                   />
-                  <Select value={fps} onValueChange={setFps}>
-                    <SelectTrigger className="absolute inset-0 opacity-0">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="240">240 fps</SelectItem>
-                      <SelectItem value="120">120 fps</SelectItem>
-                      <SelectItem value="60">60 fps</SelectItem>
-                      <SelectItem value="30">30 fps</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <span className="text-xs text-muted-foreground">
+                    {detectedFps
+                      ? `Detected: ${detectedFps} fps (you can override)`
+                      : "Defaulting to 60 fps unless overridden"}
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap gap-1">
+                  {[300, 240, 120, 90, 60, 30].map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => setFps(String(v))}
+                      className={`px-2 py-1 rounded text-xs border transition-colors ${
+                        fps === String(v)
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-border text-muted-foreground hover:bg-accent"
+                      }`}
+                    >
+                      {v} fps
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>

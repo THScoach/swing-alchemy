@@ -1344,6 +1344,7 @@ export type Database = {
           pitch_velocity: number | null
           player_id: string
           processing_status: string | null
+          raw_fps_guess: number | null
           session_notes: string | null
           skeleton_data: Json | null
           source_system: string | null
@@ -1371,6 +1372,7 @@ export type Database = {
           pitch_velocity?: number | null
           player_id: string
           processing_status?: string | null
+          raw_fps_guess?: number | null
           session_notes?: string | null
           skeleton_data?: Json | null
           source_system?: string | null
@@ -1398,6 +1400,7 @@ export type Database = {
           pitch_velocity?: number | null
           player_id?: string
           processing_status?: string | null
+          raw_fps_guess?: number | null
           session_notes?: string | null
           skeleton_data?: Json | null
           source_system?: string | null
