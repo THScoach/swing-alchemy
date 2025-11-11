@@ -4,23 +4,26 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
-  User, 
   Settings, 
   Bell, 
   LogOut, 
   Edit, 
-  Bluetooth,
   Video,
-  BookOpen,
-  Calendar,
   Wrench,
-  Upload
+  Upload,
+  ArrowLeft,
+  Brain as BrainIcon,
+  Activity,
+  Zap,
+  Target
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { EquipmentSetupModal } from "@/components/EquipmentSetupModal";
 import { CoachUploadModal } from "@/components/CoachUploadModal";
+import { cn } from "@/lib/utils";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -36,6 +39,8 @@ export default function Profile() {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
   const [selectedPlayerName, setSelectedPlayerName] = useState<string>("");
   const [isCoachOrAdmin, setIsCoachOrAdmin] = useState(false);
+  const [fourbScores, setFourbScores] = useState<any>(null);
+  const [contextFilter, setContextFilter] = useState<string>("All");
 
   useEffect(() => {
     loadProfile();
@@ -93,6 +98,17 @@ export default function Profile() {
         
         setAnalyses(analysesData || []);
         setAnalysisCount(analysesData?.length || 0);
+
+        // Load latest 4B scores
+        const { data: fourbData } = await supabase
+          .from("fourb_scores")
+          .select("*")
+          .eq("player_id", playersData[0].id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        setFourbScores(fourbData);
       }
     } else {
       // User viewing their own profile
@@ -138,6 +154,17 @@ export default function Profile() {
         setAnalyses(analysesData || []);
         setAnalysisCount(analysesData?.length || 0);
 
+        // Load latest 4B scores
+        const { data: fourbData } = await supabase
+          .from("fourb_scores")
+          .select("*")
+          .eq("player_id", playersData[0].id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        setFourbScores(fourbData);
+
         // Load equipment profile
         const { data: equipData } = await supabase
           .from("player_equipment_profile")
@@ -175,75 +202,179 @@ export default function Profile() {
   }
 
   const firstPlayer = players[0];
-  const stats = [
-    { label: "Analyses", value: analysisCount, icon: Video },
-    { label: "Courses", value: 0, icon: BookOpen },
-    { label: "Training Days", value: 0, icon: Calendar },
-  ];
-
   const initials = profile.name?.split(" ").map((n: string) => n[0]).join("").toUpperCase() || "U";
+
+  const getScoreColor = (score: number | null | undefined): string => {
+    if (!score) return "text-muted-foreground";
+    if (score >= 80) return "text-green-500";
+    if (score >= 60) return "text-yellow-500";
+    return "text-red-500";
+  };
+
+  const getScoreBgColor = (score: number | null | undefined): string => {
+    if (!score) return "bg-muted/20";
+    if (score >= 80) return "bg-green-500/10 border-green-500/20";
+    if (score >= 60) return "bg-yellow-500/10 border-yellow-500/20";
+    return "bg-red-500/10 border-red-500/20";
+  };
+
+  const getTierLabel = (tier: string | null | undefined): string => {
+    if (!tier || tier === "free") return "Free";
+    if (tier === "self_service") return "Self-Service";
+    if (tier === "group") return "Group";
+    if (tier === "one_on_one") return "1-on-1";
+    if (tier === "team") return "Team";
+    if (tier === "enterprise") return "Enterprise";
+    return tier.charAt(0).toUpperCase() + tier.slice(1);
+  };
+
+  const filteredAnalyses = analyses.filter((analysis) => {
+    if (contextFilter === "All") return true;
+    return analysis.context_tag === contextFilter.toLowerCase();
+  });
+
+  const fourbTiles = [
+    {
+      icon: BrainIcon,
+      label: "Brain",
+      score: fourbScores?.brain_score,
+      state: fourbScores?.brain_state || "No Data",
+      color: "text-purple-500"
+    },
+    {
+      icon: Activity,
+      label: "Body",
+      score: fourbScores?.body_score,
+      state: fourbScores?.body_state || "No Data",
+      color: "text-blue-500"
+    },
+    {
+      icon: Zap,
+      label: "Bat",
+      score: fourbScores?.bat_score,
+      state: fourbScores?.bat_state || "No Data",
+      color: "text-amber-500"
+    },
+    {
+      icon: Target,
+      label: "Ball",
+      score: fourbScores?.ball_score,
+      state: fourbScores?.ball_state || "No Data",
+      color: "text-green-500"
+    }
+  ];
 
   return (
     <AppLayout>
       <div className="p-4 space-y-4">
-        {userId && (
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => navigate("/admin/players")}
-            className="mb-2"
-          >
-            ← Back to Admin
-          </Button>
-        )}
-        
-        {/* Profile Header */}
-        <Card className="border-none shadow-none bg-gradient-to-br from-primary/10 to-primary/5">
+        {/* Header Bar */}
+        <div className="flex items-center justify-between mb-4">
+          {userId && (
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => navigate("/admin/players")}
+              className="gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Admin
+            </Button>
+          )}
+          {isCoachOrAdmin && userId && (
+            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+              Admin View
+            </Badge>
+          )}
+        </div>
+
+        {/* Player Header */}
+        <Card className="border-border/50">
           <CardContent className="pt-6">
             <div className="flex items-start gap-4">
-              <Avatar className="h-20 w-20 border-2 border-primary">
-                <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
+              <Avatar className="h-16 w-16 border-2 border-primary">
+                <AvatarFallback className="bg-primary text-primary-foreground text-xl">
                   {initials}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
                 <h2 className="text-2xl font-bold mb-1">{profile.name}</h2>
-                <p className="text-muted-foreground mb-2">
-                  {firstPlayer?.sport || "Baseball"} • {profile.dominant_hand || "Right"} Handed
-                </p>
-                <Badge variant="outline" className="bg-success/10 text-success border-success/20">
-                  {profile.subscription_tier || "Free"} Member
+                <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground mb-2">
+                  <span>{firstPlayer?.sport || "Baseball"}</span>
+                  {firstPlayer?.bats && (
+                    <>
+                      <span>•</span>
+                      <span>Bats: {firstPlayer.bats}</span>
+                    </>
+                  )}
+                  {firstPlayer?.throws && (
+                    <>
+                      <span>•</span>
+                      <span>Throws: {firstPlayer.throws}</span>
+                    </>
+                  )}
+                  {firstPlayer?.player_level && (
+                    <>
+                      <span>•</span>
+                      <span>{firstPlayer.player_level}</span>
+                    </>
+                  )}
+                </div>
+                <Badge variant="outline" className="text-xs">
+                  {getTierLabel(profile.subscription_tier)}
                 </Badge>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-3">
-          {stats.map((stat) => {
-            const Icon = stat.icon;
-            return (
-              <Card key={stat.label} className="cursor-pointer hover:bg-accent/50 transition-colors">
-                <CardContent className="pt-4 text-center">
-                  <Icon className="h-5 w-5 text-primary mx-auto mb-2" />
-                  <div className="text-2xl font-bold mb-1">{stat.value}</div>
-                  <div className="text-xs text-muted-foreground">{stat.label}</div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+        {/* 4B Overview Strip */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">4B Performance Overview</CardTitle>
+            <CardDescription>
+              {fourbScores ? "Latest assessment scores" : "Upload a swing to see your 4B scores"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {fourbTiles.map((tile) => {
+                const Icon = tile.icon;
+                return (
+                  <div
+                    key={tile.label}
+                    className={cn(
+                      "p-4 rounded-lg border cursor-pointer hover:shadow-md transition-all",
+                      getScoreBgColor(tile.score)
+                    )}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <Icon className={cn("h-5 w-5", tile.color)} />
+                      <span className="font-semibold text-sm">{tile.label}</span>
+                    </div>
+                    <div className={cn("text-3xl font-bold mb-1", getScoreColor(tile.score))}>
+                      {tile.score ? Math.round(tile.score) : "-"}
+                    </div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      {tile.state}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Recent Analyses */}
-        {analyses.length > 0 && (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+        {/* Recent Swing Analyses */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between mb-3">
               <div>
-                <CardTitle className="text-lg">Recent Analyses</CardTitle>
-                <CardDescription>Click any analysis to view the full report</CardDescription>
+                <CardTitle className="text-lg">Recent Swing Analyses</CardTitle>
+                <CardDescription>
+                  {analyses.length > 0 ? "Click any analysis to view the full 4B report" : "No analyses yet"}
+                </CardDescription>
               </div>
-              {isCoachOrAdmin && firstPlayer && (
+              {(isCoachOrAdmin || !userId) && firstPlayer && (
                 <Button
                   onClick={() => {
                     setSelectedPlayerId(firstPlayer.id);
@@ -257,135 +388,196 @@ export default function Profile() {
                   Upload Swing
                 </Button>
               )}
-            </CardHeader>
+            </div>
+            
+            {/* Context Filters */}
+            {analyses.length > 0 && (
+              <Tabs value={contextFilter} onValueChange={setContextFilter} className="w-full">
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="All">All</TabsTrigger>
+                  <TabsTrigger value="Game">Game</TabsTrigger>
+                  <TabsTrigger value="Practice">Practice</TabsTrigger>
+                  <TabsTrigger value="Drill">Drill</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            )}
+          </CardHeader>
+          
+          {filteredAnalyses.length > 0 ? (
             <CardContent className="space-y-3">
-              {analyses.map((analysis) => (
+              {filteredAnalyses.map((analysis) => (
                 <div
                   key={analysis.id}
                   onClick={() => navigate(`/analyze/${analysis.id}`)}
                   className="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer transition-colors"
                 >
-                  <div className="h-16 w-16 bg-muted rounded-lg flex items-center justify-center overflow-hidden">
+                  <div className="h-14 w-14 bg-muted rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
                     {analysis.thumbnail_url ? (
                       <img src={analysis.thumbnail_url} alt="Analysis" className="w-full h-full object-cover" />
                     ) : (
-                      <Video className="h-6 w-6 text-muted-foreground" />
+                      <Video className="h-5 w-5 text-muted-foreground" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{analysis.players?.name || "Unknown Player"}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(analysis.created_at).toLocaleDateString()}
-                    </p>
+                    <p className="font-medium text-sm truncate">{analysis.players?.name || "Unknown Player"}</p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>{new Date(analysis.created_at).toLocaleDateString()}</span>
+                      {analysis.context_tag && (
+                        <>
+                          <span>•</span>
+                          <Badge variant="outline" className="text-xs capitalize">
+                            {analysis.context_tag}
+                          </Badge>
+                        </>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    {analysis.ball_scores && typeof analysis.ball_scores === 'object' && (
-                      <Badge variant="outline" className="text-xs">
-                        Ball: {typeof analysis.ball_scores === 'number' ? analysis.ball_scores : 
-                              analysis.ball_scores.overall || 'N/A'}
-                      </Badge>
+                  <div className="flex gap-1.5 flex-shrink-0">
+                    {analysis.brain_scores && (
+                      <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold", 
+                        getScoreBgColor(typeof analysis.brain_scores === 'number' ? analysis.brain_scores : analysis.brain_scores?.overall))}>
+                        B
+                      </div>
                     )}
-                    {analysis.bat_scores && typeof analysis.bat_scores === 'object' && (
-                      <Badge variant="outline" className="text-xs">
-                        Bat: {typeof analysis.bat_scores === 'number' ? analysis.bat_scores : 
-                             analysis.bat_scores.overall || 'N/A'}
-                      </Badge>
+                    {analysis.body_scores && (
+                      <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold", 
+                        getScoreBgColor(typeof analysis.body_scores === 'number' ? analysis.body_scores : analysis.body_scores?.overall))}>
+                        Bo
+                      </div>
+                    )}
+                    {analysis.bat_scores && (
+                      <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold", 
+                        getScoreBgColor(typeof analysis.bat_scores === 'number' ? analysis.bat_scores : analysis.bat_scores?.overall))}>
+                        Ba
+                      </div>
+                    )}
+                    {analysis.ball_scores && (
+                      <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold", 
+                        getScoreBgColor(typeof analysis.ball_scores === 'number' ? analysis.ball_scores : analysis.ball_scores?.overall))}>
+                        Bl
+                      </div>
                     )}
                   </div>
                 </div>
               ))}
             </CardContent>
-          </Card>
-        )}
+          ) : (
+            <CardContent>
+              <div className="text-center py-8 text-muted-foreground">
+                <Video className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p className="text-sm">
+                  {contextFilter === "All" 
+                    ? "No analyses yet. Upload your first swing to get started!" 
+                    : `No ${contextFilter.toLowerCase()} analyses found`}
+                </p>
+              </div>
+            </CardContent>
+          )}
+        </Card>
 
-        {/* Player Info */}
-        {firstPlayer && (
+        {/* Player Info & Equipment */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Player Info */}
+          {firstPlayer && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Player Info</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                {firstPlayer.position && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Position</span>
+                    <span className="font-medium">{firstPlayer.position}</span>
+                  </div>
+                )}
+                {firstPlayer.date_of_birth && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Age</span>
+                    <span className="font-medium">
+                      {new Date().getFullYear() - new Date(firstPlayer.date_of_birth).getFullYear()}
+                    </span>
+                  </div>
+                )}
+                {firstPlayer.height && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Height</span>
+                    <span className="font-medium">
+                      {Math.floor(firstPlayer.height / 12)}'{firstPlayer.height % 12}"
+                    </span>
+                  </div>
+                )}
+                {firstPlayer.organization && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Organization</span>
+                    <span className="font-medium">{firstPlayer.organization}</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Equipment */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-lg">Player Info</CardTitle>
+              <CardTitle className="text-base">Equipment Setup</CardTitle>
               {!userId && (
-                <Button variant="ghost" size="sm">
-                  <Edit className="h-4 w-4" />
+                <Button variant="ghost" size="sm" onClick={() => setEquipmentModalOpen(true)}>
+                  <Wrench className="h-4 w-4" />
                 </Button>
               )}
             </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Sport</span>
-                <span className="font-medium">{firstPlayer.sport || "Baseball"}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Position</span>
-                <span className="font-medium">{firstPlayer.position || "N/A"}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Bats</span>
-                <span className="font-medium">{firstPlayer.bats || "N/A"}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Height</span>
-                <span className="font-medium">
-                  {firstPlayer.height ? `${Math.floor(firstPlayer.height / 12)}'${firstPlayer.height % 12}"` : "N/A"}
-                </span>
-              </div>
+            <CardContent>
+              {equipmentProfile ? (
+                <div className="space-y-2 text-sm">
+                  {equipmentProfile.swing_sensors?.length > 0 && (
+                    <div>
+                      <span className="text-muted-foreground block mb-1">Swing Sensors</span>
+                      <div className="flex flex-wrap gap-1">
+                        {equipmentProfile.swing_sensors.map((sensor: string) => (
+                          <Badge key={sensor} variant="secondary" className="text-xs">
+                            {sensor}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {equipmentProfile.ball_trackers?.length > 0 && (
+                    <div>
+                      <span className="text-muted-foreground block mb-1">Ball Trackers</span>
+                      <div className="flex flex-wrap gap-1">
+                        {equipmentProfile.ball_trackers.map((tracker: string) => (
+                          <Badge key={tracker} variant="secondary" className="text-xs">
+                            {tracker}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {equipmentProfile.training_facility && (
+                    <div>
+                      <span className="text-muted-foreground block mb-1">Facility</span>
+                      <span className="font-medium">{equipmentProfile.training_facility}</span>
+                    </div>
+                  )}
+                  {(!equipmentProfile.swing_sensors?.length && 
+                    !equipmentProfile.ball_trackers?.length && 
+                    !equipmentProfile.training_facility) && (
+                    <p className="text-muted-foreground text-xs">No equipment configured</p>
+                  )}
+                </div>
+              ) : (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="w-full"
+                  onClick={() => setEquipmentModalOpen(true)}
+                >
+                  Setup Equipment
+                </Button>
+              )}
             </CardContent>
           </Card>
-        )}
-
-        {/* Pocket Radar */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <div>
-              <CardTitle className="text-lg">Equipment Setup</CardTitle>
-              <CardDescription className="mt-1">
-                {equipmentProfile ? "View or update your equipment" : "Tell us what equipment you use"}
-              </CardDescription>
-            </div>
-            {!userId && (
-              <Button variant="ghost" size="sm" onClick={() => setEquipmentModalOpen(true)}>
-                <Wrench className="h-4 w-4" />
-              </Button>
-            )}
-          </CardHeader>
-          <CardContent>
-            {equipmentProfile ? (
-              <div className="space-y-2 text-sm">
-                {equipmentProfile.swing_sensors?.length > 0 && (
-                  <div>
-                    <span className="text-muted-foreground">Swing Sensors: </span>
-                    <span className="font-medium">{equipmentProfile.swing_sensors.join(", ")}</span>
-                  </div>
-                )}
-                {equipmentProfile.ball_trackers?.length > 0 && (
-                  <div>
-                    <span className="text-muted-foreground">Ball Trackers: </span>
-                    <span className="font-medium">{equipmentProfile.ball_trackers.join(", ")}</span>
-                  </div>
-                )}
-                {equipmentProfile.motion_tools?.length > 0 && (
-                  <div>
-                    <span className="text-muted-foreground">Motion Tools: </span>
-                    <span className="font-medium">{equipmentProfile.motion_tools.join(", ")}</span>
-                  </div>
-                )}
-                {equipmentProfile.training_facility && (
-                  <div>
-                    <span className="text-muted-foreground">Facility: </span>
-                    <span className="font-medium">{equipmentProfile.training_facility}</span>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <Button 
-                variant="outline" 
-                className="w-full"
-                onClick={() => setEquipmentModalOpen(true)}
-              >
-                Setup Equipment Profile
-              </Button>
-            )}
-          </CardContent>
-        </Card>
+        </div>
 
         {firstPlayer && (
           <EquipmentSetupModal
