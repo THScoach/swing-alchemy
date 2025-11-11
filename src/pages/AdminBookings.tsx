@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { Calendar, Clock, MapPin, DollarSign } from "lucide-react";
+import { Calendar, Clock, MapPin, DollarSign, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
 export default function AdminBookings() {
@@ -126,14 +126,21 @@ export default function AdminBookings() {
     <AppLayout>
       <div className="p-8">
         <div className="max-w-7xl mx-auto">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => navigate("/admin")}
+            className="mb-4 gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Admin
+          </Button>
+          
           <div className="mb-8 flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold mb-2">Session Bookings</h1>
               <p className="text-muted-foreground">Manage in-person and hybrid training sessions</p>
             </div>
-            <Button variant="outline" onClick={() => navigate("/admin")}>
-              ← Back to Admin
-            </Button>
           </div>
 
           {/* Filters */}

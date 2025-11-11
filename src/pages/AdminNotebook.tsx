@@ -16,6 +16,7 @@ import {
   Trash2,
   Filter,
   ExternalLink,
+  ArrowLeft,
 } from "lucide-react";
 import {
   Table,
@@ -276,6 +277,16 @@ export default function AdminNotebook() {
     <AppLayout>
       <div className="p-8">
         <div className="max-w-7xl mx-auto">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => navigate("/admin")}
+            className="mb-4 gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Admin
+          </Button>
+          
           <div className="flex justify-between items-center mb-8">
             <div>
               <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">

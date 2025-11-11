@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Trophy, Gift } from "lucide-react";
+import { Plus, Trophy, Gift, ArrowLeft } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -85,6 +85,16 @@ export default function AdminGamification() {
   return (
     <AppLayout>
       <div className="space-y-6">
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={() => navigate("/admin")}
+          className="gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Admin
+        </Button>
+        
         <div>
           <h1 className="text-3xl font-bold">Gamification</h1>
           <p className="text-muted-foreground">Manage points, rewards, and leaderboards</p>

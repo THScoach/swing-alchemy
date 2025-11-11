@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, Eye, Trash2 } from "lucide-react";
+import { Search, Eye, Trash2, ArrowLeft } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -99,6 +99,16 @@ export default function AdminPlayers() {
     <AppLayout>
       <div className="p-8">
         <div className="max-w-7xl mx-auto">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => navigate("/admin")}
+            className="mb-4 gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Admin
+          </Button>
+          
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">All Users</h1>
             <p className="text-muted-foreground">Manage user accounts and permissions</p>

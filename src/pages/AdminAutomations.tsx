@@ -1,11 +1,13 @@
+import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Zap, Play, Pause } from "lucide-react";
+import { Plus, Zap, Play, Pause, ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 
 export default function AdminAutomations() {
+  const navigate = useNavigate();
   const automations = [
     {
       id: 1,
@@ -36,6 +38,16 @@ export default function AdminAutomations() {
   return (
     <AppLayout>
       <div className="space-y-6">
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={() => navigate("/admin")}
+          className="gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Admin
+        </Button>
+        
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Automations</h1>
