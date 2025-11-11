@@ -32,6 +32,7 @@ import MyProgress from "./pages/MyProgress";
 import Calendar from "./pages/Calendar";
 import KnowledgeBase from "./pages/KnowledgeBase";
 import Team from "./pages/Team";
+import Brain from "./pages/Brain";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +61,7 @@ const App = () => (
           <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
           <Route path="/knowledge-base" element={<ProtectedRoute><KnowledgeBase /></ProtectedRoute>} />
           <Route path="/team" element={<ProtectedRoute><Team /></ProtectedRoute>} />
+          <Route path="/brain" element={<ProtectedRoute><Brain /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/profile/:userId" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           

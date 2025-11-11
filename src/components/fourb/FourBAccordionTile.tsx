@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Brain, User, Activity, Target, ChevronDown, TrendingUp, Info } from "lucide-react";
 import { TileData } from "@/lib/fourb/types";
 import { useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -72,10 +73,22 @@ const metricConfig = {
 
 export function FourBAccordionTile({ tile, data, onAssignDrill, onViewTrend }: FourBAccordionTileProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const playerId = searchParams.get("playerId");
+  
   const Icon = icons[tile.name];
   const bgGradient = stateColors[tile.state];
   const iconColor = iconColors[tile.state];
   const metrics = metricConfig[tile.name]?.metrics || [];
+
+  const handleTileClick = () => {
+    if (tile.name === 'brain' && playerId) {
+      navigate(`/brain?playerId=${playerId}`);
+    } else {
+      setIsOpen(!isOpen);
+    }
+  };
 
   const formatValue = (value: any, metric: any) => {
     if (value === undefined || value === null) return '—';
@@ -126,8 +139,18 @@ export function FourBAccordionTile({ tile, data, onAssignDrill, onViewTrend }: F
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <Card className={`bg-gradient-to-br ${bgGradient} border transition-all`}>
-        <CollapsibleTrigger className="w-full">
-          <CardHeader>
+        <CollapsibleTrigger 
+          className="w-full" 
+          asChild
+          onClick={(e) => {
+            if (tile.name === 'brain') {
+              e.preventDefault();
+              handleTileClick();
+            }
+          }}
+        >
+          <div className="cursor-pointer">
+            <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Icon className={`h-6 w-6 ${iconColor}`} />
@@ -157,7 +180,8 @@ export function FourBAccordionTile({ tile, data, onAssignDrill, onViewTrend }: F
                 />
               </div>
             )}
-          </CardHeader>
+            </CardHeader>
+          </div>
         </CollapsibleTrigger>
 
         <CollapsibleContent>
