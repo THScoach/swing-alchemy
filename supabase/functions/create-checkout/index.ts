@@ -11,9 +11,13 @@ interface CheckoutRequest {
   planType: string;
   sessionType: string;
   amount: number;
-  playerName: string;
-  playerEmail: string;
-  playerPhone: string;
+  // Support both naming conventions
+  playerName?: string;
+  playerEmail?: string;
+  playerPhone?: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
   playerId?: string;
   scheduledDate?: string;
   metadata?: Record<string, any>;
@@ -48,12 +52,24 @@ serve(async (req) => {
       playerName,
       playerEmail,
       playerPhone,
+      customerName,
+      customerEmail,
+      customerPhone,
       playerId,
       scheduledDate,
       metadata = {}
     }: CheckoutRequest = await req.json();
 
-    console.log("[CREATE-CHECKOUT] Request:", { planType, sessionType, amount, playerEmail });
+    // Use customer* fields if provided, fallback to player* fields
+    const name = customerName || playerName || "Customer";
+    const email = customerEmail || playerEmail;
+    const phone = customerPhone || playerPhone;
+
+    if (!email) {
+      throw new Error("Email is required");
+    }
+
+    console.log("[CREATE-CHECKOUT] Request:", { planType, sessionType, amount, email });
 
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -61,7 +77,7 @@ serve(async (req) => {
     });
 
     // Check for existing Stripe customer
-    const customers = await stripe.customers.list({ email: playerEmail, limit: 1 });
+    const customers = await stripe.customers.list({ email: email, limit: 1 });
     let customerId;
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
@@ -78,9 +94,9 @@ serve(async (req) => {
         session_type: sessionType,
         amount: amount,
         payment_status: "pending",
-        customer_name: playerName,
-        customer_email: playerEmail,
-        customer_phone: playerPhone,
+        customer_name: name,
+        customer_email: email,
+        customer_phone: phone,
         scheduled_date: scheduledDate || null,
         metadata: metadata,
       })
@@ -97,7 +113,7 @@ serve(async (req) => {
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      customer_email: customerId ? undefined : playerEmail,
+      customer_email: customerId ? undefined : email,
       line_items: [
         {
           price_data: {
@@ -113,14 +129,15 @@ serve(async (req) => {
       ],
       mode: "payment",
       success_url: `${req.headers.get("origin")}/thank-you?session_id={CHECKOUT_SESSION_ID}&transaction_id=${transaction.id}`,
-      cancel_url: `${req.headers.get("origin")}/facility?canceled=true`,
+      cancel_url: `${req.headers.get("origin")}/pricing?canceled=true`,
       metadata: {
         transaction_id: transaction.id,
-        player_name: playerName,
-        player_email: playerEmail,
-        player_phone: playerPhone,
+        player_name: name,
+        player_email: email,
+        player_phone: phone || "",
         session_type: sessionType,
         plan_type: planType,
+        ...metadata, // Include any additional metadata from the order form
       },
     });
 

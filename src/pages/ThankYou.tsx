@@ -56,6 +56,16 @@ export default function ThankYou() {
         console.error("Transaction update error:", updateError);
       }
 
+      // Check if we need to auto-create account
+      const metadata = txn.metadata as Record<string, any> | null;
+      const shouldCreateAccount = metadata?.createAccount === "true";
+      
+      if (shouldCreateAccount && txn.customer_email) {
+        console.log("Auto-creating account for:", txn.customer_email);
+        // Account will be created when user clicks "Create My Account" button
+        // This gives them control over password creation
+      }
+
       // Send confirmation SMS
       if (txn.customer_phone && !smsSent) {
         try {
@@ -209,22 +219,24 @@ export default function ThankYou() {
             </div>
 
             {/* Account Creation CTA */}
-            <Card className="bg-primary text-primary-foreground border-0">
-              <CardContent className="p-6 text-center space-y-3">
-                <h3 className="text-xl font-bold">Welcome to The Hitting Skool!</h3>
-                <p className="opacity-90">
-                  Create your account now to access your training dashboard
-                </p>
-                <Button 
-                  size="lg" 
-                  variant="secondary"
-                  onClick={() => navigate(`/auth?email=${transaction?.customer_email || ''}&name=${transaction?.customer_name || ''}`)}
-                  className="w-full"
-                >
-                  Create My Account
-                </Button>
-              </CardContent>
-            </Card>
+            {transaction && (transaction.metadata as Record<string, any>)?.createAccount === "true" && (
+              <Card className="bg-primary text-primary-foreground border-0">
+                <CardContent className="p-6 text-center space-y-3">
+                  <h3 className="text-xl font-bold">Welcome to The Hitting Skool!</h3>
+                  <p className="opacity-90">
+                    Create your account now to access your training dashboard
+                  </p>
+                  <Button 
+                    size="lg" 
+                    variant="secondary"
+                    onClick={() => navigate(`/auth?email=${transaction?.customer_email || ''}&name=${transaction?.customer_name || ''}`)}
+                    className="w-full"
+                  >
+                    Create My Account
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
 
             <div className="flex flex-col sm:flex-row gap-3 pt-4">
               <Button onClick={() => navigate("/analyze")} className="flex-1 gap-2">

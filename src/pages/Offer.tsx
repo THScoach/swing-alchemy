@@ -140,8 +140,8 @@ export default function Offer() {
       // Free plan goes to auth/signup
       navigate("/auth");
     } else {
-      // Paid plans go to auth for now (will integrate Stripe checkout next)
-      navigate("/auth");
+      // Paid plans go to order page
+      navigate(`/order/${plan}`);
     }
   };
 
