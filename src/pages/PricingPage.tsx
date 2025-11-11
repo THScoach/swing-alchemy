@@ -63,20 +63,20 @@ const tiers = [
     highlighted: false,
   },
   {
-    name: "Elite Remote Program",
-    price: "$399",
-    period: " / 8 weeks",
-    description: "Rebuild your swing from the ground up — the same process used with MLB hitters",
+    name: "Winter Program",
+    price: "$997",
+    period: " one-time",
+    description: "Full-access training experience — the complete hitting transformation used with pro players",
     features: [
       { text: "Complete biomechanical evaluation", included: true },
       { text: "Weekly live sessions with Coach Rick", included: true },
-      { text: "Personalized 8-week training plan", included: true },
+      { text: "Fully personalized training plan", included: true },
       { text: "Final swing performance report", included: true },
       { text: "Direct messaging access", included: true },
-      { text: "Priority support", included: true },
+      { text: "Priority support throughout program", included: true },
       { text: "Team dashboard", included: false },
     ],
-    cta: "Start Elite Program",
+    cta: "Join Winter Program",
     highlighted: true,
   },
   {
@@ -160,18 +160,18 @@ const inPersonTiers = [
     sessionType: "hybrid-addon"
   },
   {
-    name: "Nine-Inning Intensive",
-    price: "$997",
-    period: " / 8 weeks",
-    description: "High-intensity rebuild program",
+    name: "4B Evaluation",
+    price: "$299",
+    period: " one-time",
+    description: "Standalone in-person analysis or program onboarding",
     features: [
       "Full 4B evaluation",
-      "6 focused training sessions",
-      "Post-assessment report",
+      "Comprehensive assessment report",
+      "Video breakdown session",
       "Personalized game plan",
-      "Guaranteed improvement metrics"
+      "Lab-grade precision equipment"
     ],
-    sessionType: "nine-inning"
+    sessionType: "4b-evaluation-standalone"
   },
   {
     name: "Private 1-on-1",
@@ -211,6 +211,10 @@ export default function PricingPage() {
           <h1 className="text-4xl lg:text-6xl font-bold mb-6">Train from Anywhere. Fix Your Swing Forever.</h1>
           <p className="text-xl text-secondary-foreground/90 max-w-2xl mx-auto">
             Upload your swing. Get instant feedback. Learn exactly what's holding you back — and what to fix next.
+          </p>
+          <p className="text-lg text-secondary-foreground/80 max-w-3xl mx-auto mt-4 italic">
+            Every swing you upload helps The Hitting Skool's AI learn your movement patterns. 
+            The smarter it gets, the better your drill recommendations become.
           </p>
         </div>
       </section>

@@ -24,6 +24,10 @@ export default function Landing() {
               <p className="text-xl text-secondary-foreground/90">
                 The 4B Framework: Brain, Body, Bat, Ball - Complete player development
               </p>
+              <p className="text-lg text-secondary-foreground/80 italic">
+                Every swing you upload helps The Hitting Skool's AI learn your movement patterns. 
+                The smarter it gets, the better your drill recommendations become.
+              </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link to="/auth">
                   <Button size="lg" className="w-full sm:w-auto text-lg px-8">
@@ -134,7 +138,7 @@ export default function Landing() {
                 </div>
                 <CardTitle>AI Analysis</CardTitle>
                 <CardDescription className="text-base">
-                  MediaPipe pose detection analyzes your kinetic sequence automatically
+                  AI motion tracking analyzes your kinetic sequence automatically. Every swing you upload helps it learn your movement patterns better.
                 </CardDescription>
               </CardHeader>
             </Card>
