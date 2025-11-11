@@ -90,14 +90,130 @@ export function FourBModal({ isOpen, onClose, tileName, score, state, data }: Fo
 
           <TabsContent value="overview" className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              {config.metrics.map((metric) => (
-                <div key={metric} className="p-4 border rounded-lg bg-muted/30">
-                  <div className="text-sm text-muted-foreground">{metric}</div>
-                  <div className="text-2xl font-bold mt-1">
-                    {data ? '—' : 'No Data'}
+              {tileName === 'body' && data && (
+                <>
+                  <div className="p-4 border rounded-lg bg-muted/30">
+                    <div className="text-sm text-muted-foreground">COM Movement</div>
+                    <div className="text-2xl font-bold mt-1">
+                      {data.com_forward_movement_pct ? `${data.com_forward_movement_pct.toFixed(1)}%` : '—'}
+                    </div>
                   </div>
-                </div>
-              ))}
+                  <div className="p-4 border rounded-lg bg-muted/30">
+                    <div className="text-sm text-muted-foreground">Spine Stability</div>
+                    <div className="text-2xl font-bold mt-1">
+                      {data.spine_stability_score ? data.spine_stability_score.toFixed(0) : '—'}
+                    </div>
+                  </div>
+                  <div className="p-4 border rounded-lg bg-muted/30">
+                    <div className="text-sm text-muted-foreground">Head Movement</div>
+                    <div className="text-2xl font-bold mt-1">
+                      {data.head_movement_inches ? `${data.head_movement_inches.toFixed(1)}"` : '—'}
+                    </div>
+                  </div>
+                  <div className="p-4 border rounded-lg bg-muted/30">
+                    <div className="text-sm text-muted-foreground">Sequence</div>
+                    <div className="text-2xl font-bold mt-1">
+                      {data.sequence_correct !== null ? (data.sequence_correct ? '✓ Correct' : '✗ Incorrect') : '—'}
+                    </div>
+                  </div>
+                </>
+              )}
+              
+              {tileName === 'brain' && data && (
+                <>
+                  <div className="p-4 border rounded-lg bg-muted/30">
+                    <div className="text-sm text-muted-foreground">Processing Speed</div>
+                    <div className="text-2xl font-bold mt-1">
+                      {data.processing_speed ? `${data.processing_speed}%` : '—'}
+                    </div>
+                  </div>
+                  <div className="p-4 border rounded-lg bg-muted/30">
+                    <div className="text-sm text-muted-foreground">Tracking/Focus</div>
+                    <div className="text-2xl font-bold mt-1">
+                      {data.tracking_focus ? `${data.tracking_focus}%` : '—'}
+                    </div>
+                  </div>
+                  <div className="p-4 border rounded-lg bg-muted/30">
+                    <div className="text-sm text-muted-foreground">Impulse Control</div>
+                    <div className="text-2xl font-bold mt-1">
+                      {data.impulse_control ? `${data.impulse_control}%` : '—'}
+                    </div>
+                  </div>
+                  <div className="p-4 border rounded-lg bg-muted/30">
+                    <div className="text-sm text-muted-foreground">Decision Making</div>
+                    <div className="text-2xl font-bold mt-1">
+                      {data.decision_making ? `${data.decision_making}%` : '—'}
+                    </div>
+                  </div>
+                </>
+              )}
+              
+              {tileName === 'bat' && data && (
+                <>
+                  <div className="p-4 border rounded-lg bg-muted/30">
+                    <div className="text-sm text-muted-foreground">Bat Speed</div>
+                    <div className="text-2xl font-bold mt-1">
+                      {data.avg_bat_speed ? `${data.avg_bat_speed.toFixed(1)} mph` : '—'}
+                    </div>
+                  </div>
+                  <div className="p-4 border rounded-lg bg-muted/30">
+                    <div className="text-sm text-muted-foreground">Attack Angle</div>
+                    <div className="text-2xl font-bold mt-1">
+                      {data.attack_angle_avg ? `${data.attack_angle_avg.toFixed(1)}°` : '—'}
+                    </div>
+                  </div>
+                  <div className="p-4 border rounded-lg bg-muted/30">
+                    <div className="text-sm text-muted-foreground">Time in Zone</div>
+                    <div className="text-2xl font-bold mt-1">
+                      {data.time_in_zone_ms ? `${data.time_in_zone_ms.toFixed(0)}ms` : '—'}
+                    </div>
+                  </div>
+                  <div className="p-4 border rounded-lg bg-muted/30">
+                    <div className="text-sm text-muted-foreground">Consistency</div>
+                    <div className="text-2xl font-bold mt-1">
+                      {data.bat_speed_sd ? `${data.bat_speed_sd.toFixed(1)} mph` : '—'}
+                    </div>
+                  </div>
+                </>
+              )}
+              
+              {tileName === 'ball' && data && (
+                <>
+                  <div className="p-4 border rounded-lg bg-muted/30">
+                    <div className="text-sm text-muted-foreground">EV90</div>
+                    <div className="text-2xl font-bold mt-1">
+                      {data.ev90 ? `${data.ev90.toFixed(1)} mph` : '—'}
+                    </div>
+                  </div>
+                  <div className="p-4 border rounded-lg bg-muted/30">
+                    <div className="text-sm text-muted-foreground">LA90</div>
+                    <div className="text-2xl font-bold mt-1">
+                      {data.la90 ? `${data.la90.toFixed(1)}°` : '—'}
+                    </div>
+                  </div>
+                  <div className="p-4 border rounded-lg bg-muted/30">
+                    <div className="text-sm text-muted-foreground">Barrel Rate</div>
+                    <div className="text-2xl font-bold mt-1">
+                      {data.barrel_like_rate ? `${data.barrel_like_rate.toFixed(1)}%` : '—'}
+                    </div>
+                  </div>
+                  <div className="p-4 border rounded-lg bg-muted/30">
+                    <div className="text-sm text-muted-foreground">Hard Hit %</div>
+                    <div className="text-2xl font-bold mt-1">
+                      {data.hard_hit_rate ? `${data.hard_hit_rate.toFixed(1)}%` : '—'}
+                    </div>
+                  </div>
+                </>
+              )}
+              
+              {!data && (
+                config.metrics.map((metric) => (
+                  <div key={metric} className="p-4 border rounded-lg bg-muted/30">
+                    <div className="text-sm text-muted-foreground">{metric}</div>
+                    <div className="text-2xl font-bold mt-1">No Data</div>
+                  </div>
+                ))
+              )}
             </div>
 
             {!data && (
