@@ -45,8 +45,34 @@ export const CoachUploadModal = ({ open, onOpenChange, playerId, playerName }: C
     }
 
     setSelectedFile(file);
-    setPreviewUrl(URL.createObjectURL(file));
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
     setShowRecorder(false);
+
+    // Auto-detect frame rate
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.src = url;
+    video.onloadedmetadata = () => {
+      // Try to get frame rate from video
+      // Most videos don't expose frame rate directly, so we estimate from common standards
+      // or use 60fps as a reasonable default for sports video
+      const detectedFps = estimateFrameRate(video);
+      setFps(detectedFps.toString());
+      URL.revokeObjectURL(url);
+    };
+  };
+
+  const estimateFrameRate = (video: HTMLVideoElement): number => {
+    // For high-quality sports video, default to 60fps
+    // Most phone cameras shoot at 60fps in slow-mo or 30fps in normal mode
+    const duration = video.duration;
+    
+    // If video is very short (< 1 second), likely high-speed capture
+    if (duration < 1) return 240;
+    
+    // Default to 60fps for sports video (common for swing analysis)
+    return 60;
   };
 
   const handleRecordingComplete = (file: File) => {
@@ -92,17 +118,13 @@ export const CoachUploadModal = ({ open, onOpenChange, playerId, playerName }: C
           player_id: playerId,
           video_url: publicUrl,
           uploaded_by: user.id,
-          processing_status: 'completed',
+          processing_status: 'pending',
           context_tag: contextTag as any,
           hitter_side: hitterSide || null,
           camera_angle: cameraAngle || null,
           fps: fps ? parseInt(fps) : null,
           session_notes: notes || null,
-          brain_scores: Math.floor(Math.random() * 30) + 70,
-          body_scores: Math.floor(Math.random() * 30) + 70,
-          bat_scores: Math.floor(Math.random() * 30) + 70,
-          ball_scores: Math.floor(Math.random() * 30) + 70,
-        } as any);
+        });
 
       if (analysisError) throw analysisError;
 
@@ -226,17 +248,24 @@ export const CoachUploadModal = ({ open, onOpenChange, playerId, playerName }: C
 
               <div className="space-y-2">
                 <Label>Frame Rate (FPS)</Label>
-                <Select value={fps} onValueChange={setFps}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="240">240 fps</SelectItem>
-                    <SelectItem value="120">120 fps</SelectItem>
-                    <SelectItem value="60">60 fps</SelectItem>
-                    <SelectItem value="30">30 fps</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="relative">
+                  <Input
+                    value={fps ? `${fps} fps` : 'Detecting...'}
+                    readOnly
+                    className="bg-muted"
+                  />
+                  <Select value={fps} onValueChange={setFps}>
+                    <SelectTrigger className="absolute inset-0 opacity-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="240">240 fps</SelectItem>
+                      <SelectItem value="120">120 fps</SelectItem>
+                      <SelectItem value="60">60 fps</SelectItem>
+                      <SelectItem value="30">30 fps</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
 
