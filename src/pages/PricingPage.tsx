@@ -2,7 +2,9 @@ import { MarketingLayout } from "@/components/MarketingLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { Check, X } from "lucide-react";
+import { Check, X, MapPin } from "lucide-react";
+import { useState } from "react";
+import { BookingModal } from "@/components/BookingModal";
 
 const tiers = [
   {
@@ -109,9 +111,97 @@ const tiers = [
   },
 ];
 
+const inPersonTiers = [
+  {
+    name: "4B Elite Evaluation",
+    price: "$299",
+    period: " one-time",
+    description: "Complete in-lab assessment",
+    features: [
+      "90-minute in-lab assessment",
+      "Brain, Body, Bat, Ball measurement",
+      "Full 4B report with video summary",
+      "Next-step training plan",
+      "Lab-grade precision equipment"
+    ],
+    sessionType: "4b-evaluation"
+  },
+  {
+    name: "4B Training Pods",
+    price: "$399",
+    period: "/mo",
+    description: "Small-group training rotation",
+    features: [
+      "Small-group (3 athletes) pods",
+      "Sessions every 30 minutes",
+      "STACK training block",
+      "Mobility & movement work",
+      "Tempo & ball data tracking",
+      "3-month minimum commitment"
+    ],
+    sessionType: "pod",
+    highlighted: true
+  },
+  {
+    name: "Hybrid Add-On",
+    price: "+$99",
+    period: "/mo",
+    description: "Remote + in-person combo",
+    features: [
+      "Remote video feedback",
+      "In-app progress tracking",
+      "Data syncs to 4B dashboard",
+      "Between-session support",
+      "Requires Pod or 1-on-1 plan"
+    ],
+    sessionType: "hybrid-addon"
+  },
+  {
+    name: "Nine-Inning Intensive",
+    price: "$997",
+    period: " / 8 weeks",
+    description: "High-intensity rebuild program",
+    features: [
+      "Full 4B evaluation",
+      "6 focused training sessions",
+      "Post-assessment report",
+      "Personalized game plan",
+      "Guaranteed improvement metrics"
+    ],
+    sessionType: "nine-inning"
+  },
+  {
+    name: "Private 1-on-1",
+    price: "$125",
+    period: "/hr",
+    description: "Individual tune-up session",
+    features: [
+      "One-hour in-lab session",
+      "Personalized attention",
+      "Real-time adjustments",
+      "Requires prior 4B Evaluation",
+      "À la carte booking"
+    ],
+    sessionType: "private-session"
+  }
+];
+
 export default function PricingPage() {
+  const [bookingModalOpen, setBookingModalOpen] = useState(false);
+  const [selectedSessionType, setSelectedSessionType] = useState<string>("");
+
+  const handleBookSession = (sessionType: string) => {
+    setSelectedSessionType(sessionType);
+    setBookingModalOpen(true);
+  };
   return (
     <MarketingLayout>
+      <BookingModal 
+        open={bookingModalOpen} 
+        onOpenChange={setBookingModalOpen}
+        sessionType={selectedSessionType}
+      />
+
       {/* Header */}
       <section className="bg-gradient-to-br from-secondary to-secondary/80 text-secondary-foreground py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -122,9 +212,10 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* Pricing Tiers */}
+      {/* Remote Training Tiers */}
       <section className="py-20 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold text-center mb-12">Remote Training Plans</h2>
           <div className="grid lg:grid-cols-3 gap-8">
             {tiers.map((tier) => (
               <Card
@@ -191,6 +282,103 @@ export default function PricingPage() {
         </div>
       </section>
 
+      {/* In-Person & Hybrid Training */}
+      <section className="py-20 bg-muted/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <MapPin className="h-6 w-6 text-primary" />
+              <h2 className="text-3xl font-bold">In-Person & Hybrid Training</h2>
+            </div>
+            <p className="text-muted-foreground text-lg">
+              The Hitting Skool Lab – Fenton, MO
+            </p>
+          </div>
+          
+          <div className="grid lg:grid-cols-3 gap-8 mb-12">
+            {inPersonTiers.map((tier) => (
+              <Card
+                key={tier.name}
+                className={`flex flex-col ${
+                  tier.highlighted
+                    ? "border-primary border-2 shadow-xl relative"
+                    : ""
+                }`}
+              >
+                {tier.highlighted && (
+                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                    <div className="bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-semibold">
+                      Most Popular
+                    </div>
+                  </div>
+                )}
+                <CardHeader>
+                  <CardTitle className="text-2xl">{tier.name}</CardTitle>
+                  <div className="mt-4">
+                    <span className="text-4xl font-bold">{tier.price}</span>
+                    <span className="text-muted-foreground">{tier.period}</span>
+                  </div>
+                  <CardDescription className="text-base mt-2">
+                    {tier.description}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex-1 flex flex-col">
+                  <ul className="space-y-3 mb-8 flex-1">
+                    {tier.features.map((feature, idx) => (
+                      <li key={idx} className="flex items-start gap-3">
+                        <Check className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
+                        <span className="text-foreground">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button
+                    className="w-full"
+                    variant={tier.highlighted ? "default" : "outline"}
+                    size="lg"
+                    onClick={() => handleBookSession(tier.sessionType)}
+                  >
+                    Book Session
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* CTA Blocks */}
+          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            <Card className="bg-primary text-primary-foreground">
+              <CardContent className="p-8 text-center">
+                <h3 className="text-2xl font-bold mb-4">🧠 Ready to Train In-Person?</h3>
+                <p className="mb-6 opacity-90">
+                  Get started with a complete 4B evaluation at our Fenton, MO facility
+                </p>
+                <Button 
+                  size="lg" 
+                  variant="secondary"
+                  onClick={() => handleBookSession("4b-evaluation")}
+                  className="w-full"
+                >
+                  Book Your 4B Evaluation
+                </Button>
+              </CardContent>
+            </Card>
+            <Card className="bg-secondary text-secondary-foreground">
+              <CardContent className="p-8 text-center">
+                <h3 className="text-2xl font-bold mb-4">🌎 Can't Make It to Fenton?</h3>
+                <p className="mb-6 opacity-90">
+                  Start training remotely with full 4B analysis and coaching
+                </p>
+                <Link to="/auth" className="block">
+                  <Button size="lg" variant="outline" className="w-full">
+                    Start Remote Coaching Online
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
       {/* Feature Comparison Table */}
       <section className="py-20 bg-muted/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -205,6 +393,7 @@ export default function PricingPage() {
                       {tier.name}
                     </th>
                   ))}
+                  <th className="p-4 text-center font-semibold min-w-[120px]">In-Person / Hybrid</th>
                 </tr>
               </thead>
               <tbody>
@@ -216,6 +405,7 @@ export default function PricingPage() {
                   <td className="p-4 text-center">Unlimited</td>
                   <td className="p-4 text-center">Unlimited</td>
                   <td className="p-4 text-center">Unlimited</td>
+                  <td className="p-4 text-center"><Check className="h-5 w-5 text-success mx-auto" /></td>
                 </tr>
                 <tr className="border-b">
                   <td className="p-4 font-medium">4B Analysis</td>
@@ -224,6 +414,47 @@ export default function PricingPage() {
                   <td className="p-4 text-center"><Check className="h-5 w-5 text-success mx-auto" /></td>
                   <td className="p-4 text-center"><Check className="h-5 w-5 text-success mx-auto" /></td>
                   <td className="p-4 text-center"><Check className="h-5 w-5 text-success mx-auto" /></td>
+                  <td className="p-4 text-center"><Check className="h-5 w-5 text-success mx-auto" /></td>
+                  <td className="p-4 text-center font-semibold text-success">✓ (lab)</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-4 font-medium">STACK Training</td>
+                  <td className="p-4 text-center"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="p-4 text-center"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="p-4 text-center"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="p-4 text-center"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="p-4 text-center"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="p-4 text-center"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="p-4 text-center"><Check className="h-5 w-5 text-success mx-auto" /></td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-4 font-medium">Mobility / Drill Work</td>
+                  <td className="p-4 text-center"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="p-4 text-center"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="p-4 text-center"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="p-4 text-center"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="p-4 text-center"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="p-4 text-center"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="p-4 text-center"><Check className="h-5 w-5 text-success mx-auto" /></td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-4 font-medium">Tempo & Ball Data</td>
+                  <td className="p-4 text-center"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="p-4 text-center font-semibold text-success">✓ (video)</td>
+                  <td className="p-4 text-center font-semibold text-success">✓ (video)</td>
+                  <td className="p-4 text-center font-semibold text-success">✓ (video)</td>
+                  <td className="p-4 text-center font-semibold text-success">✓ (video)</td>
+                  <td className="p-4 text-center font-semibold text-success">✓ (video)</td>
+                  <td className="p-4 text-center font-semibold text-success">✓ (machine / radar)</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-4 font-medium">On-Site Evaluation</td>
+                  <td className="p-4 text-center"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="p-4 text-center"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="p-4 text-center"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="p-4 text-center"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="p-4 text-center"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="p-4 text-center"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
                   <td className="p-4 text-center"><Check className="h-5 w-5 text-success mx-auto" /></td>
                 </tr>
                 <tr className="border-b">
@@ -288,6 +519,7 @@ export default function PricingPage() {
                   <td className="p-4 text-center">1</td>
                   <td className="p-4 text-center">Unlimited</td>
                   <td className="p-4 text-center">Unlimited</td>
+                  <td className="p-4 text-center">1-3</td>
                 </tr>
               </tbody>
             </table>

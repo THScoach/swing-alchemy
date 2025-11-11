@@ -88,6 +88,7 @@ export default function Admin() {
   const quickActions = [
     { label: "View All Users", path: "/admin/players" },
     { label: "View All Teams", path: "/admin/teams" },
+    { label: "Session Bookings", path: "/admin/bookings" },
     { label: "Coach Rick's Notebook", path: "/admin/notebook" },
     { label: "Manage Subscriptions", path: "/admin/subscriptions" },
   ];

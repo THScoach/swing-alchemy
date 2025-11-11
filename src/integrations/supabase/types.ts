@@ -689,6 +689,50 @@ export type Database = {
         }
         Relationships: []
       }
+      player_equipment_profile: {
+        Row: {
+          ball_trackers: string[] | null
+          created_at: string
+          id: string
+          motion_tools: string[] | null
+          player_id: string
+          setup_photo_url: string | null
+          swing_sensors: string[] | null
+          training_facility: string | null
+          updated_at: string
+        }
+        Insert: {
+          ball_trackers?: string[] | null
+          created_at?: string
+          id?: string
+          motion_tools?: string[] | null
+          player_id: string
+          setup_photo_url?: string | null
+          swing_sensors?: string[] | null
+          training_facility?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ball_trackers?: string[] | null
+          created_at?: string
+          id?: string
+          motion_tools?: string[] | null
+          player_id?: string
+          setup_photo_url?: string | null
+          swing_sensors?: string[] | null
+          training_facility?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_equipment_profile_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_points: {
         Row: {
           balance: number
@@ -986,6 +1030,72 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "progression_history_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sessions: {
+        Row: {
+          add_ons: Json | null
+          created_at: string
+          duration_minutes: number
+          id: string
+          location: string | null
+          notes: string | null
+          organization_id: string
+          payment_status: string
+          player_id: string
+          scheduled_at: string
+          session_type: string
+          status: string
+          stripe_payment_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          add_ons?: Json | null
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          location?: string | null
+          notes?: string | null
+          organization_id: string
+          payment_status?: string
+          player_id: string
+          scheduled_at: string
+          session_type: string
+          status?: string
+          stripe_payment_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          add_ons?: Json | null
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          location?: string | null
+          notes?: string | null
+          organization_id?: string
+          payment_status?: string
+          player_id?: string
+          scheduled_at?: string
+          session_type?: string
+          status?: string
+          stripe_payment_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sessions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"

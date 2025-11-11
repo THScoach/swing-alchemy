@@ -27,6 +27,7 @@ import AdminMessaging from "./pages/AdminMessaging";
 import AdminAutomations from "./pages/AdminAutomations";
 import AdminContent from "./pages/AdminContent";
 import AdminGamification from "./pages/AdminGamification";
+import AdminBookings from "./pages/AdminBookings";
 import MyProgress from "./pages/MyProgress";
 import Calendar from "./pages/Calendar";
 import KnowledgeBase from "./pages/KnowledgeBase";
@@ -73,6 +74,7 @@ const App = () => (
           <Route path="/admin/notebook" element={<ProtectedRoute><AdminNotebook /></ProtectedRoute>} />
           <Route path="/admin/gamification" element={<ProtectedRoute><AdminGamification /></ProtectedRoute>} />
           <Route path="/admin/subscriptions" element={<ProtectedRoute><AdminSubscriptions /></ProtectedRoute>} />
+          <Route path="/admin/bookings" element={<ProtectedRoute><AdminBookings /></ProtectedRoute>} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

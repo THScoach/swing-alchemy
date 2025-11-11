@@ -1,4 +1,4 @@
-import { Home, Video, BookOpen, ShoppingBag, User, Users, Shield, TrendingUp, Calendar as CalendarIcon, Library, UsersRound, MessageSquare, Zap, Upload, Gift, DollarSign } from "lucide-react";
+import { Home, Video, BookOpen, ShoppingBag, User, Users, Shield, TrendingUp, Calendar as CalendarIcon, Library, UsersRound, MessageSquare, Zap, Upload, Gift, DollarSign, ClipboardList } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
@@ -20,6 +20,7 @@ const adminNavItems = [
   { icon: Shield, label: "Dashboard", path: "/admin" },
   { icon: Users, label: "Players", path: "/admin/players" },
   { icon: UsersRound, label: "Teams", path: "/admin/teams" },
+  { icon: ClipboardList, label: "Bookings", path: "/admin/bookings" },
   { icon: MessageSquare, label: "Messaging", path: "/admin/messaging" },
   { icon: Zap, label: "Automations", path: "/admin/automations" },
   { icon: Upload, label: "Content", path: "/admin/content" },

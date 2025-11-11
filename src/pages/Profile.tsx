@@ -13,10 +13,12 @@ import {
   Bluetooth,
   Video,
   BookOpen,
-  Calendar
+  Calendar,
+  Wrench
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { EquipmentSetupModal } from "@/components/EquipmentSetupModal";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -26,6 +28,8 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [analysisCount, setAnalysisCount] = useState(0);
   const [analyses, setAnalyses] = useState<any[]>([]);
+  const [equipmentModalOpen, setEquipmentModalOpen] = useState(false);
+  const [equipmentProfile, setEquipmentProfile] = useState<any>(null);
 
   useEffect(() => {
     loadProfile();
@@ -117,6 +121,15 @@ export default function Profile() {
         
         setAnalyses(analysesData || []);
         setAnalysisCount(analysesData?.length || 0);
+
+        // Load equipment profile
+        const { data: equipData } = await supabase
+          .from("player_equipment_profile")
+          .select("*")
+          .eq("player_id", playersData[0].id)
+          .maybeSingle();
+        
+        setEquipmentProfile(equipData);
       }
     }
 
@@ -291,19 +304,65 @@ export default function Profile() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
             <div>
-              <CardTitle className="text-lg">Pocket Radar</CardTitle>
-              <CardDescription className="mt-1">Last synced 2 hours ago</CardDescription>
+              <CardTitle className="text-lg">Equipment Setup</CardTitle>
+              <CardDescription className="mt-1">
+                {equipmentProfile ? "View or update your equipment" : "Tell us what equipment you use"}
+              </CardDescription>
             </div>
-            <Button variant="ghost" size="sm">
-              <Bluetooth className="h-4 w-4" />
-            </Button>
+            {!userId && (
+              <Button variant="ghost" size="sm" onClick={() => setEquipmentModalOpen(true)}>
+                <Wrench className="h-4 w-4" />
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
-            <Button variant="outline" className="w-full">
-              Sync Device
-            </Button>
+            {equipmentProfile ? (
+              <div className="space-y-2 text-sm">
+                {equipmentProfile.swing_sensors?.length > 0 && (
+                  <div>
+                    <span className="text-muted-foreground">Swing Sensors: </span>
+                    <span className="font-medium">{equipmentProfile.swing_sensors.join(", ")}</span>
+                  </div>
+                )}
+                {equipmentProfile.ball_trackers?.length > 0 && (
+                  <div>
+                    <span className="text-muted-foreground">Ball Trackers: </span>
+                    <span className="font-medium">{equipmentProfile.ball_trackers.join(", ")}</span>
+                  </div>
+                )}
+                {equipmentProfile.motion_tools?.length > 0 && (
+                  <div>
+                    <span className="text-muted-foreground">Motion Tools: </span>
+                    <span className="font-medium">{equipmentProfile.motion_tools.join(", ")}</span>
+                  </div>
+                )}
+                {equipmentProfile.training_facility && (
+                  <div>
+                    <span className="text-muted-foreground">Facility: </span>
+                    <span className="font-medium">{equipmentProfile.training_facility}</span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => setEquipmentModalOpen(true)}
+              >
+                Setup Equipment Profile
+              </Button>
+            )}
           </CardContent>
         </Card>
+
+        {firstPlayer && (
+          <EquipmentSetupModal
+            open={equipmentModalOpen}
+            onOpenChange={setEquipmentModalOpen}
+            playerId={firstPlayer.id}
+            onComplete={loadProfile}
+          />
+        )}
 
         {/* Settings - Only show for own profile */}
         {!userId && (
