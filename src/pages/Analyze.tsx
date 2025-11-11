@@ -25,6 +25,7 @@ export default function Analyze() {
   const [fps, setFps] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [gamePlanModalOpen, setGamePlanModalOpen] = useState(false);
+  const [contactFrame, setContactFrame] = useState<number | null>(null);
   
   // Form state
   const [swingType, setSwingType] = useState<string>("");
@@ -82,7 +83,7 @@ export default function Analyze() {
     });
   };
 
-  const handleFileSelect = async (file: File) => {
+  const handleFileSelect = async (file: File, metadata?: { contactFrame?: number; fps?: number }) => {
     if (!file.type.startsWith('video/')) {
       toast({
         title: "Invalid File",
@@ -98,16 +99,30 @@ export default function Analyze() {
     const previewUrl = URL.createObjectURL(file);
     setVideoPreview(previewUrl);
     
-    // Check FPS
-    const detectedFPS = await checkVideoFPS(file);
-    setFps(detectedFPS);
-    
-    if (detectedFPS < 240) {
-      toast({
-        title: "Low FPS Detected",
-        description: `Video is ${detectedFPS}fps. For best results, use 240fps or higher.`,
-        variant: "destructive",
-      });
+    // Handle metadata from camera recording
+    if (metadata) {
+      setContactFrame(metadata.contactFrame || null);
+      setFps(metadata.fps || null);
+      
+      if (metadata.contactFrame) {
+        toast({
+          title: "Video ready with contact marker",
+          description: `Contact marked at ${(metadata.contactFrame / 1000).toFixed(2)}s. Add swing details and submit.`,
+        });
+      }
+    } else {
+      // Check FPS for uploaded files
+      const detectedFPS = await checkVideoFPS(file);
+      setFps(detectedFPS);
+      setContactFrame(null);
+      
+      if (detectedFPS < 240) {
+        toast({
+          title: "Low FPS Detected",
+          description: `Video is ${detectedFPS}fps. For best results, use 240fps or higher.`,
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -138,6 +153,7 @@ export default function Analyze() {
     setSelectedFile(null);
     setVideoPreview(null);
     setFps(null);
+    setContactFrame(null);
     setSwingType("");
     setPitchType("");
     setResult("");
@@ -206,19 +222,20 @@ export default function Analyze() {
         .from('swing-videos')
         .getPublicUrl(fileName);
 
-      // Create analysis record
+      // Create analysis record - set to pending for real processing
       const { data: analysisData, error: analysisError } = await supabase
         .from('video_analyses')
         .insert({
           player_id: playerId,
           video_url: publicUrl,
-          processing_status: 'completed',
+          processing_status: 'pending',
           session_notes: notes || null,
-          brain_scores: Math.floor(Math.random() * 30) + 70, // Mock scores
-          body_scores: Math.floor(Math.random() * 30) + 70,
-          bat_scores: Math.floor(Math.random() * 30) + 70,
-          ball_scores: Math.floor(Math.random() * 30) + 70,
-        })
+          context_tag: swingType || null,
+          pitch_type: pitchType || null,
+          fps: fps,
+          contact_frame: contactFrame,
+          contact_time_ms: contactFrame ? contactFrame : null,
+        } as any)
         .select()
         .single();
 
@@ -227,8 +244,8 @@ export default function Analyze() {
       setUploadProgress(100);
 
       toast({
-        title: "Analysis Complete!",
-        description: "Your swing analysis is ready to view.",
+        title: "Video Uploaded!",
+        description: "Your video is being analyzed. This may take a few minutes.",
       });
 
       // Navigate to results

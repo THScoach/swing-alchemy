@@ -5,7 +5,7 @@ import { Camera, Square, Play, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface CameraRecorderProps {
-  onRecordingComplete: (file: File) => void;
+  onRecordingComplete: (file: File, metadata?: { contactFrame?: number; fps?: number }) => void;
 }
 
 export const CameraRecorder = ({ onRecordingComplete }: CameraRecorderProps) => {
@@ -113,7 +113,11 @@ export const CameraRecorder = ({ onRecordingComplete }: CameraRecorderProps) => 
       const file = new File([recordedBlob], `recording-${Date.now()}.webm`, {
         type: 'video/webm'
       });
-      onRecordingComplete(file);
+      const metadata = {
+        contactFrame: contactFrame || undefined,
+        fps: 240 // Attempted capture rate
+      };
+      onRecordingComplete(file, metadata);
       stopCamera();
       setRecordedBlob(null);
     }
