@@ -23,6 +23,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { EquipmentSetupModal } from "@/components/EquipmentSetupModal";
 import { CoachUploadModal } from "@/components/CoachUploadModal";
+import { FourBHistoryChart } from "@/components/FourBHistoryChart";
 import { cn } from "@/lib/utils";
 
 export default function Profile() {
@@ -41,6 +42,7 @@ export default function Profile() {
   const [isCoachOrAdmin, setIsCoachOrAdmin] = useState(false);
   const [fourbScores, setFourbScores] = useState<any>(null);
   const [contextFilter, setContextFilter] = useState<string>("All");
+  const [fourbHistory, setFourbHistory] = useState<any[]>([]);
 
   useEffect(() => {
     loadProfile();
@@ -109,6 +111,25 @@ export default function Profile() {
           .maybeSingle();
         
         setFourbScores(fourbData);
+
+        // Load 4B history
+        const { data: fourbHistoryData } = await supabase
+          .from("fourb_scores")
+          .select("*")
+          .eq("player_id", playersData[0].id)
+          .order("session_date", { ascending: false })
+          .limit(20);
+        
+        if (fourbHistoryData && fourbHistoryData.length > 0) {
+          setFourbHistory(fourbHistoryData.map(score => ({
+            date: score.session_date || score.created_at,
+            brain_score: score.brain_score,
+            body_score: score.body_score,
+            bat_score: score.bat_score,
+            ball_score: score.ball_score,
+            overall_score: score.overall_score
+          })));
+        }
       }
     } else {
       // User viewing their own profile
@@ -165,6 +186,25 @@ export default function Profile() {
         
         setFourbScores(fourbData);
 
+        // Load 4B history
+        const { data: fourbHistoryData } = await supabase
+          .from("fourb_scores")
+          .select("*")
+          .eq("player_id", playersData[0].id)
+          .order("session_date", { ascending: false })
+          .limit(20);
+        
+        if (fourbHistoryData && fourbHistoryData.length > 0) {
+          setFourbHistory(fourbHistoryData.map(score => ({
+            date: score.session_date || score.created_at,
+            brain_score: score.brain_score,
+            body_score: score.body_score,
+            bat_score: score.bat_score,
+            ball_score: score.ball_score,
+            overall_score: score.overall_score
+          })));
+        }
+
         // Load equipment profile
         const { data: equipData } = await supabase
           .from("player_equipment_profile")
@@ -219,6 +259,8 @@ export default function Profile() {
   };
 
   const getTierLabel = (tier: string | null | undefined): string => {
+    // Don't show subscription tier for admins viewing profiles
+    if (isCoachOrAdmin && userId) return "Admin";
     if (!tier || tier === "free") return "Free";
     if (tier === "self_service") return "Self-Service";
     if (tier === "group") return "Group";
@@ -578,6 +620,18 @@ export default function Profile() {
             </CardContent>
           </Card>
         </div>
+
+        {/* 4B History */}
+        <FourBHistoryChart 
+          data={fourbHistory} 
+          onUploadClick={() => {
+            if (firstPlayer) {
+              setSelectedPlayerId(firstPlayer.id);
+              setSelectedPlayerName(firstPlayer.name);
+              setUploadModalOpen(true);
+            }
+          }}
+        />
 
         {firstPlayer && (
           <EquipmentSetupModal
