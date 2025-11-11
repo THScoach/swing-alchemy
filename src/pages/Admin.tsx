@@ -13,7 +13,8 @@ import {
   Trophy, 
   CreditCard,
   Calendar,
-  Video
+  Video,
+  DollarSign
 } from "lucide-react";
 
 export default function Admin() {
@@ -142,6 +143,13 @@ export default function Admin() {
       icon: Calendar,
       path: "/admin/bookings",
       color: "text-cyan-500"
+    },
+    {
+      title: "Transactions",
+      description: "View payments and revenue analytics",
+      icon: DollarSign,
+      path: "/admin/transactions",
+      color: "text-emerald-600"
     }
   ];
 

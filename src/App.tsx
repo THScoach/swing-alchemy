@@ -30,11 +30,13 @@ import AdminGamification from "./pages/AdminGamification";
 import AdminBookings from "./pages/AdminBookings";
 import AdminProSwings from "./pages/AdminProSwings";
 import AdminTeamsOverview from "./pages/AdminTeamsOverview";
+import AdminTransactions from "./pages/AdminTransactions";
 import MyProgress from "./pages/MyProgress";
 import Calendar from "./pages/Calendar";
 import KnowledgeBase from "./pages/KnowledgeBase";
 import Team from "./pages/Team";
 import Brain from "./pages/Brain";
+import ThankYou from "./pages/ThankYou";
 
 const queryClient = new QueryClient();
 
@@ -80,6 +82,11 @@ const App = () => (
           <Route path="/admin/bookings" element={<ProtectedRoute><AdminBookings /></ProtectedRoute>} />
           <Route path="/admin/pro-swings" element={<ProtectedRoute><AdminProSwings /></ProtectedRoute>} />
           <Route path="/admin/teams-overview" element={<ProtectedRoute><AdminTeamsOverview /></ProtectedRoute>} />
+          <Route path="/admin/transactions" element={<ProtectedRoute><AdminTransactions /></ProtectedRoute>} />
+          
+          {/* Public success page */}
+          <Route path="/thank-you" element={<ThankYou />} />
+          <Route path="/facility" element={<Facility />} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

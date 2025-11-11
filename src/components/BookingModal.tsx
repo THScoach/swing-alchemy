@@ -59,12 +59,18 @@ export function BookingModal({ open, onOpenChange, sessionType }: BookingModalPr
         return;
       }
 
-      // Get player profile
+      // Get player and profile info
       const { data: players } = await supabase
         .from('players')
-        .select('id, organization_id')
+        .select('id, name, organization_id, contact')
         .eq('profile_id', user.id)
         .limit(1);
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('name, phone')
+        .eq('id', user.id)
+        .single();
 
       if (!players || players.length === 0) {
         toast.error("Please complete your profile first");
@@ -78,24 +84,39 @@ export function BookingModal({ open, onOpenChange, sessionType }: BookingModalPr
       const scheduledAt = new Date(date);
       scheduledAt.setHours(parseInt(hours), parseInt(minutes), 0, 0);
 
-      // Insert session booking
-      const { error } = await supabase
-        .from('sessions')
-        .insert({
-          player_id: player.id,
-          organization_id: player.organization_id,
-          session_type: sessionType,
-          scheduled_at: scheduledAt.toISOString(),
-          location: "The Hitting Skool Lab - Fenton, MO",
-          add_ons: addOns,
-          payment_status: 'pending',
-          status: 'scheduled'
-        });
+      // Get user email
+      const userEmail = user.email || player.contact || "";
+      const userPhone = profile?.phone || player.contact || "";
+      const userName = profile?.name || player.name || "Player";
 
-      if (error) throw error;
+      // Create checkout session
+      const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke("create-checkout", {
+        body: {
+          planType: sessionNames[sessionType],
+          sessionType: sessionType,
+          amount: totalPrice,
+          playerName: userName,
+          playerEmail: userEmail,
+          playerPhone: userPhone,
+          playerId: player.id,
+          scheduledDate: scheduledAt.toISOString(),
+          metadata: {
+            addOns: addOns,
+            location: "The Hitting Skool Lab - Fenton, MO",
+          },
+        },
+      });
 
-      toast.success("Session booked successfully! Check your calendar.");
-      onOpenChange(false);
+      if (checkoutError) throw checkoutError;
+
+      // Redirect to Stripe checkout
+      if (checkoutData?.url) {
+        window.open(checkoutData.url, '_blank');
+        toast.success("Redirecting to payment...");
+        onOpenChange(false);
+      } else {
+        throw new Error("No checkout URL returned");
+      }
       
       // Reset form
       setDate(undefined);
@@ -104,7 +125,7 @@ export function BookingModal({ open, onOpenChange, sessionType }: BookingModalPr
       
     } catch (error) {
       console.error('Booking error:', error);
-      toast.error("Failed to book session");
+      toast.error("Failed to create checkout session");
     } finally {
       setLoading(false);
     }
@@ -223,7 +244,7 @@ export function BookingModal({ open, onOpenChange, sessionType }: BookingModalPr
               Cancel
             </Button>
             <Button type="submit" disabled={loading} className="flex-1">
-              {loading ? "Processing..." : "Confirm Booking"}
+              {loading ? "Processing..." : `Proceed to Payment ($${totalPrice})`}
             </Button>
           </div>
         </form>

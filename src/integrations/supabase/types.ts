@@ -316,6 +316,69 @@ export type Database = {
           },
         ]
       }
+      communications: {
+        Row: {
+          channel: string
+          created_at: string | null
+          error_message: string | null
+          external_id: string | null
+          id: string
+          message_body: string
+          message_type: string
+          metadata: Json | null
+          player_id: string | null
+          recipient_email: string | null
+          recipient_phone: string | null
+          status: string
+          transaction_id: string | null
+        }
+        Insert: {
+          channel: string
+          created_at?: string | null
+          error_message?: string | null
+          external_id?: string | null
+          id?: string
+          message_body: string
+          message_type: string
+          metadata?: Json | null
+          player_id?: string | null
+          recipient_email?: string | null
+          recipient_phone?: string | null
+          status?: string
+          transaction_id?: string | null
+        }
+        Update: {
+          channel?: string
+          created_at?: string | null
+          error_message?: string | null
+          external_id?: string | null
+          id?: string
+          message_body?: string
+          message_type?: string
+          metadata?: Json | null
+          player_id?: string | null
+          recipient_email?: string | null
+          recipient_phone?: string | null
+          status?: string
+          transaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communications_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communications_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_modules: {
         Row: {
           action_items: string[] | null
@@ -1340,6 +1403,84 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transactions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          currency: string | null
+          customer_email: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          id: string
+          metadata: Json | null
+          organization_id: string | null
+          payment_status: string
+          plan_type: string
+          player_id: string | null
+          scheduled_date: string | null
+          session_type: string | null
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          currency?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          metadata?: Json | null
+          organization_id?: string | null
+          payment_status?: string
+          plan_type: string
+          player_id?: string | null
+          scheduled_date?: string | null
+          session_type?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          currency?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          metadata?: Json | null
+          organization_id?: string | null
+          payment_status?: string
+          plan_type?: string
+          player_id?: string | null
+          scheduled_date?: string | null
+          session_type?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
             referencedColumns: ["id"]
           },
         ]

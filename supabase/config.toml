@@ -14,3 +14,9 @@ verify_jwt = true
 
 [functions.send-weekly-progress-digest]
 verify_jwt = false
+
+[functions.create-checkout]
+verify_jwt = true
+
+[functions.send-booking-sms]
+verify_jwt = false
