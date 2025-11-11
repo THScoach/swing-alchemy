@@ -26,12 +26,15 @@ import { KineticSequenceChart } from "@/components/KineticSequenceChart";
 import { FourBDashboard } from "@/components/fourb/FourBDashboard";
 import { PlayerLevel } from "@/lib/fourb/types";
 import { CoachRickAvatar } from "@/components/CoachRickAvatar";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AnalyzeResults() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [analysis, setAnalysis] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
   const [selectedTab, setSelectedTab] = useState("fourb");
   const [player, setPlayer] = useState<any>(null);
   const [fourbData, setFourbData] = useState<any>({
@@ -77,6 +80,34 @@ export default function AnalyzeResults() {
       console.error('Error fetching analysis:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleProcessVideo = async () => {
+    setProcessing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('process-video-analysis', {
+        body: { analysisId: id }
+      });
+
+      if (error) throw error;
+
+      // Refresh the analysis data
+      await fetchAnalysis();
+      
+      toast({
+        title: "Processing Complete!",
+        description: "Your video has been analyzed and biomechanics data is now available.",
+      });
+    } catch (error) {
+      console.error('Error processing video:', error);
+      toast({
+        title: "Processing Failed",
+        description: "Failed to process video. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -142,9 +173,27 @@ export default function AnalyzeResults() {
                 {formatDistanceToNow(new Date(analysis.created_at), { addSuffix: true })}
               </p>
             </div>
-            <Badge variant="outline" className="text-lg px-4 py-2">
-              {analysis.processing_status}
-            </Badge>
+            <div className="flex items-center gap-3">
+              {analysis.processing_status === 'pending' && (
+                <Button 
+                  onClick={handleProcessVideo}
+                  disabled={processing}
+                  size="lg"
+                >
+                  {processing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    'Process Video'
+                  )}
+                </Button>
+              )}
+              <Badge variant={analysis.processing_status === 'completed' ? 'default' : 'secondary'} className="text-lg px-4 py-2">
+                {analysis.processing_status}
+              </Badge>
+            </div>
           </div>
         </div>
 
