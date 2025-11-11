@@ -1,8 +1,10 @@
-import { Home, Video, TrendingUp, Library, User } from "lucide-react";
+import { Home, Video, TrendingUp, Library, User, Shield, Users, MessageSquare, BookOpen } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
-const navItems = [
+const playerNavItems = [
   { icon: Home, label: "Feed", path: "/feed" },
   { icon: Video, label: "Analyze", path: "/analyze" },
   { icon: TrendingUp, label: "Progress", path: "/my-progress" },
@@ -10,8 +12,35 @@ const navItems = [
   { icon: User, label: "Profile", path: "/profile" },
 ];
 
+const adminNavItems = [
+  { icon: Shield, label: "Dashboard", path: "/admin" },
+  { icon: Users, label: "Players", path: "/admin/players" },
+  { icon: MessageSquare, label: "Messages", path: "/admin/messaging" },
+  { icon: BookOpen, label: "Content", path: "/admin/content" },
+  { icon: User, label: "Profile", path: "/profile" },
+];
+
 export const BottomNav = () => {
   const location = useLocation();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const isAdminRoute = location.pathname.startsWith('/admin');
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase.rpc("has_role", {
+          _user_id: user.id,
+          _role: "admin",
+        });
+        setIsAdmin(!!data);
+      }
+    };
+    checkAdmin();
+  }, []);
+
+  // Show admin nav when on admin routes AND user is admin
+  const navItems = (isAdminRoute && isAdmin) ? adminNavItems : playerNavItems;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 lg:hidden">

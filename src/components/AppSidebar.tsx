@@ -53,6 +53,7 @@ export const AppSidebar = () => {
 
   const isAdmin = roles.includes('admin');
   const isCoach = roles.includes('coach') || isAdmin;
+  const isAdminRoute = location.pathname.startsWith('/admin');
 
   return (
     <aside className="hidden lg:flex lg:flex-col lg:w-60 bg-secondary text-secondary-foreground border-r border-border h-screen fixed left-0 top-0">
@@ -68,37 +69,41 @@ export const AppSidebar = () => {
 
       {/* Navigation */}
       <nav className="flex-1 py-4 overflow-y-auto">
-        {/* Player Navigation */}
-        <div className="px-3 mb-6">
-          <ul className="space-y-1">
-            {playerNavItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.path;
-              
-              return (
-                <li key={item.path}>
-                  <Link
-                    to={item.path}
-                    className={cn(
-                      "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm font-medium",
-                      isActive 
-                        ? "bg-primary text-primary-foreground" 
-                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                    )}
-                  >
-                    <Icon className="h-5 w-5" />
-                    <span>{item.label}</span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
+        {/* Show Player Nav only when NOT on admin routes OR when admin wants to switch back */}
+        {!isAdminRoute && (
+          <div className="px-3 mb-6">
+            <ul className="space-y-1">
+              {playerNavItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = location.pathname === item.path;
+                
+                return (
+                  <li key={item.path}>
+                    <Link
+                      to={item.path}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm font-medium",
+                        isActive 
+                          ? "bg-primary text-primary-foreground" 
+                          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                      )}
+                    >
+                      <Icon className="h-5 w-5" />
+                      <span>{item.label}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
 
-        {/* Admin Navigation */}
+        {/* Show Admin Nav when user is admin */}
         {isAdmin && (
-          <div className="px-3 border-t border-border/50 pt-4">
-            <div className="text-xs font-semibold text-muted-foreground px-3 mb-2">ADMIN</div>
+          <div className={cn("px-3", !isAdminRoute && "border-t border-border/50 pt-4")}>
+            {!isAdminRoute && (
+              <div className="text-xs font-semibold text-muted-foreground px-3 mb-2">ADMIN</div>
+            )}
             <ul className="space-y-1">
               {adminNavItems.map((item) => {
                 const Icon = item.icon;
@@ -122,6 +127,19 @@ export const AppSidebar = () => {
                 );
               })}
             </ul>
+          </div>
+        )}
+
+        {/* Quick switch back to player view when on admin routes */}
+        {isAdminRoute && isAdmin && (
+          <div className="px-3 mt-4 pt-4 border-t border-border/50">
+            <Link
+              to="/feed"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            >
+              <Home className="h-5 w-5" />
+              <span>Back to Feed</span>
+            </Link>
           </div>
         )}
       </nav>

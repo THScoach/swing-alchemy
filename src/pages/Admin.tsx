@@ -19,6 +19,7 @@ export default function Admin() {
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
     checkAdminAccess();
@@ -41,6 +42,14 @@ export default function Admin() {
       return;
     }
 
+    // Load admin profile
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .single();
+    
+    setProfile(profileData);
     setIsAdmin(true);
     setLoading(false);
   };
@@ -124,11 +133,18 @@ export default function Admin() {
   return (
     <AppLayout>
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Admin Control Panel</h1>
-          <p className="text-muted-foreground text-lg">
-            Manage all aspects of The Hitting Skool platform
-          </p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold mb-2">Admin Control Panel</h1>
+            <p className="text-muted-foreground text-lg">
+              Manage all aspects of The Hitting Skool platform
+            </p>
+          </div>
+          {profile && (
+            <p className="text-sm text-muted-foreground hidden md:block">
+              Welcome back, {profile.name?.split(' ')[0] || 'Coach'}
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
