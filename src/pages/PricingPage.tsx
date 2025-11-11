@@ -26,54 +26,57 @@ const tiers = [
     highlighted: false,
   },
   {
-    name: "Self-Service",
+    name: "Remote Starter",
     price: "$29",
     period: "/mo",
-    description: "DIY analysis and training",
+    description: "Fix your swing fast — without overpaying for lessons",
     features: [
-      { text: "Unlimited video uploads", included: true },
-      { text: "Full 4B analysis", included: true },
-      { text: "S2 Cognition upload", included: true },
-      { text: "Pocket Radar integration", included: true },
+      { text: "Instant 4B + Tempo analysis", included: true },
+      { text: "Drill recommendations that match your swing", included: true },
+      { text: "Weekly 'Coach Rick Breakdown' videos", included: true },
+      { text: "Access to The Hitting Skool community", included: true },
       { text: "Full course access", included: true },
-      { text: "Feed content", included: true },
-      { text: "Group Zoom calls", included: false },
-      { text: "1-on-1 Zoom calls", included: false },
+      { text: "Unlimited video uploads", included: true },
+      { text: "Group coaching sessions", included: false },
+      { text: "1-on-1 coaching calls", included: false },
       { text: "Team dashboard", included: false },
     ],
-    cta: "Select Plan",
+    cta: "Start Remote Training",
     highlighted: false,
   },
   {
-    name: "Group Coaching",
+    name: "Remote Hybrid Coaching",
     price: "$99",
     period: "/mo",
-    description: "Weekly group sessions",
+    description: "Train with Coach Rick — anywhere in the world",
     features: [
-      { text: "Everything in Self-Service", included: true },
-      { text: "Weekly group Zoom calls", included: true },
-      { text: "Group chat & forum", included: true },
+      { text: "Everything in Remote Starter", included: true },
+      { text: "2 personalized swing reviews per month", included: true },
+      { text: "Custom drills + video feedback from Coach Rick", included: true },
+      { text: "Group coaching sessions", included: true },
+      { text: "Progress reports powered by 4B + Reboot metrics", included: true },
       { text: "Priority support", included: true },
-      { text: "1-on-1 Zoom calls", included: false },
+      { text: "Private 1-on-1 calls", included: false },
       { text: "Team dashboard", included: false },
     ],
     cta: "Select Plan",
     highlighted: false,
   },
   {
-    name: "1-on-1 Coaching",
-    price: "$299",
-    period: "/mo",
-    description: "Private sessions with Rick",
+    name: "Elite Remote Program",
+    price: "$399",
+    period: " / 8 weeks",
+    description: "Rebuild your swing from the ground up — the same process used with MLB hitters",
     features: [
-      { text: "Everything in Group Coaching", included: true },
-      { text: "Weekly private Zoom calls", included: true },
-      { text: "Direct messaging with Rick", included: true },
-      { text: "Personalized training plans", included: true },
+      { text: "Complete biomechanical evaluation", included: true },
+      { text: "Weekly live sessions with Coach Rick", included: true },
+      { text: "Personalized 8-week training plan", included: true },
+      { text: "Final swing performance report", included: true },
+      { text: "Direct messaging access", included: true },
       { text: "Priority support", included: true },
       { text: "Team dashboard", included: false },
     ],
-    cta: "Select Plan",
+    cta: "Start Elite Program",
     highlighted: true,
   },
   {
@@ -205,9 +208,9 @@ export default function PricingPage() {
       {/* Header */}
       <section className="bg-gradient-to-br from-secondary to-secondary/80 text-secondary-foreground py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl lg:text-6xl font-bold mb-6">Choose Your Plan</h1>
+          <h1 className="text-4xl lg:text-6xl font-bold mb-6">Train from Anywhere. Fix Your Swing Forever.</h1>
           <p className="text-xl text-secondary-foreground/90 max-w-2xl mx-auto">
-            Select the coaching tier that fits your goals and budget
+            Upload your swing. Get instant feedback. Learn exactly what's holding you back — and what to fix next.
           </p>
         </div>
       </section>
@@ -215,7 +218,10 @@ export default function PricingPage() {
       {/* Remote Training Tiers */}
       <section className="py-20 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center mb-12">Remote Training Plans</h2>
+          <h2 className="text-3xl font-bold text-center mb-4">Remote Training Plans</h2>
+          <p className="text-center text-muted-foreground text-lg mb-12 max-w-2xl mx-auto">
+            Get real data, drills, and AI feedback that tells you what's wrong and how to fix it.
+          </p>
           <div className="grid lg:grid-cols-3 gap-8">
             {tiers.map((tier) => (
               <Card
@@ -290,8 +296,11 @@ export default function PricingPage() {
               <MapPin className="h-6 w-6 text-primary" />
               <h2 className="text-3xl font-bold">In-Person & Hybrid Training</h2>
             </div>
-            <p className="text-muted-foreground text-lg">
+            <p className="text-muted-foreground text-lg mb-2">
               The Hitting Skool Lab – Fenton, MO
+            </p>
+            <p className="text-foreground text-lg font-medium">
+              Prefer live training? Or have a full team? Book in-person sessions powered by the same 4B system.
             </p>
           </div>
           
@@ -348,7 +357,7 @@ export default function PricingPage() {
           <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             <Card className="bg-primary text-primary-foreground">
               <CardContent className="p-8 text-center">
-                <h3 className="text-2xl font-bold mb-4">🧠 Ready to Train In-Person?</h3>
+                <h3 className="text-2xl font-bold mb-4">Ready to Train In-Person?</h3>
                 <p className="mb-6 opacity-90">
                   Get started with a complete 4B evaluation at our Fenton, MO facility
                 </p>
@@ -364,13 +373,13 @@ export default function PricingPage() {
             </Card>
             <Card className="bg-secondary text-secondary-foreground">
               <CardContent className="p-8 text-center">
-                <h3 className="text-2xl font-bold mb-4">🌎 Can't Make It to Fenton?</h3>
+                <h3 className="text-2xl font-bold mb-4">Can't Make It to Fenton?</h3>
                 <p className="mb-6 opacity-90">
-                  Start training remotely with full 4B analysis and coaching
+                  You don't need more swings. You need better feedback. Start today for $29 and know exactly what's holding your swing back.
                 </p>
                 <Link to="/auth" className="block">
                   <Button size="lg" variant="outline" className="w-full">
-                    Start Remote Coaching Online
+                    Start Remote Training
                   </Button>
                 </Link>
               </CardContent>
