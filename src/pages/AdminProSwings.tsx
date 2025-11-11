@@ -41,7 +41,11 @@ export default function AdminProSwings() {
     description: '',
     handedness: 'R',
     level: '',
-    video_url: ''
+    video_url: '',
+    player_name: '',
+    team: '',
+    height_inches: '',
+    weight_lbs: ''
   });
 
   useEffect(() => {
@@ -157,6 +161,11 @@ export default function AdminProSwings() {
                 handedness: newSwing.handedness,
                 level: newSwing.level,
                 video_url: publicUrl,
+                player_name: newSwing.player_name || newSwing.label,
+                team: newSwing.team || null,
+                height_inches: newSwing.height_inches ? Number(newSwing.height_inches) : null,
+                weight_lbs: newSwing.weight_lbs ? Number(newSwing.weight_lbs) : null,
+                is_model: true,
                 organization_id: orgMember?.organization_id ?? null,
                 created_by: user.id,
               });
@@ -187,6 +196,11 @@ export default function AdminProSwings() {
             handedness: newSwing.handedness,
             level: newSwing.level,
             video_url: urlToUse,
+            player_name: newSwing.player_name || newSwing.label,
+            team: newSwing.team || null,
+            height_inches: newSwing.height_inches ? Number(newSwing.height_inches) : null,
+            weight_lbs: newSwing.weight_lbs ? Number(newSwing.weight_lbs) : null,
+            is_model: true,
             organization_id: orgMember?.organization_id ?? null,
             created_by: user.id,
           });
@@ -299,12 +313,21 @@ export default function AdminProSwings() {
               {proSwings.map((swing) => (
                 <Card key={swing.id}>
                   <CardHeader>
-                  <div className="flex items-start justify-between">
+                   <div className="flex items-start justify-between">
                     <div>
-                      <CardTitle className="text-lg">{swing.label}</CardTitle>
-                      <CardDescription className="mt-1">
-                        {swing.description}
-                      </CardDescription>
+                      <CardTitle className="text-lg">{swing.player_name || swing.label}</CardTitle>
+                      {(swing.team || swing.level) && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {swing.team && `${swing.team}`}
+                          {swing.team && swing.level && ' • '}
+                          {swing.level}
+                        </p>
+                      )}
+                      {swing.description && (
+                        <CardDescription className="mt-1">
+                          {swing.description}
+                        </CardDescription>
+                      )}
                     </div>
                     <div className="flex gap-1">
                       {swing.has_analysis && (
@@ -324,9 +347,18 @@ export default function AdminProSwings() {
                       controls 
                       className="w-full aspect-video bg-black rounded-lg mb-4"
                     />
-                    <div className="flex gap-2 flex-wrap">
-                      <Badge variant="outline">{swing.handedness === 'R' ? 'Right' : 'Left'} Handed</Badge>
-                      {swing.level && <Badge variant="secondary">{swing.level}</Badge>}
+                    <div className="space-y-2">
+                      {(swing.height_inches || swing.weight_lbs) && (
+                        <p className="text-xs text-muted-foreground">
+                          {swing.height_inches && `${Math.floor(swing.height_inches / 12)}'${swing.height_inches % 12}"`}
+                          {swing.height_inches && swing.weight_lbs && ' • '}
+                          {swing.weight_lbs && `${swing.weight_lbs} lbs`}
+                        </p>
+                      )}
+                      <div className="flex gap-2 flex-wrap">
+                        <Badge variant="outline">{swing.handedness === 'R' ? 'Right' : 'Left'} Handed</Badge>
+                        {swing.level && <Badge variant="secondary">{swing.level}</Badge>}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -355,6 +387,53 @@ export default function AdminProSwings() {
                 value={newSwing.label}
                 onChange={(e) => setNewSwing({ ...newSwing, label: e.target.value })}
               />
+            </div>
+
+            <div>
+              <Label htmlFor="player_name">Player Name *</Label>
+              <Input
+                id="player_name"
+                placeholder="e.g., Freddie Freeman"
+                value={newSwing.player_name}
+                onChange={(e) => setNewSwing({ ...newSwing, player_name: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="team">Team</Label>
+              <Input
+                id="team"
+                placeholder="e.g., Dodgers"
+                value={newSwing.team}
+                onChange={(e) => setNewSwing({ ...newSwing, team: e.target.value })}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="height">Height (inches)</Label>
+                <Input
+                  id="height"
+                  type="number"
+                  min={55}
+                  max={82}
+                  placeholder="e.g., 77"
+                  value={newSwing.height_inches}
+                  onChange={(e) => setNewSwing({ ...newSwing, height_inches: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="weight">Weight (lbs)</Label>
+                <Input
+                  id="weight"
+                  type="number"
+                  min={120}
+                  max={280}
+                  placeholder="e.g., 215"
+                  value={newSwing.weight_lbs}
+                  onChange={(e) => setNewSwing({ ...newSwing, weight_lbs: e.target.value })}
+                />
+              </div>
             </div>
 
             <div>

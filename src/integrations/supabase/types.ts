@@ -996,13 +996,18 @@ export type Database = {
           fps_confirmed: number | null
           handedness: string | null
           has_analysis: boolean | null
+          height_inches: number | null
           id: string
+          is_model: boolean | null
           label: string
           level: string | null
           metrics_reboot: Json | null
           organization_id: string | null
+          player_name: string | null
+          team: string | null
           updated_at: string
           video_url: string
+          weight_lbs: number | null
           weirdness_flags: Json | null
         }
         Insert: {
@@ -1013,13 +1018,18 @@ export type Database = {
           fps_confirmed?: number | null
           handedness?: string | null
           has_analysis?: boolean | null
+          height_inches?: number | null
           id?: string
+          is_model?: boolean | null
           label: string
           level?: string | null
           metrics_reboot?: Json | null
           organization_id?: string | null
+          player_name?: string | null
+          team?: string | null
           updated_at?: string
           video_url: string
+          weight_lbs?: number | null
           weirdness_flags?: Json | null
         }
         Update: {
@@ -1030,13 +1040,18 @@ export type Database = {
           fps_confirmed?: number | null
           handedness?: string | null
           has_analysis?: boolean | null
+          height_inches?: number | null
           id?: string
+          is_model?: boolean | null
           label?: string
           level?: string | null
           metrics_reboot?: Json | null
           organization_id?: string | null
+          player_name?: string | null
+          team?: string | null
           updated_at?: string
           video_url?: string
+          weight_lbs?: number | null
           weirdness_flags?: Json | null
         }
         Relationships: [
