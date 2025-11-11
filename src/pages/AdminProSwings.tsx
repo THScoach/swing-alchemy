@@ -34,7 +34,7 @@ export default function AdminProSwings() {
   const [proSwings, setProSwings] = useState<any[]>([]);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [newSwing, setNewSwing] = useState({
     label: '',
@@ -92,10 +92,10 @@ export default function AdminProSwings() {
       return;
     }
 
-    if (!newSwing.video_url && !file) {
+    if (!newSwing.video_url && files.length === 0) {
       toast({
         title: "Video Required",
-        description: "Add a video URL or upload a video file.",
+        description: "Add a video URL or upload video file(s).",
         variant: "destructive",
       });
       return;
@@ -117,70 +117,97 @@ export default function AdminProSwings() {
         .eq('user_id', user.id)
         .maybeSingle();
 
-      let videoUrl = newSwing.video_url?.trim() || "";
+      // Handle multiple files or single URL
+      const filesToUpload = files.length > 0 ? files : [];
+      const urlToUse = !filesToUpload.length ? newSwing.video_url?.trim() : "";
 
-      // If file is provided, upload it and override videoUrl
-      if (file) {
-        const ext = file.name.split('.').pop() || 'mp4';
-        const path = `pro-swings/${user.id}/${Date.now()}-${newSwing.label
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')}.${ext}`;
+      if (filesToUpload.length > 0) {
+        // Upload multiple files
+        let successCount = 0;
+        for (let i = 0; i < filesToUpload.length; i++) {
+          const file = filesToUpload[i];
+          try {
+            const ext = file.name.split('.').pop() || 'mp4';
+            const path = `pro-swings/${user.id}/${Date.now()}-${newSwing.label
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, '-')}-${i}.${ext}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from('pro-swings')
-          .upload(path, file, {
-            cacheControl: '3600',
-            upsert: false
-          });
+            const { error: uploadError } = await supabase.storage
+              .from('pro-swings')
+              .upload(path, file, {
+                cacheControl: '3600',
+                upsert: false
+              });
 
-        if (uploadError) {
-          console.error('Error uploading pro swing file:', uploadError);
-          setUploadError('Failed to upload video file.');
-          throw uploadError;
+            if (uploadError) {
+              console.error('Error uploading file:', uploadError);
+              continue;
+            }
+
+            const { data: { publicUrl } } = supabase.storage
+              .from('pro-swings')
+              .getPublicUrl(path);
+
+            // Create pro_swing row for each file
+            const { error: insertError } = await supabase
+              .from('pro_swings')
+              .insert({
+                label: `${newSwing.label}${filesToUpload.length > 1 ? ` (${i + 1})` : ''}`,
+                description: newSwing.description,
+                handedness: newSwing.handedness,
+                level: newSwing.level,
+                video_url: publicUrl,
+                organization_id: orgMember?.organization_id ?? null,
+                created_by: user.id,
+              });
+
+            if (!insertError) {
+              successCount++;
+            }
+          } catch (err) {
+            console.error('Error processing file:', err);
+          }
         }
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('pro-swings')
-          .getPublicUrl(path);
+        if (successCount === 0) {
+          throw new Error('Failed to upload any files');
+        }
 
-        videoUrl = publicUrl;
-      }
-
-      if (!videoUrl) {
-        throw new Error('No valid video URL resolved.');
-      }
-
-      // Create pro_swing row
-      const { error: insertError } = await supabase
-        .from('pro_swings')
-        .insert({
-          label: newSwing.label,
-          description: newSwing.description,
-          handedness: newSwing.handedness,
-          level: newSwing.level,
-          video_url: videoUrl,
-          organization_id: orgMember?.organization_id ?? null,
-          created_by: user.id,
+        toast({
+          title: "Pro Swings Added",
+          description: `Successfully added ${successCount} of ${filesToUpload.length} swing(s).`,
         });
+      } else if (urlToUse) {
+        // Single URL upload
+        const { error: insertError } = await supabase
+          .from('pro_swings')
+          .insert({
+            label: newSwing.label,
+            description: newSwing.description,
+            handedness: newSwing.handedness,
+            level: newSwing.level,
+            video_url: urlToUse,
+            organization_id: orgMember?.organization_id ?? null,
+            created_by: user.id,
+          });
 
-      if (insertError) {
-        throw insertError;
+        if (insertError) {
+          throw insertError;
+        }
+
+        toast({
+          title: "Pro Swing Added",
+          description: "Model swing added to the library.",
+        });
       }
 
-      toast({
-        title: "Pro Swing Added",
-        description: "Model swing added to the library.",
-      });
-
-      setShowUploadDialog(false);
+      // Keep label and other fields, just clear description, URL and files
       setNewSwing({
-        label: '',
+        ...newSwing,
         description: '',
-        handedness: 'R',
-        level: '',
         video_url: ''
       });
-      setFile(null);
+      setFiles([]);
       loadProSwings();
     } catch (error: any) {
       console.error('Error adding pro swing:', error);
@@ -349,22 +376,28 @@ export default function AdminProSwings() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="video_file">Or Upload Video File</Label>
+              <Label htmlFor="video_file">Or Upload Video File(s)</Label>
               <Input
                 id="video_file"
                 type="file"
                 accept="video/*"
+                multiple
                 onChange={(e) => {
-                  const f = e.target.files?.[0] || null;
-                  setFile(f);
+                  const selectedFiles = Array.from(e.target.files || []);
+                  setFiles(selectedFiles);
                   setUploadError(null);
                 }}
               />
+              {files.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {files.length} file(s) selected
+                </p>
+              )}
               {uploadError && (
                 <p className="text-xs text-red-500">{uploadError}</p>
               )}
               <p className="text-xs text-muted-foreground">
-                If you upload a file, we'll store it and use that as the model swing video.
+                Select multiple files to batch upload swings with the same label.
               </p>
             </div>
 
