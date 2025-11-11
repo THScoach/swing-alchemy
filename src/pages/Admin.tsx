@@ -1,27 +1,27 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, Building2, CreditCard, TrendingUp, Activity, DollarSign, BookOpen } from "lucide-react";
+import { 
+  Users, 
+  Building2, 
+  MessageSquare, 
+  Zap, 
+  FileText, 
+  BookOpen, 
+  Trophy, 
+  CreditCard,
+  Calendar
+} from "lucide-react";
 
 export default function Admin() {
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    totalTeams: 0,
-    totalAnalyses: 0,
-    mrr: 0,
-    churnRate: 0,
-    growthRate: 0,
-  });
 
   useEffect(() => {
     checkAdminAccess();
-    fetchStats();
   }, []);
 
   const checkAdminAccess = async () => {
@@ -45,27 +45,6 @@ export default function Admin() {
     setLoading(false);
   };
 
-  const fetchStats = async () => {
-    // Fetch total users
-    const { count: userCount } = await supabase
-      .from("profiles")
-      .select("*", { count: "exact", head: true });
-
-    // Fetch total analyses
-    const { count: analysisCount } = await supabase
-      .from("video_analyses")
-      .select("*", { count: "exact", head: true });
-
-    setStats({
-      totalUsers: userCount || 0,
-      totalTeams: 0,
-      totalAnalyses: analysisCount || 0,
-      mrr: 0,
-      churnRate: 0,
-      growthRate: 0,
-    });
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -76,66 +55,105 @@ export default function Admin() {
 
   if (!isAdmin) return null;
 
-  const statCards = [
-    { label: "Total Users", value: stats.totalUsers, icon: Users, color: "text-blue-500" },
-    { label: "Total Teams", value: stats.totalTeams, icon: Building2, color: "text-green-500" },
-    { label: "Total Analyses", value: stats.totalAnalyses, icon: Activity, color: "text-purple-500" },
-    { label: "MRR", value: `$${stats.mrr.toLocaleString()}`, icon: DollarSign, color: "text-yellow-500" },
-    { label: "Churn Rate", value: `${stats.churnRate}%`, icon: TrendingUp, color: "text-red-500" },
-    { label: "Growth Rate", value: `${stats.growthRate}%`, icon: TrendingUp, color: "text-green-500" },
-  ];
-
-  const quickActions = [
-    { label: "View All Users", path: "/admin/players" },
-    { label: "View All Teams", path: "/admin/teams" },
-    { label: "Session Bookings", path: "/admin/bookings" },
-    { label: "Coach Rick's Notebook", path: "/admin/notebook" },
-    { label: "Manage Subscriptions", path: "/admin/subscriptions" },
+  const adminSections = [
+    {
+      title: "Players",
+      description: "Manage player profiles, assignments, and progress",
+      icon: Users,
+      path: "/admin/players",
+      color: "text-blue-500"
+    },
+    {
+      title: "Teams",
+      description: "Organize teams, rosters, and group training",
+      icon: Building2,
+      path: "/admin/teams",
+      color: "text-green-500"
+    },
+    {
+      title: "Messaging",
+      description: "Send announcements and communicate with players",
+      icon: MessageSquare,
+      path: "/admin/messaging",
+      color: "text-purple-500"
+    },
+    {
+      title: "Automations",
+      description: "Set up automated workflows and notifications",
+      icon: Zap,
+      path: "/admin/automations",
+      color: "text-yellow-500"
+    },
+    {
+      title: "Content",
+      description: "Manage training content, drills, and resources",
+      icon: FileText,
+      path: "/admin/content",
+      color: "text-orange-500"
+    },
+    {
+      title: "Coach's Notebook",
+      description: "Personal notes, observations, and player insights",
+      icon: BookOpen,
+      path: "/admin/notebook",
+      color: "text-indigo-500"
+    },
+    {
+      title: "Gamification",
+      description: "Configure points, levels, and player rewards",
+      icon: Trophy,
+      path: "/admin/gamification",
+      color: "text-primary"
+    },
+    {
+      title: "Subscriptions",
+      description: "Manage billing plans and subscription tiers",
+      icon: CreditCard,
+      path: "/admin/subscriptions",
+      color: "text-pink-500"
+    },
+    {
+      title: "Bookings",
+      description: "View and manage session bookings",
+      icon: Calendar,
+      path: "/admin/bookings",
+      color: "text-cyan-500"
+    }
   ];
 
   return (
     <AppLayout>
-      <div className="p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Manage users, teams, and platform analytics</p>
-          </div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold mb-2">Admin Control Panel</h1>
+          <p className="text-muted-foreground text-lg">
+            Manage all aspects of The Hitting Skool platform
+          </p>
+        </div>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {statCards.map((stat) => {
-              const Icon = stat.icon;
-              return (
-                <Card key={stat.label} className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">{stat.label}</p>
-                      <p className="text-3xl font-bold">{stat.value}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {adminSections.map((section) => {
+            const Icon = section.icon;
+            return (
+              <Card 
+                key={section.title}
+                className="hover:shadow-lg transition-shadow cursor-pointer group"
+                onClick={() => navigate(section.path)}
+              >
+                <CardHeader>
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className={`p-2 rounded-lg bg-accent group-hover:bg-accent/80 transition-colors`}>
+                      <Icon className={`h-6 w-6 ${section.color}`} />
                     </div>
-                    <Icon className={`h-12 w-12 ${stat.color}`} />
+                    <CardTitle className="text-xl">{section.title}</CardTitle>
                   </div>
-                </Card>
-              );
-            })}
-          </div>
-
-          {/* Quick Actions */}
-          <Card className="p-6">
-            <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-              {quickActions.map((action) => (
-                <Button
-                  key={action.label}
-                  variant="outline"
-                  className="h-20"
-                  onClick={() => navigate(action.path)}
-                >
-                  {action.label}
-                </Button>
-              ))}
-            </div>
-          </Card>
+                  <CardDescription className="text-sm">
+                    {section.description}
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            );
+          })}
         </div>
       </div>
     </AppLayout>
