@@ -176,7 +176,6 @@ export default function AdminProSwings() {
                 weight_lbs: newSwing.weight_lbs ? Number(newSwing.weight_lbs) : null,
                 is_model: true,
                 fps: fpsConfirmed,
-                fps_confirmed: true,
                 organization_id: orgMember?.organization_id ?? null,
                 created_by: user.id,
               })
@@ -215,7 +214,6 @@ export default function AdminProSwings() {
             weight_lbs: newSwing.weight_lbs ? Number(newSwing.weight_lbs) : null,
             is_model: true,
             fps: fpsConfirmed,
-            fps_confirmed: true,
             organization_id: orgMember?.organization_id ?? null,
             created_by: user.id,
           })
