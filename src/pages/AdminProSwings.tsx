@@ -36,6 +36,9 @@ export default function AdminProSwings() {
   const [uploading, setUploading] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [fpsConfirmed, setFpsConfirmed] = useState<number | null>(null);
+  const [showFpsDialog, setShowFpsDialog] = useState(false);
+  const [manualFps, setManualFps] = useState<string>("240");
   const [newSwing, setNewSwing] = useState({
     label: '',
     description: '',
@@ -105,6 +108,12 @@ export default function AdminProSwings() {
       return;
     }
 
+    // Require FPS confirmation for model swings
+    if (!fpsConfirmed) {
+      setShowFpsDialog(true);
+      return;
+    }
+
     setUploading(true);
 
     try {
@@ -153,7 +162,7 @@ export default function AdminProSwings() {
               .getPublicUrl(path);
 
             // Create pro_swing row for each file
-            const { error: insertError } = await supabase
+            const { data: proSwingData, error: insertError } = await supabase
               .from('pro_swings')
               .insert({
                 label: `${newSwing.label}${filesToUpload.length > 1 ? ` (${i + 1})` : ''}`,
@@ -166,9 +175,12 @@ export default function AdminProSwings() {
                 height_inches: newSwing.height_inches ? Number(newSwing.height_inches) : null,
                 weight_lbs: newSwing.weight_lbs ? Number(newSwing.weight_lbs) : null,
                 is_model: true,
+                fps_confirmed: fpsConfirmed,
                 organization_id: orgMember?.organization_id ?? null,
                 created_by: user.id,
-              });
+              })
+              .select()
+              .single();
 
             if (!insertError) {
               successCount++;
@@ -188,7 +200,7 @@ export default function AdminProSwings() {
         });
       } else if (urlToUse) {
         // Single URL upload
-        const { error: insertError } = await supabase
+        const { data: proSwingData, error: insertError } = await supabase
           .from('pro_swings')
           .insert({
             label: newSwing.label,
@@ -201,9 +213,12 @@ export default function AdminProSwings() {
             height_inches: newSwing.height_inches ? Number(newSwing.height_inches) : null,
             weight_lbs: newSwing.weight_lbs ? Number(newSwing.weight_lbs) : null,
             is_model: true,
+            fps_confirmed: fpsConfirmed,
             organization_id: orgMember?.organization_id ?? null,
             created_by: user.id,
-          });
+          })
+          .select()
+          .single();
 
         if (insertError) {
           throw insertError;
@@ -215,13 +230,21 @@ export default function AdminProSwings() {
         });
       }
 
-      // Keep label and other fields, just clear description, URL and files
+      // Reset form
       setNewSwing({
-        ...newSwing,
+        label: '',
         description: '',
-        video_url: ''
+        handedness: 'R',
+        level: '',
+        video_url: '',
+        player_name: '',
+        team: '',
+        height_inches: '',
+        weight_lbs: ''
       });
       setFiles([]);
+      setFpsConfirmed(null);
+      setManualFps("240");
       setShowUploadDialog(false);
       await loadProSwings();
     } catch (error: any) {
@@ -503,13 +526,19 @@ export default function AdminProSwings() {
             </div>
 
             <div>
-              <Label htmlFor="level">Level</Label>
-              <Input
-                id="level"
-                placeholder="e.g., MLB, College, HS"
-                value={newSwing.level}
-                onChange={(e) => setNewSwing({ ...newSwing, level: e.target.value })}
-              />
+              <Label htmlFor="level">Level *</Label>
+              <Select value={newSwing.level} onValueChange={(value) => setNewSwing({ ...newSwing, level: value })}>
+                <SelectTrigger id="level">
+                  <SelectValue placeholder="Select level..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="MLB">MLB</SelectItem>
+                  <SelectItem value="Pro">Pro</SelectItem>
+                  <SelectItem value="College">College</SelectItem>
+                  <SelectItem value="HS">High School</SelectItem>
+                  <SelectItem value="Youth">Youth</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -518,7 +547,83 @@ export default function AdminProSwings() {
               Cancel
             </Button>
             <Button onClick={handleUploadSwing} disabled={uploading}>
-              {uploading ? "Adding..." : "Add Pro Swing"}
+              {uploading ? "Adding..." : fpsConfirmed ? "Add Pro Swing" : "Next: Confirm FPS"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* FPS Confirmation Dialog */}
+      <Dialog open={showFpsDialog} onOpenChange={setShowFpsDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Frame Rate</DialogTitle>
+            <DialogDescription>
+              Model/Pro swings require accurate FPS for Reboot-style biomechanical analysis
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Frame Rate (FPS) *</Label>
+              <p className="text-xs text-muted-foreground">
+                Enter the confirmed frame rate for these videos. This is critical for accurate timing and kinematic calculations.
+              </p>
+              <Input
+                type="number"
+                min={30}
+                max={480}
+                placeholder="e.g., 240"
+                value={manualFps}
+                onChange={(e) => setManualFps(e.target.value)}
+              />
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {[480, 300, 240, 120, 60, 30].map((fps) => (
+                <Button
+                  key={fps}
+                  type="button"
+                  variant={manualFps === String(fps) ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setManualFps(String(fps))}
+                >
+                  {fps} fps
+                </Button>
+              ))}
+            </div>
+
+            {manualFps && Number(manualFps) < 120 && (
+              <p className="text-xs text-yellow-600 dark:text-yellow-500">
+                ⚠️ For professional-grade Reboot analysis, ≥120 fps is recommended (ideally 240+ fps)
+              </p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowFpsDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                const fps = Number(manualFps);
+                if (fps && fps > 0) {
+                  setFpsConfirmed(fps);
+                  setShowFpsDialog(false);
+                  toast({
+                    title: "FPS Confirmed",
+                    description: `Frame rate set to ${fps} fps. Ready to upload.`,
+                  });
+                } else {
+                  toast({
+                    title: "Invalid FPS",
+                    description: "Please enter a valid frame rate.",
+                    variant: "destructive",
+                  });
+                }
+              }}
+            >
+              Confirm & Continue
             </Button>
           </DialogFooter>
         </DialogContent>
