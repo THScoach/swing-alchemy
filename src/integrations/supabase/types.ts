@@ -188,7 +188,10 @@ export type Database = {
         Row: {
           analysis_id: string | null
           back_leg_lift_time: number | null
+          com_foot_down_pct: number | null
           com_forward_movement_pct: number | null
+          com_max_forward_pct: number | null
+          com_negative_move_pct: number | null
           contact_time: number | null
           context_tag: Database["public"]["Enums"]["context_tag"] | null
           created_at: string
@@ -204,7 +207,10 @@ export type Database = {
         Insert: {
           analysis_id?: string | null
           back_leg_lift_time?: number | null
+          com_foot_down_pct?: number | null
           com_forward_movement_pct?: number | null
+          com_max_forward_pct?: number | null
+          com_negative_move_pct?: number | null
           contact_time?: number | null
           context_tag?: Database["public"]["Enums"]["context_tag"] | null
           created_at?: string
@@ -220,7 +226,10 @@ export type Database = {
         Update: {
           analysis_id?: string | null
           back_leg_lift_time?: number | null
+          com_foot_down_pct?: number | null
           com_forward_movement_pct?: number | null
+          com_max_forward_pct?: number | null
+          com_negative_move_pct?: number | null
           contact_time?: number | null
           context_tag?: Database["public"]["Enums"]["context_tag"] | null
           created_at?: string

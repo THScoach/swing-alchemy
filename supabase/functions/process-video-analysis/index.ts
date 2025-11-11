@@ -74,11 +74,18 @@ serve(async (req) => {
       overall_percentile: Math.round(45 + Math.random() * 45), // 45-90 percentile
     };
 
-    // Generate Body Data (Reboot Motion simulation)
+    // Generate Body Data (Reboot Motion simulation with extended COM metrics)
+    const comNegativeMove = Math.round((25 + Math.random() * 20) * 100) / 100; // 25-45%
+    const comFootDown = Math.round((35 + Math.random() * 20) * 100) / 100; // 35-55%
+    const comMaxForward = Math.round((50 + Math.random() * 20) * 100) / 100; // 50-70%
+    
     const bodyData = {
       player_id: analysis.player_id,
       analysis_id: analysisId,
-      com_forward_movement_pct: Math.round((10 + Math.random() * 50) * 100) / 100, // 10-60%
+      com_forward_movement_pct: comMaxForward, // Use max forward as legacy metric
+      com_negative_move_pct: comNegativeMove,
+      com_foot_down_pct: comFootDown,
+      com_max_forward_pct: comMaxForward,
       spine_stability_score: Math.round((65 + Math.random() * 30) * 100) / 100, // 65-95
       spine_angle_var_deg: Math.round((3 + Math.random() * 12) * 100) / 100, // 3-15°
       head_movement_inches: Math.round((2 + Math.random() * 8) * 100) / 100, // 2-10 inches

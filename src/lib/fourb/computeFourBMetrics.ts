@@ -43,7 +43,33 @@ export interface WeirdnessFlags {
 // ============================================================================
 
 /**
- * Compute COM forward movement percentage
+ * Generic range-based scoring function for Reboot-style metrics
+ */
+export function rangeScore(
+  value: number | null | undefined,
+  idealMin: number,
+  idealMax: number,
+  hardMin: number,
+  hardMax: number
+): number {
+  if (value == null || isNaN(value)) return 50;
+
+  // Hard guardrail - outside realistic bounds
+  if (value < hardMin || value > hardMax) return 40;
+
+  // Inside ideal range - perfect score
+  if (value >= idealMin && value <= idealMax) return 100;
+
+  // Calculate distance from ideal range
+  const dist = value < idealMin ? idealMin - value : value - idealMax;
+
+  // Lose 5 points per unit outside ideal range, floor at 60
+  const score = 100 - dist * 5;
+  return Math.max(60, Math.min(100, score));
+}
+
+/**
+ * Compute COM forward movement percentage (legacy single metric)
  */
 export function computeCOMForward(
   pelvisStance: { x: number; y: number },
@@ -64,6 +90,39 @@ export function computeCOMForward(
   const score = scoreCOM(comPct, config.mode);
 
   return { value: comPct, score, confidence };
+}
+
+/**
+ * Reboot-style extended COM scoring using three-phase metrics
+ */
+export function scoreRebootCOM(
+  negativeMovePct: number | null,
+  footDownPct: number | null,
+  maxForwardPct: number | null
+): {
+  negMoveScore: number;
+  footDownScore: number;
+  maxForwardScore: number;
+  overallScore: number;
+} {
+  // Score each phase using rangeScore
+  const negMoveScore = rangeScore(negativeMovePct, 30, 40, 10, 60);
+  const footDownScore = rangeScore(footDownPct, 40, 50, 20, 70);
+  const maxForwardScore = rangeScore(maxForwardPct, 55, 65, 30, 80);
+
+  // Weighted overall: max_forward is most important
+  const overallScore = Math.round(
+    maxForwardScore * 0.5 +
+    footDownScore * 0.3 +
+    negMoveScore * 0.2
+  );
+
+  return {
+    negMoveScore,
+    footDownScore,
+    maxForwardScore,
+    overallScore: Math.max(40, Math.min(100, overallScore))
+  };
 }
 
 function scoreCOM(comPct: number, mode: AnalysisMode): number {
