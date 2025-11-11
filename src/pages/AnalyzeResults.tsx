@@ -110,7 +110,13 @@ export default function AnalyzeResults() {
     setProcessing(true);
     try {
       const { data, error } = await supabase.functions.invoke('process-video-analysis', {
-        body: { analysisId: id }
+        body: { 
+          analysisId: id,
+          mode: analysis.mode || 'player',
+          level: analysis.level || player?.player_level,
+          handedness: analysis.handedness || analysis.hitter_side || player?.bats,
+          fps_confirmed: analysis.fps_confirmed || analysis.fps,
+        }
       });
 
       if (error) throw error;

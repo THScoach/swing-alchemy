@@ -12,10 +12,18 @@ serve(async (req) => {
   }
 
   try {
-    const { analysisId } = await req.json();
+    const { analysisId, mode, level, handedness, fps_confirmed, source, proSwingId } = await req.json();
     
     if (!analysisId) {
       return new Response(JSON.stringify({ error: 'analysisId is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // For model mode, require fps_confirmed
+    if (mode === 'model' && !fps_confirmed) {
+      return new Response(JSON.stringify({ error: 'fps_confirmed is required for model mode' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -48,10 +56,17 @@ serve(async (req) => {
     }
 
     console.log('Processing video analysis for player:', analysis.player_id);
+    console.log('Mode:', mode || analysis.mode || 'player');
+    console.log('FPS Confirmed:', fps_confirmed || analysis.fps_confirmed);
 
     // Get player level for scoring adjustments
     type PlayerLevel = 'Youth (10-13)' | 'HS (14-18)' | 'College' | 'Pro' | 'Other';
     const playerLevel: PlayerLevel = (analysis.players?.player_level as PlayerLevel) || 'Other';
+    
+    // Use provided level or fall back to player level
+    const effectiveLevel = level || (analysis.players?.player_level as string) || 'Other';
+    const effectiveHandedness = handedness || analysis.hitter_side || analysis.players?.bats || 'R';
+    const effectiveFps = fps_confirmed || analysis.fps_confirmed || 60;
     
     // Level-based target adjustments
     const levelMultipliers: Record<PlayerLevel, number> = {
@@ -180,68 +195,82 @@ serve(async (req) => {
     // For Model mode, compute Reboot-style metrics
     let metricsReboot = null;
     let weirdnessFlags = null;
+    const analysisMode = mode || analysis.mode || 'player';
 
-    if (analysis.mode === 'model' && analysis.fps_confirmed) {
+    if (analysisMode === 'model') {
       console.log('Computing Reboot metrics for model mode analysis');
       
-      // Use Reboot-style scoring (model-level bands)
-      const scoreCOM = (pct: number) => {
+      // Reboot-style scoring functions (model-level bands)
+      const scoreCOM = (pct: number): number => {
         if (pct >= 18 && pct <= 22) return 100;
         if (pct >= 15 && pct <= 25) return 80;
         if (pct >= 10 && pct <= 30) return 60;
         return 40;
       };
       
-      const scoreHead = (inches: number) => {
+      const scoreHead = (inches: number): number => {
         if (inches <= 4) return 100;
         if (inches <= 6) return 80;
         if (inches <= 10) return 60;
         return 40;
       };
       
-      const scoreSpine = (std: number) => {
+      const scoreSpine = (std: number): number => {
         if (std <= 6) return 100;
         if (std <= 10) return 80;
         if (std <= 15) return 60;
         return 40;
       };
       
-      const scoreBatSpeed = (speed: number, level: string) => {
-        const targets: Record<string, number> = { 'MLB': 75, 'Pro': 75, 'College': 70, 'HS': 65, 'Youth': 55 };
-        const target = targets[level] || 70;
+      const scoreBatSpeedModel = (speed: number, lvl: string): number => {
+        const targets: Record<string, number> = { 
+          'MLB': 75, 'Pro': 75, 'College': 70, 'HS': 65, 
+          'HS (14-18)': 65, 'Youth': 55, 'Youth (10-13)': 55, 'Other': 70 
+        };
+        const target = targets[lvl] || 70;
         if (speed >= target) return 100;
         if (speed >= target * 0.9) return 80;
         if (speed >= target * 0.8) return 60;
         return 40;
       };
       
-      const scoreAttackAngle = (angle: number) => {
+      const scoreAttackAngleModel = (angle: number): number => {
         if (angle >= 8 && angle <= 20) return 100;
         if (angle >= 5 && angle <= 25) return 80;
         if (angle >= 0 && angle <= 30) return 60;
         return 40;
       };
       
-      const scoreTimeInZone = (ms: number) => {
+      const scoreTimeInZoneModel = (ms: number): number => {
         if (ms >= 150 && ms <= 200) return 100;
         if (ms >= 120 && ms <= 220) return 80;
         if (ms >= 100 && ms <= 250) return 60;
         return 40;
       };
       
-      const scoreEV = (ev: number, level: string) => {
-        const targets: Record<string, number> = { 'MLB': 95, 'Pro': 95, 'College': 90, 'HS': 85, 'Youth': 75 };
-        const target = targets[level] || 90;
+      const scoreEVModel = (ev: number, lvl: string): number => {
+        const targets: Record<string, number> = { 
+          'MLB': 95, 'Pro': 95, 'College': 90, 'HS': 85,
+          'HS (14-18)': 85, 'Youth': 75, 'Youth (10-13)': 75, 'Other': 90 
+        };
+        const target = targets[lvl] || 90;
         if (ev >= target) return 100;
         if (ev >= target * 0.95) return 80;
         if (ev >= target * 0.9) return 60;
         return 40;
       };
       
-      const scoreLA = (la: number) => {
+      const scoreLAModel = (la: number): number => {
         if (la >= 10 && la <= 30) return 100;
         if (la >= 5 && la <= 35) return 80;
         if (la >= 0 && la <= 40) return 60;
+        return 40;
+      };
+      
+      const scoreRateModel = (rate: number, target: number = 50): number => {
+        if (rate >= target) return 100;
+        if (rate >= target * 0.8) return 80;
+        if (rate >= target * 0.6) return 60;
         return 40;
       };
 
@@ -251,7 +280,7 @@ serve(async (req) => {
         excessiveHeadMovement: bodyData.head_movement_inches > 18,
         poorSpineStability: bodyData.spine_angle_var_deg > 25,
         sequenceIncorrect: !bodyData.sequence_correct,
-        insufficientFrames: false // Can't check without raw frame data
+        insufficientFrames: false
       };
 
       const weirdnessMessages: string[] = [];
@@ -266,16 +295,21 @@ serve(async (req) => {
         has_any: weirdnessMessages.length > 0
       };
 
-      const levelForScoring = analysis.level || playerLevel.split(' ')[0];
-
       metricsReboot = {
-        fps_confirmed: analysis.fps_confirmed,
+        fps_confirmed: effectiveFps,
+        mode: 'model',
+        level: effectiveLevel,
+        handedness: effectiveHandedness,
+        
+        // Body metrics
         com_pct: bodyData.com_max_forward_pct,
         com_score: scoreCOM(bodyData.com_max_forward_pct),
         head_movement_inches: bodyData.head_movement_inches,
         head_score: scoreHead(bodyData.head_movement_inches),
         spine_std: bodyData.spine_angle_var_deg,
         spine_score: scoreSpine(bodyData.spine_angle_var_deg),
+        
+        // Sequence
         sequence: {
           pelvis_frame: 0,
           torso_frame: 0,
@@ -284,26 +318,31 @@ serve(async (req) => {
           score: bodyData.sequence_correct ? 100 : 50,
           details: bodyData.sequence_correct ? '3/3 transitions correct' : 'Sequence timing off'
         },
+        
+        // Bat metrics
         bat: {
           speed: batData.avg_bat_speed,
-          speed_score: scoreBatSpeed(batData.avg_bat_speed, levelForScoring),
+          speed_score: scoreBatSpeedModel(batData.avg_bat_speed, effectiveLevel),
           attack_angle: batData.attack_angle_avg,
-          attack_angle_score: scoreAttackAngle(batData.attack_angle_avg),
+          attack_angle_score: scoreAttackAngleModel(batData.attack_angle_avg),
           time_in_zone_ms: batData.time_in_zone_ms,
-          time_in_zone_score: scoreTimeInZone(batData.time_in_zone_ms)
+          time_in_zone_score: scoreTimeInZoneModel(batData.time_in_zone_ms)
         },
+        
+        // Ball metrics
         ball: {
           ev90: ballData.ev90,
-          ev90_score: scoreEV(ballData.ev90, levelForScoring),
+          ev90_score: scoreEVModel(ballData.ev90, effectiveLevel),
           la90: ballData.la90,
-          la90_score: scoreLA(ballData.la90),
+          la90_score: scoreLAModel(ballData.la90),
           hard_hit_rate: ballData.hard_hit_rate,
           barrel_rate: ballData.barrel_like_rate
         },
+        
         weirdness: weirdnessFlags
       };
 
-      console.log('Reboot metrics computed:', metricsReboot);
+      console.log('Reboot metrics computed:', JSON.stringify(metricsReboot, null, 2));
     }
 
     // Update video_analyses with completion status and scores
@@ -315,8 +354,17 @@ serve(async (req) => {
       ball_scores: Math.min(100, Math.max(0, ballScore)),
     };
 
-    if (metricsReboot) {
-      updateData.metrics_reboot = metricsReboot;
+    // Add model-specific fields if in model mode
+    if (analysisMode === 'model') {
+      updateData.mode = 'model';
+      updateData.level = effectiveLevel;
+      updateData.handedness = effectiveHandedness;
+      updateData.fps_confirmed = effectiveFps;
+      updateData.is_pro_model = true;
+      
+      if (metricsReboot) {
+        updateData.metrics_reboot = metricsReboot;
+      }
     }
 
     const { error: updateError } = await supabase
@@ -330,6 +378,27 @@ serve(async (req) => {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    // If this is from a Pro Swing upload, also update the pro_swings table
+    if (source === 'pro_swing' && proSwingId && metricsReboot) {
+      console.log('Updating pro_swings record:', proSwingId);
+      const { error: proSwingError } = await supabase
+        .from('pro_swings')
+        .update({
+          has_analysis: true,
+          fps_confirmed: effectiveFps,
+          metrics_reboot: metricsReboot,
+          weirdness_flags: weirdnessFlags,
+        })
+        .eq('id', proSwingId);
+
+      if (proSwingError) {
+        console.error('Error updating pro_swings:', proSwingError);
+        // Don't fail the whole request, just log it
+      } else {
+        console.log('Successfully updated pro_swings record');
+      }
     }
 
     console.log('Successfully processed video analysis:', analysisId);
