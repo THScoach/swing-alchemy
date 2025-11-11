@@ -208,7 +208,8 @@ export default function AdminProSwings() {
         video_url: ''
       });
       setFiles([]);
-      loadProSwings();
+      setShowUploadDialog(false);
+      await loadProSwings();
     } catch (error: any) {
       console.error('Error adding pro swing:', error);
       toast({
