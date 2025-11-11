@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -31,10 +31,11 @@ export function ComparisonModal({ isOpen, onClose, currentAnalysisId, playerId }
   const [selectedCompareId, setSelectedCompareId] = useState<string>("");
   const [currentScores, setCurrentScores] = useState<any>(null);
   const [compareScores, setCompareScores] = useState<any>(null);
-  const [syncPlay, setSyncPlay] = useState(true);
   const [ghostMode, setGhostMode] = useState(false);
-  const currentVideoRef = useState<HTMLVideoElement | null>(null);
-  const compareVideoRef = useState<HTMLVideoElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  
+  const currentVideoRef = useRef<HTMLVideoElement | null>(null);
+  const compareVideoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     if (isOpen) {

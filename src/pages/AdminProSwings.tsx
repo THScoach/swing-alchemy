@@ -1,0 +1,328 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { AppLayout } from "@/components/AppLayout";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { ArrowLeft, Plus, Play, Trash2, Edit } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+export default function AdminProSwings() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [proSwings, setProSwings] = useState<any[]>([]);
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [newSwing, setNewSwing] = useState({
+    label: '',
+    description: '',
+    handedness: 'R',
+    level: '',
+    video_url: ''
+  });
+
+  useEffect(() => {
+    checkAdminAccess();
+  }, []);
+
+  const checkAdminAccess = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+
+    const { data: hasAdminRole } = await supabase.rpc("has_role", {
+      _user_id: user.id,
+      _role: "admin",
+    });
+
+    if (!hasAdminRole) {
+      navigate("/feed");
+      return;
+    }
+
+    setIsAdmin(true);
+    loadProSwings();
+  };
+
+  const loadProSwings = async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from('pro_swings')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    setProSwings(data || []);
+    setLoading(false);
+  };
+
+  const handleUploadSwing = async () => {
+    if (!newSwing.label || !newSwing.video_url) {
+      toast({
+        title: "Missing Fields",
+        description: "Please provide a label and video URL.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Get user's organization
+      const { data: orgMember } = await supabase
+        .from('organization_members')
+        .select('organization_id')
+        .eq('user_id', user?.id)
+        .single();
+
+      const { error } = await supabase
+        .from('pro_swings')
+        .insert({
+          ...newSwing,
+          organization_id: orgMember?.organization_id,
+          created_by: user?.id
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Pro Swing Added",
+        description: "Successfully added to the library.",
+      });
+
+      setShowUploadDialog(false);
+      setNewSwing({
+        label: '',
+        description: '',
+        handedness: 'R',
+        level: '',
+        video_url: ''
+      });
+      loadProSwings();
+    } catch (error) {
+      console.error('Error uploading pro swing:', error);
+      toast({
+        title: "Upload Failed",
+        description: "Failed to add pro swing. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('pro_swings')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Deleted",
+        description: "Pro swing removed from library.",
+      });
+      loadProSwings();
+    } catch (error) {
+      console.error('Error deleting pro swing:', error);
+      toast({
+        title: "Delete Failed",
+        description: "Failed to delete pro swing.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) return null;
+
+  return (
+    <AppLayout>
+      <div className="p-8">
+        <div className="max-w-7xl mx-auto">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => navigate("/admin")}
+            className="mb-4 gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Admin
+          </Button>
+          
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Pro Swing Library</h1>
+              <p className="text-muted-foreground">Curated reference swings for comparison and analysis</p>
+            </div>
+            <Button onClick={() => setShowUploadDialog(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Pro Swing
+            </Button>
+          </div>
+
+          {proSwings.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Play className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No Pro Swings Yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  Add reference swings to use in comparisons and ghost overlays
+                </p>
+                <Button onClick={() => setShowUploadDialog(true)}>
+                  Add First Pro Swing
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {proSwings.map((swing) => (
+                <Card key={swing.id}>
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-lg">{swing.label}</CardTitle>
+                        <CardDescription className="mt-1">
+                          {swing.description}
+                        </CardDescription>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="ghost" onClick={() => handleDelete(swing.id)}>
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <video 
+                      src={swing.video_url} 
+                      controls 
+                      className="w-full aspect-video bg-black rounded-lg mb-4"
+                    />
+                    <div className="flex gap-2 flex-wrap">
+                      <Badge variant="outline">{swing.handedness === 'R' ? 'Right' : 'Left'} Handed</Badge>
+                      {swing.level && <Badge variant="secondary">{swing.level}</Badge>}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Upload Dialog */}
+      <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Pro Swing</DialogTitle>
+            <DialogDescription>
+              Add a reference swing to the library for comparison
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="label">Label *</Label>
+              <Input
+                id="label"
+                placeholder="e.g., Mike Trout - HR Swing"
+                value={newSwing.label}
+                onChange={(e) => setNewSwing({ ...newSwing, label: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                placeholder="Brief description of this swing..."
+                value={newSwing.description}
+                onChange={(e) => setNewSwing({ ...newSwing, description: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="video_url">Video URL *</Label>
+              <Input
+                id="video_url"
+                type="url"
+                placeholder="https://..."
+                value={newSwing.video_url}
+                onChange={(e) => setNewSwing({ ...newSwing, video_url: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="handedness">Handedness</Label>
+              <Select 
+                value={newSwing.handedness} 
+                onValueChange={(value) => setNewSwing({ ...newSwing, handedness: value })}
+              >
+                <SelectTrigger id="handedness">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="R">Right Handed</SelectItem>
+                  <SelectItem value="L">Left Handed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="level">Level</Label>
+              <Input
+                id="level"
+                placeholder="e.g., MLB, College, HS"
+                value={newSwing.level}
+                onChange={(e) => setNewSwing({ ...newSwing, level: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowUploadDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUploadSwing} disabled={uploading}>
+              {uploading ? "Adding..." : "Add Pro Swing"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </AppLayout>
+  );
+}

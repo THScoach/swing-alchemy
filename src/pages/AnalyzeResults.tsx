@@ -15,6 +15,7 @@ import { formatDistanceToNow } from "date-fns";
 import { FourBDashboard } from "@/components/fourb/FourBDashboard";
 import { AdvancedVideoPlayer } from "@/components/video/AdvancedVideoPlayer";
 import { ComparisonModal } from "@/components/analysis/ComparisonModal";
+import { DrillRecommendations } from "@/components/analysis/DrillRecommendations";
 import { PlayerLevel } from "@/lib/fourb/types";
 import { useToast } from "@/hooks/use-toast";
 
@@ -263,6 +264,25 @@ export default function AnalyzeResults() {
           batData={fourbData.bat}
           ballData={fourbData.ball}
         />
+
+        {/* Drill Recommendations */}
+        {fourbData.brain || fourbData.body || fourbData.bat || fourbData.ball ? (
+          <div className="mt-8">
+            <DrillRecommendations
+              fourbScores={{
+                brain_score: fourbData.brain?.brain_score,
+                body_score: fourbData.body?.body_score,
+                bat_score: fourbData.bat?.bat_score,
+                ball_score: fourbData.ball?.ball_score,
+                overall_score: (fourbData.brain?.brain_score + fourbData.body?.body_score + fourbData.bat?.bat_score + fourbData.ball?.ball_score) / 4
+              }}
+              brainData={fourbData.brain}
+              bodyData={fourbData.body}
+              batData={fourbData.bat}
+              ballData={fourbData.ball}
+            />
+          </div>
+        ) : null}
 
         {/* Comparison Modal */}
         <ComparisonModal

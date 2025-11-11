@@ -448,6 +448,42 @@ export type Database = {
         }
         Relationships: []
       }
+      drills: {
+        Row: {
+          category: string
+          created_at: string
+          description: string
+          difficulty: string | null
+          duration_minutes: number | null
+          focus_metric: string
+          id: string
+          title: string
+          video_url: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description: string
+          difficulty?: string | null
+          duration_minutes?: number | null
+          focus_metric: string
+          id?: string
+          title: string
+          video_url?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string
+          difficulty?: string | null
+          duration_minutes?: number | null
+          focus_metric?: string
+          id?: string
+          title?: string
+          video_url?: string | null
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           created_at: string
@@ -938,6 +974,60 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pro_swings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          handedness: string | null
+          id: string
+          label: string
+          level: string | null
+          organization_id: string | null
+          updated_at: string
+          video_url: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          handedness?: string | null
+          id?: string
+          label: string
+          level?: string | null
+          organization_id?: string | null
+          updated_at?: string
+          video_url: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          handedness?: string | null
+          id?: string
+          label?: string
+          level?: string | null
+          organization_id?: string | null
+          updated_at?: string
+          video_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pro_swings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pro_swings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]

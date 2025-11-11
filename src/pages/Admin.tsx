@@ -12,7 +12,8 @@ import {
   BookOpen, 
   Trophy, 
   CreditCard,
-  Calendar
+  Calendar,
+  Video
 } from "lucide-react";
 
 export default function Admin() {
@@ -80,11 +81,18 @@ export default function Admin() {
       color: "text-green-500"
     },
     {
+      title: "Pro Swing Library",
+      description: "Manage reference swings for comparison",
+      icon: Video,
+      path: "/admin/pro-swings",
+      color: "text-purple-500"
+    },
+    {
       title: "Messaging",
       description: "Send announcements and communicate with players",
       icon: MessageSquare,
       path: "/admin/messaging",
-      color: "text-purple-500"
+      color: "text-pink-500"
     },
     {
       title: "Automations",
