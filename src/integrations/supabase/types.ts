@@ -989,6 +989,7 @@ export type Database = {
       }
       pro_swings: {
         Row: {
+          analysis_id: string | null
           created_at: string
           created_by: string | null
           description: string | null
@@ -1001,6 +1002,7 @@ export type Database = {
           video_url: string
         }
         Insert: {
+          analysis_id?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -1013,6 +1015,7 @@ export type Database = {
           video_url: string
         }
         Update: {
+          analysis_id?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -1025,6 +1028,13 @@ export type Database = {
           video_url?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "pro_swings_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "video_analyses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "pro_swings_created_by_fkey"
             columns: ["created_by"]

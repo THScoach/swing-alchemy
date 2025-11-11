@@ -34,6 +34,8 @@ export default function AdminProSwings() {
   const [proSwings, setProSwings] = useState<any[]>([]);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [newSwing, setNewSwing] = useState({
     label: '',
     description: '',
@@ -79,39 +81,95 @@ export default function AdminProSwings() {
   };
 
   const handleUploadSwing = async () => {
-    if (!newSwing.label || !newSwing.video_url) {
+    setUploadError(null);
+
+    if (!newSwing.label) {
       toast({
-        title: "Missing Fields",
-        description: "Please provide a label and video URL.",
+        title: "Missing Label",
+        description: "Please provide a label for this pro swing.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!newSwing.video_url && !file) {
+      toast({
+        title: "Video Required",
+        description: "Add a video URL or upload a video file.",
         variant: "destructive",
       });
       return;
     }
 
     setUploading(true);
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
+
+      if (!user) {
+        throw new Error("Not authenticated");
+      }
+
       // Get user's organization
       const { data: orgMember } = await supabase
         .from('organization_members')
         .select('organization_id')
-        .eq('user_id', user?.id)
-        .single();
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-      const { error } = await supabase
+      let videoUrl = newSwing.video_url?.trim() || "";
+
+      // If file is provided, upload it and override videoUrl
+      if (file) {
+        const ext = file.name.split('.').pop() || 'mp4';
+        const path = `pro-swings/${user.id}/${Date.now()}-${newSwing.label
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')}.${ext}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('pro-swings')
+          .upload(path, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (uploadError) {
+          console.error('Error uploading pro swing file:', uploadError);
+          setUploadError('Failed to upload video file.');
+          throw uploadError;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('pro-swings')
+          .getPublicUrl(path);
+
+        videoUrl = publicUrl;
+      }
+
+      if (!videoUrl) {
+        throw new Error('No valid video URL resolved.');
+      }
+
+      // Create pro_swing row
+      const { error: insertError } = await supabase
         .from('pro_swings')
         .insert({
-          ...newSwing,
-          organization_id: orgMember?.organization_id,
-          created_by: user?.id
+          label: newSwing.label,
+          description: newSwing.description,
+          handedness: newSwing.handedness,
+          level: newSwing.level,
+          video_url: videoUrl,
+          organization_id: orgMember?.organization_id ?? null,
+          created_by: user.id,
         });
 
-      if (error) throw error;
+      if (insertError) {
+        throw insertError;
+      }
 
       toast({
         title: "Pro Swing Added",
-        description: "Successfully added to the library.",
+        description: "Model swing added to the library.",
       });
 
       setShowUploadDialog(false);
@@ -122,12 +180,13 @@ export default function AdminProSwings() {
         level: '',
         video_url: ''
       });
+      setFile(null);
       loadProSwings();
-    } catch (error) {
-      console.error('Error uploading pro swing:', error);
+    } catch (error: any) {
+      console.error('Error adding pro swing:', error);
       toast({
         title: "Upload Failed",
-        description: "Failed to add pro swing. Please try again.",
+        description: error.message || "Failed to add pro swing. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -276,7 +335,7 @@ export default function AdminProSwings() {
             </div>
 
             <div>
-              <Label htmlFor="video_url">Video URL *</Label>
+              <Label htmlFor="video_url">Video URL</Label>
               <Input
                 id="video_url"
                 type="url"
@@ -284,6 +343,29 @@ export default function AdminProSwings() {
                 value={newSwing.video_url}
                 onChange={(e) => setNewSwing({ ...newSwing, video_url: e.target.value })}
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                Paste a public URL, <strong>or</strong> upload a file below.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="video_file">Or Upload Video File</Label>
+              <Input
+                id="video_file"
+                type="file"
+                accept="video/*"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] || null;
+                  setFile(f);
+                  setUploadError(null);
+                }}
+              />
+              {uploadError && (
+                <p className="text-xs text-red-500">{uploadError}</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                If you upload a file, we'll store it and use that as the model swing video.
+              </p>
             </div>
 
             <div>
