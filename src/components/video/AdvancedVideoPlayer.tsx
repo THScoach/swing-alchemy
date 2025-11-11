@@ -19,8 +19,17 @@ import {
   EyeOff,
   GitCompare,
   Maximize2,
-  MapPin
+  MapPin,
+  Layers
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
@@ -515,6 +524,80 @@ export function AdvancedVideoPlayer({
     });
   };
 
+  const applyTemplate = (template: string) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+
+    switch (template) {
+      case 'posture':
+        // Vertical line through center (spine)
+        setDrawings(prev => [...prev, {
+          type: 'line',
+          points: [
+            { x: centerX, y: centerY * 0.3 },
+            { x: centerX, y: centerY * 1.7 }
+          ],
+          color: '#FFD700',
+          frame: Math.floor(currentTime * 30)
+        }]);
+        toast({ title: "Template Applied", description: "Posture line added" });
+        break;
+      case 'base':
+        // Horizontal line at bottom (feet)
+        setDrawings(prev => [...prev, {
+          type: 'line',
+          points: [
+            { x: centerX * 0.6, y: centerY * 1.6 },
+            { x: centerX * 1.4, y: centerY * 1.6 }
+          ],
+          color: '#FFD700',
+          frame: Math.floor(currentTime * 30)
+        }]);
+        toast({ title: "Template Applied", description: "Base width line added" });
+        break;
+      case 'hip-shoulder':
+        // Two lines for hip-shoulder separation
+        setDrawings(prev => [...prev, 
+          {
+            type: 'line',
+            points: [
+              { x: centerX * 0.7, y: centerY * 1.2 },
+              { x: centerX * 1.3, y: centerY * 1.2 }
+            ],
+            color: '#00FF00',
+            frame: Math.floor(currentTime * 30)
+          },
+          {
+            type: 'line',
+            points: [
+              { x: centerX * 0.7, y: centerY * 0.7 },
+              { x: centerX * 1.3, y: centerY * 0.7 }
+            ],
+            color: '#00FFFF',
+            frame: Math.floor(currentTime * 30)
+          }
+        ]);
+        toast({ title: "Template Applied", description: "Hip-shoulder separation lines added" });
+        break;
+      case 'bat-plane':
+        // Diagonal line for bat path
+        setDrawings(prev => [...prev, {
+          type: 'line',
+          points: [
+            { x: centerX * 0.8, y: centerY * 0.6 },
+            { x: centerX * 1.4, y: centerY * 1.3 }
+          ],
+          color: '#FF6B6B',
+          frame: Math.floor(currentTime * 30)
+        }]);
+        toast({ title: "Template Applied", description: "Bat plane line added" });
+        break;
+    }
+  };
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -617,6 +700,32 @@ export function AdvancedVideoPlayer({
             <MapPin className="h-4 w-4" />
             Marker
           </Button>
+
+          {/* Templates Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline" className="gap-2">
+                <Layers className="h-4 w-4" />
+                Templates
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuLabel>Telestration Templates</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => applyTemplate('posture')}>
+                Posture Line
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => applyTemplate('base')}>
+                Base Width
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => applyTemplate('hip-shoulder')}>
+                Hip-Shoulder Separation
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => applyTemplate('bat-plane')}>
+                Bat Plane
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           
           <div className="flex-1" />
           

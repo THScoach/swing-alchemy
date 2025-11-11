@@ -11,7 +11,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { Download, Play, Pause, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Download, Play, Pause, TrendingUp, TrendingDown, Minus, Ghost } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
 interface ComparisonModalProps {
@@ -30,6 +32,9 @@ export function ComparisonModal({ isOpen, onClose, currentAnalysisId, playerId }
   const [currentScores, setCurrentScores] = useState<any>(null);
   const [compareScores, setCompareScores] = useState<any>(null);
   const [syncPlay, setSyncPlay] = useState(true);
+  const [ghostMode, setGhostMode] = useState(false);
+  const currentVideoRef = useState<HTMLVideoElement | null>(null);
+  const compareVideoRef = useState<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -168,51 +173,103 @@ export function ComparisonModal({ isOpen, onClose, currentAnalysisId, playerId }
 
         {compareAnalysis && (
           <>
-            {/* Video Comparison */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="mb-2 flex items-center justify-between">
-                    <Badge variant="outline">Current</Badge>
-                    <span className="text-sm text-muted-foreground">
-                      {new Date(currentAnalysis?.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                  {currentAnalysis?.video_url ? (
-                    <video 
-                      src={currentAnalysis.video_url} 
-                      controls 
-                      className="w-full aspect-video bg-black rounded-lg"
-                    />
-                  ) : (
-                    <div className="w-full aspect-video bg-muted rounded-lg flex items-center justify-center">
-                      <p className="text-muted-foreground">No video</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+            {/* Ghost Mode Toggle */}
+            <Card className="mb-4 p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Ghost className="h-5 w-5 text-muted-foreground" />
+                  <Label htmlFor="ghost-mode">Ghost Overlay Mode</Label>
+                </div>
+                <Switch
+                  id="ghost-mode"
+                  checked={ghostMode}
+                  onCheckedChange={setGhostMode}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Overlay the comparison video semi-transparently over the current video
+              </p>
+            </Card>
 
-              <Card>
-                <CardContent className="p-4">
-                  <div className="mb-2 flex items-center justify-between">
-                    <Badge variant="outline">Comparison</Badge>
-                    <span className="text-sm text-muted-foreground">
-                      {new Date(compareAnalysis.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                  {compareAnalysis.video_url ? (
-                    <video 
-                      src={compareAnalysis.video_url} 
-                      controls 
-                      className="w-full aspect-video bg-black rounded-lg"
-                    />
-                  ) : (
-                    <div className="w-full aspect-video bg-muted rounded-lg flex items-center justify-center">
-                      <p className="text-muted-foreground">No video</p>
+            {/* Video Comparison */}
+            <div className={ghostMode ? "mb-6" : "grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"}>
+              {ghostMode ? (
+                // Ghost overlay mode - single video with overlay
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="mb-2 flex items-center justify-between">
+                      <Badge variant="outline">Current with Ghost Overlay</Badge>
+                      <span className="text-sm text-muted-foreground">
+                        {new Date(currentAnalysis?.created_at).toLocaleDateString()}
+                      </span>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
+                    <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
+                      {currentAnalysis?.video_url && (
+                        <video 
+                          src={currentAnalysis.video_url} 
+                          controls 
+                          className="absolute inset-0 w-full h-full"
+                        />
+                      )}
+                      {compareAnalysis?.video_url && (
+                        <video 
+                          src={compareAnalysis.video_url} 
+                          muted
+                          className="absolute inset-0 w-full h-full opacity-40 pointer-events-none"
+                          style={{ mixBlendMode: 'screen' }}
+                        />
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                // Side-by-side mode
+                <>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="mb-2 flex items-center justify-between">
+                        <Badge variant="outline">Current</Badge>
+                        <span className="text-sm text-muted-foreground">
+                          {new Date(currentAnalysis?.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      {currentAnalysis?.video_url ? (
+                        <video 
+                          src={currentAnalysis.video_url} 
+                          controls 
+                          className="w-full aspect-video bg-black rounded-lg"
+                        />
+                      ) : (
+                        <div className="w-full aspect-video bg-muted rounded-lg flex items-center justify-center">
+                          <p className="text-muted-foreground">No video</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="mb-2 flex items-center justify-between">
+                        <Badge variant="outline">Comparison</Badge>
+                        <span className="text-sm text-muted-foreground">
+                          {new Date(compareAnalysis.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      {compareAnalysis.video_url ? (
+                        <video 
+                          src={compareAnalysis.video_url} 
+                          controls 
+                          className="w-full aspect-video bg-black rounded-lg"
+                        />
+                      ) : (
+                        <div className="w-full aspect-video bg-muted rounded-lg flex items-center justify-center">
+                          <p className="text-muted-foreground">No video</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </>
+              )}
             </div>
 
             {/* 4B Scores Comparison */}
