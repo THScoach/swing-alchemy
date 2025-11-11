@@ -141,7 +141,7 @@ export const ModelUploadWizard = ({ open, onOpenChange, onComplete, existingMode
 
           const label = sessionLabel || `${modelProfile.player_name} - Swing ${i + 1}`;
 
-          const { error: insertError } = await supabase
+          const { data: insertedSwing, error: insertError } = await supabase
             .from('pro_swings')
             .insert({
               label: files.length > 1 ? `${label} (${i + 1})` : label,
@@ -158,9 +158,95 @@ export const ModelUploadWizard = ({ open, onOpenChange, onComplete, existingMode
               fps_confirmed: fpsConfirmed,
               organization_id: orgMember?.organization_id ?? null,
               created_by: user.id,
-            });
+            })
+            .select()
+            .single();
 
-          if (!insertError) successCount++;
+          if (!insertError && insertedSwing) {
+            // Create a dummy player for model analysis
+            let modelPlayerId = null;
+            const { data: existingPlayer } = await supabase
+              .from('players')
+              .select('id')
+              .eq('name', `MODEL_${modelProfile.player_name}`)
+              .eq('organization_id', orgMember?.organization_id)
+              .maybeSingle();
+
+            if (existingPlayer) {
+              modelPlayerId = existingPlayer.id;
+            } else {
+              // Map level to player_level enum
+              const levelMap: Record<string, 'Youth (10-13)' | 'HS (14-18)' | 'College' | 'Pro' | 'Other'> = {
+                'Youth': 'Youth (10-13)',
+                'HS': 'HS (14-18)',
+                'College': 'College',
+                'Pro': 'Pro',
+                'MLB': 'Pro',
+                'MiLB': 'Pro',
+              };
+
+              const { data: newPlayer } = await supabase
+                .from('players')
+                .insert([{
+                  name: `MODEL_${modelProfile.player_name}`,
+                  organization_id: orgMember?.organization_id,
+                  profile_id: user.id,
+                  player_level: levelMap[modelProfile.level] || 'Other',
+                  bats: modelProfile.handedness,
+                  sport: 'Baseball',
+                }])
+                .select('id')
+                .single();
+              
+              if (newPlayer) modelPlayerId = newPlayer.id;
+            }
+
+            if (modelPlayerId) {
+              // Create video_analysis record
+              const { data: analysisRecord, error: analysisInsertError } = await supabase
+                .from('video_analyses')
+                .insert({
+                  player_id: modelPlayerId,
+                  video_url: publicUrl,
+                  mode: 'model',
+                  is_pro_model: true,
+                  pro_swing_id: insertedSwing.id,
+                  fps: fpsConfirmed,
+                  fps_confirmed: fpsConfirmed,
+                  processing_status: 'pending',
+                  uploaded_by: user.id,
+                })
+                .select()
+                .single();
+
+              if (!analysisInsertError && analysisRecord) {
+                // Trigger analysis
+                try {
+                  const { error: analysisError } = await supabase.functions.invoke('process-video-analysis', {
+                    body: {
+                      analysisId: analysisRecord.id,
+                      mode: 'model',
+                      level: modelProfile.level,
+                      handedness: modelProfile.handedness,
+                      fps_confirmed: fpsConfirmed,
+                      source: 'pro_swing',
+                      proSwingId: insertedSwing.id,
+                    }
+                  });
+                  
+                  if (analysisError) {
+                    console.error('Analysis trigger error:', analysisError);
+                  } else {
+                    console.log('Analysis triggered for:', analysisRecord.id);
+                  }
+                } catch (analysisErr) {
+                  console.error('Failed to trigger analysis:', analysisErr);
+                }
+              }
+            }
+            
+            successCount++;
+          }
         } catch (err) {
           console.error('Error processing file:', err);
         }
