@@ -6,12 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { 
   AlertTriangle,
-  Loader2
+  Loader2,
+  Download,
+  GitCompare
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { FourBDashboard } from "@/components/fourb/FourBDashboard";
-import { SwingVideoPlayer } from "@/components/video/SwingVideoPlayer";
+import { AdvancedVideoPlayer } from "@/components/video/AdvancedVideoPlayer";
+import { ComparisonModal } from "@/components/analysis/ComparisonModal";
 import { PlayerLevel } from "@/lib/fourb/types";
 import { useToast } from "@/hooks/use-toast";
 
@@ -29,6 +32,8 @@ export default function AnalyzeResults() {
     bat: null,
     ball: null,
   });
+  const [compareModalOpen, setCompareModalOpen] = useState(false);
+  const [exportingPDF, setExportingPDF] = useState(false);
 
   useEffect(() => {
     fetchAnalysis();
@@ -97,6 +102,43 @@ export default function AnalyzeResults() {
     }
   };
 
+  const handleExportPDF = async () => {
+    setExportingPDF(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-4b-pdf', {
+        body: { analysisId: id }
+      });
+
+      if (error) throw error;
+
+      // Open HTML in new tab for printing/PDF
+      const printWindow = window.open('', '_blank');
+      if (printWindow && data.html) {
+        printWindow.document.write(data.html);
+        printWindow.document.close();
+        
+        // Trigger print dialog after a short delay
+        setTimeout(() => {
+          printWindow.print();
+        }, 500);
+      }
+
+      toast({
+        title: "PDF Generated",
+        description: "Opening print dialog...",
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to generate PDF. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setExportingPDF(false);
+    }
+  };
+
   if (loading) {
     return (
       <AppLayout>
@@ -141,6 +183,34 @@ export default function AnalyzeResults() {
               </p>
             </div>
             <div className="flex items-center gap-3">
+              <Button
+                onClick={() => setCompareModalOpen(true)}
+                variant="outline"
+                size="lg"
+                className="gap-2"
+              >
+                <GitCompare className="h-4 w-4" />
+                Compare
+              </Button>
+              <Button
+                onClick={handleExportPDF}
+                disabled={exportingPDF}
+                variant="outline"
+                size="lg"
+                className="gap-2"
+              >
+                {exportingPDF ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4" />
+                    Export PDF
+                  </>
+                )}
+              </Button>
               {analysis.processing_status === 'pending' && (
                 <Button 
                   onClick={handleProcessVideo}
@@ -164,13 +234,14 @@ export default function AnalyzeResults() {
           </div>
         </div>
 
-        {/* Video Player with Telestration Tools */}
+        {/* Advanced Video Player with Telestration */}
         {analysis.video_url && (
           <div className="mb-8">
-            <SwingVideoPlayer 
+            <AdvancedVideoPlayer 
               videoUrl={analysis.video_url}
               analysisId={analysis.id}
               showPoseOverlay={!!fourbData.body}
+              skeletonData={analysis.skeleton_data}
             />
           </div>
         )}
@@ -183,6 +254,14 @@ export default function AnalyzeResults() {
           bodyData={fourbData.body}
           batData={fourbData.bat}
           ballData={fourbData.ball}
+        />
+
+        {/* Comparison Modal */}
+        <ComparisonModal
+          isOpen={compareModalOpen}
+          onClose={() => setCompareModalOpen(false)}
+          currentAnalysisId={analysis.id}
+          playerId={analysis.player_id}
         />
       </div>
     </AppLayout>
