@@ -1197,8 +1197,13 @@ export type Database = {
           bat_scores: Json | null
           body_scores: Json | null
           brain_scores: Json | null
+          camera_angle: string | null
+          contact_frame: number | null
+          contact_time_ms: number | null
           context_tag: Database["public"]["Enums"]["context_tag"] | null
           created_at: string
+          fps: number | null
+          hitter_side: string | null
           id: string
           kinetic_sequence: Json | null
           pitch_type: string | null
@@ -1211,6 +1216,7 @@ export type Database = {
           swing_phases: Json | null
           thumbnail_url: string | null
           updated_at: string
+          uploaded_by: string | null
           video_url: string
         }
         Insert: {
@@ -1218,8 +1224,13 @@ export type Database = {
           bat_scores?: Json | null
           body_scores?: Json | null
           brain_scores?: Json | null
+          camera_angle?: string | null
+          contact_frame?: number | null
+          contact_time_ms?: number | null
           context_tag?: Database["public"]["Enums"]["context_tag"] | null
           created_at?: string
+          fps?: number | null
+          hitter_side?: string | null
           id?: string
           kinetic_sequence?: Json | null
           pitch_type?: string | null
@@ -1232,6 +1243,7 @@ export type Database = {
           swing_phases?: Json | null
           thumbnail_url?: string | null
           updated_at?: string
+          uploaded_by?: string | null
           video_url: string
         }
         Update: {
@@ -1239,8 +1251,13 @@ export type Database = {
           bat_scores?: Json | null
           body_scores?: Json | null
           brain_scores?: Json | null
+          camera_angle?: string | null
+          contact_frame?: number | null
+          contact_time_ms?: number | null
           context_tag?: Database["public"]["Enums"]["context_tag"] | null
           created_at?: string
+          fps?: number | null
+          hitter_side?: string | null
           id?: string
           kinetic_sequence?: Json | null
           pitch_type?: string | null
@@ -1253,6 +1270,7 @@ export type Database = {
           swing_phases?: Json | null
           thumbnail_url?: string | null
           updated_at?: string
+          uploaded_by?: string | null
           video_url?: string
         }
         Relationships: [

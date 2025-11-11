@@ -13,6 +13,9 @@ export const CameraRecorder = ({ onRecordingComplete }: CameraRecorderProps) => 
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [contactMarked, setContactMarked] = useState(false);
+  const [contactFrame, setContactFrame] = useState<number | null>(null);
+  const [recordingStartTime, setRecordingStartTime] = useState<number | null>(null);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -50,6 +53,10 @@ export const CameraRecorder = ({ onRecordingComplete }: CameraRecorderProps) => 
     if (!stream) return;
 
     chunksRef.current = [];
+    setContactMarked(false);
+    setContactFrame(null);
+    setRecordingStartTime(Date.now());
+    
     const mediaRecorder = new MediaRecorder(stream, {
       mimeType: 'video/webm;codecs=vp9',
     });
@@ -68,6 +75,19 @@ export const CameraRecorder = ({ onRecordingComplete }: CameraRecorderProps) => 
     mediaRecorderRef.current = mediaRecorder;
     mediaRecorder.start();
     setIsRecording(true);
+  };
+
+  const markContact = () => {
+    if (!isRecording || !recordingStartTime) return;
+    
+    const elapsedMs = Date.now() - recordingStartTime;
+    setContactFrame(elapsedMs);
+    setContactMarked(true);
+    
+    toast({
+      title: "Contact Marked!",
+      description: `Contact point marked at ${(elapsedMs / 1000).toFixed(2)}s`,
+    });
   };
 
   const stopRecording = () => {
@@ -146,9 +166,23 @@ export const CameraRecorder = ({ onRecordingComplete }: CameraRecorderProps) => 
                 className="w-full aspect-video bg-black rounded-lg"
               />
               {isRecording && (
-                <div className="absolute top-4 left-4 flex items-center gap-2 bg-destructive text-destructive-foreground px-3 py-1.5 rounded-full">
-                  <div className="w-3 h-3 bg-white rounded-full animate-pulse" />
-                  <span className="text-sm font-medium">Recording</span>
+                <>
+                  <div className="absolute top-4 left-4 flex items-center gap-2 bg-destructive text-destructive-foreground px-3 py-1.5 rounded-full">
+                    <div className="w-3 h-3 bg-white rounded-full animate-pulse" />
+                    <span className="text-sm font-medium">Recording</span>
+                  </div>
+                  {contactMarked && (
+                    <div className="absolute top-4 right-4 bg-green-600 text-white px-3 py-1.5 rounded-full">
+                      <span className="text-sm font-medium">✓ Contact Marked</span>
+                    </div>
+                  )}
+                </>
+              )}
+              {isRecording && (
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+                  <p className="text-white text-xs bg-black/50 px-3 py-1 rounded-full mb-2 text-center">
+                    Tap "Mark Contact" at the exact moment bat meets ball
+                  </p>
                 </div>
               )}
             </div>
@@ -164,10 +198,21 @@ export const CameraRecorder = ({ onRecordingComplete }: CameraRecorderProps) => 
                   </Button>
                 </>
               ) : (
-                <Button onClick={stopRecording} variant="destructive" className="w-full" size="lg">
-                  <Square className="h-5 w-5 mr-2" />
-                  Stop Recording
-                </Button>
+                <>
+                  <Button 
+                    onClick={markContact} 
+                    variant={contactMarked ? "secondary" : "default"}
+                    className="flex-1" 
+                    size="lg"
+                    disabled={contactMarked}
+                  >
+                    {contactMarked ? "Contact Marked ✓" : "Mark Contact"}
+                  </Button>
+                  <Button onClick={stopRecording} variant="destructive" className="flex-1" size="lg">
+                    <Square className="h-5 w-5 mr-2" />
+                    Stop
+                  </Button>
+                </>
               )}
             </div>
           </div>

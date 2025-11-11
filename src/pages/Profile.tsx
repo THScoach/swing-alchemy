@@ -14,11 +14,13 @@ import {
   Video,
   BookOpen,
   Calendar,
-  Wrench
+  Wrench,
+  Upload
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { EquipmentSetupModal } from "@/components/EquipmentSetupModal";
+import { CoachUploadModal } from "@/components/CoachUploadModal";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -30,6 +32,10 @@ export default function Profile() {
   const [analyses, setAnalyses] = useState<any[]>([]);
   const [equipmentModalOpen, setEquipmentModalOpen] = useState(false);
   const [equipmentProfile, setEquipmentProfile] = useState<any>(null);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
+  const [selectedPlayerName, setSelectedPlayerName] = useState<string>("");
+  const [isCoachOrAdmin, setIsCoachOrAdmin] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -56,6 +62,8 @@ export default function Profile() {
         navigate("/profile");
         return;
       }
+
+      setIsCoachOrAdmin(true);
 
       // Load the target user's profile
       const { data: profileData } = await supabase
@@ -93,6 +101,14 @@ export default function Profile() {
         navigate("/auth");
         return;
       }
+
+      // Check if current user is coach or admin
+      const { data: isAdmin } = await supabase.rpc("has_role", {
+        _user_id: user.id,
+        _role: "admin",
+      });
+      
+      setIsCoachOrAdmin(!!isAdmin);
 
       const { data: profileData } = await supabase
         .from("profiles")
@@ -222,9 +238,25 @@ export default function Profile() {
         {/* Recent Analyses */}
         {analyses.length > 0 && (
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Recent Analyses</CardTitle>
-              <CardDescription>Click any analysis to view the full report</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-lg">Recent Analyses</CardTitle>
+                <CardDescription>Click any analysis to view the full report</CardDescription>
+              </div>
+              {isCoachOrAdmin && firstPlayer && (
+                <Button
+                  onClick={() => {
+                    setSelectedPlayerId(firstPlayer.id);
+                    setSelectedPlayerName(firstPlayer.name);
+                    setUploadModalOpen(true);
+                  }}
+                  size="sm"
+                  className="gap-2"
+                >
+                  <Upload className="h-4 w-4" />
+                  Upload Swing
+                </Button>
+              )}
             </CardHeader>
             <CardContent className="space-y-3">
               {analyses.map((analysis) => (
@@ -361,6 +393,15 @@ export default function Profile() {
             onOpenChange={setEquipmentModalOpen}
             playerId={firstPlayer.id}
             onComplete={loadProfile}
+          />
+        )}
+
+        {selectedPlayerId && (
+          <CoachUploadModal
+            open={uploadModalOpen}
+            onOpenChange={setUploadModalOpen}
+            playerId={selectedPlayerId}
+            playerName={selectedPlayerName}
           />
         )}
 
