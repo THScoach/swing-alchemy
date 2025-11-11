@@ -11,6 +11,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { FourBDashboard } from "@/components/fourb/FourBDashboard";
+import { SwingVideoPlayer } from "@/components/video/SwingVideoPlayer";
 import { PlayerLevel } from "@/lib/fourb/types";
 import { useToast } from "@/hooks/use-toast";
 
@@ -162,6 +163,17 @@ export default function AnalyzeResults() {
             </div>
           </div>
         </div>
+
+        {/* Video Player with Telestration Tools */}
+        {analysis.video_url && (
+          <div className="mb-8">
+            <SwingVideoPlayer 
+              videoUrl={analysis.video_url}
+              analysisId={analysis.id}
+              showPoseOverlay={!!fourbData.body}
+            />
+          </div>
+        )}
 
         {/* Unified 4B Dashboard - No Tabs */}
         <FourBDashboard
