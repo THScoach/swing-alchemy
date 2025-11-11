@@ -5,12 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Mail, Phone, MapPin } from "lucide-react";
+import { Mail, Phone, MapPin, MessageCircle } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { CoachRickChat } from "@/components/CoachRickChat";
 
 export default function Contact() {
   const [loading, setLoading] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -30,6 +32,11 @@ export default function Contact() {
 
   return (
     <MarketingLayout>
+      <CoachRickChat 
+        minimized={!chatOpen} 
+        onMinimize={() => setChatOpen(!chatOpen)} 
+      />
+      
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-secondary to-secondary/80 text-secondary-foreground py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -61,15 +68,24 @@ export default function Contact() {
               <Card>
                 <CardHeader>
                   <Phone className="h-8 w-8 text-primary mb-2" />
-                  <CardTitle>Phone</CardTitle>
+                  <CardTitle>Phone / Text</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <a href="tel:+1234567890" className="text-primary hover:underline">
-                    (123) 456-7890
+                  <a href="tel:+13147841322" className="text-primary hover:underline text-lg font-semibold">
+                    314-784-1322
                   </a>
                   <p className="text-sm text-muted-foreground mt-2">
-                    Monday - Friday: 9am - 6pm
+                    Call or text anytime
                   </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full mt-3"
+                    onClick={() => setChatOpen(true)}
+                  >
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    Chat Now
+                  </Button>
                 </CardContent>
               </Card>
 
@@ -80,9 +96,17 @@ export default function Contact() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    [Facility Address]<br />
-                    [City, State ZIP]
+                    2013 Hitzert Court<br />
+                    Fenton, Missouri 63026
                   </p>
+                  <a 
+                    href="https://maps.google.com/?q=2013+Hitzert+Court,+Fenton,+Missouri+63026"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline text-sm mt-2 inline-block"
+                  >
+                    Get Directions →
+                  </a>
                 </CardContent>
               </Card>
             </div>
