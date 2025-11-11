@@ -994,6 +994,7 @@ export type Database = {
           created_by: string | null
           description: string | null
           handedness: string | null
+          has_analysis: boolean | null
           id: string
           label: string
           level: string | null
@@ -1007,6 +1008,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           handedness?: string | null
+          has_analysis?: boolean | null
           id?: string
           label: string
           level?: string | null
@@ -1020,6 +1022,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           handedness?: string | null
+          has_analysis?: boolean | null
           id?: string
           label?: string
           level?: string | null
@@ -1347,12 +1350,17 @@ export type Database = {
           context_tag: Database["public"]["Enums"]["context_tag"] | null
           created_at: string
           fps: number | null
+          fps_confirmed: number | null
           hitter_side: string | null
           id: string
+          is_pro_model: boolean | null
           kinetic_sequence: Json | null
+          metrics_reboot: Json | null
+          mode: Database["public"]["Enums"]["analysis_mode"] | null
           pitch_type: string | null
           pitch_velocity: number | null
           player_id: string
+          pro_swing_id: string | null
           processing_status: string | null
           raw_fps_guess: number | null
           session_notes: string | null
@@ -1375,12 +1383,17 @@ export type Database = {
           context_tag?: Database["public"]["Enums"]["context_tag"] | null
           created_at?: string
           fps?: number | null
+          fps_confirmed?: number | null
           hitter_side?: string | null
           id?: string
+          is_pro_model?: boolean | null
           kinetic_sequence?: Json | null
+          metrics_reboot?: Json | null
+          mode?: Database["public"]["Enums"]["analysis_mode"] | null
           pitch_type?: string | null
           pitch_velocity?: number | null
           player_id: string
+          pro_swing_id?: string | null
           processing_status?: string | null
           raw_fps_guess?: number | null
           session_notes?: string | null
@@ -1403,12 +1416,17 @@ export type Database = {
           context_tag?: Database["public"]["Enums"]["context_tag"] | null
           created_at?: string
           fps?: number | null
+          fps_confirmed?: number | null
           hitter_side?: string | null
           id?: string
+          is_pro_model?: boolean | null
           kinetic_sequence?: Json | null
+          metrics_reboot?: Json | null
+          mode?: Database["public"]["Enums"]["analysis_mode"] | null
           pitch_type?: string | null
           pitch_velocity?: number | null
           player_id?: string
+          pro_swing_id?: string | null
           processing_status?: string | null
           raw_fps_guess?: number | null
           session_notes?: string | null
@@ -1426,6 +1444,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_analyses_pro_swing_id_fkey"
+            columns: ["pro_swing_id"]
+            isOneToOne: false
+            referencedRelation: "pro_swings"
             referencedColumns: ["id"]
           },
         ]
@@ -1491,6 +1516,7 @@ export type Database = {
       }
     }
     Enums: {
+      analysis_mode: "player" | "model"
       app_role: "user" | "coach" | "admin"
       content_topic: "Brain" | "Body" | "Bat" | "Ball"
       content_type: "Video" | "Audio" | "Article" | "Course" | "Drill" | "Note"
@@ -1625,6 +1651,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      analysis_mode: ["player", "model"],
       app_role: ["user", "coach", "admin"],
       content_topic: ["Brain", "Body", "Bat", "Ball"],
       content_type: ["Video", "Audio", "Article", "Course", "Drill", "Note"],

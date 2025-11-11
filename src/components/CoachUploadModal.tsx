@@ -34,6 +34,7 @@ export const CoachUploadModal = ({ open, onOpenChange, playerId, playerName }: C
   const [manualFps, setManualFps] = useState<string>("");
   const [confirmedFps, setConfirmedFps] = useState<number | null>(null);
   const [hasConfirmedFps, setHasConfirmedFps] = useState(false);
+  const [analysisMode, setAnalysisMode] = useState<'player' | 'model'>('player');
   
   const [notes, setNotes] = useState("");
 
@@ -197,7 +198,10 @@ export const CoachUploadModal = ({ open, onOpenChange, playerId, playerName }: C
           hitter_side: hitterSide || null,
           camera_angle: cameraAngle || null,
           fps: confirmedFps,
+          fps_confirmed: confirmedFps,
           raw_fps_guess: detectedFps,
+          mode: analysisMode,
+          is_pro_model: analysisMode === 'model',
           session_notes: notes || null,
         });
 
@@ -369,13 +373,40 @@ export const CoachUploadModal = ({ open, onOpenChange, playerId, playerName }: C
                   ))}
                 </div>
 
-                {hasConfirmedFps && confirmedFps && confirmedFps < 120 && (
-                  <p className="text-xs text-yellow-600 dark:text-yellow-500">
-                    ⚠️ For Reboot-style analysis, ≥120 fps recommended (ideally 240+)
-                  </p>
-                )}
-              </div>
+              {hasConfirmedFps && confirmedFps && confirmedFps < 120 && (
+                <p className="text-xs text-yellow-600 dark:text-yellow-500">
+                  ⚠️ For Reboot-style analysis, ≥120 fps recommended (ideally 240+)
+                </p>
+              )}
             </div>
+
+            <div className="space-y-2 col-span-2">
+              <Label>Analysis Mode</Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={analysisMode === 'player' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setAnalysisMode('player')}
+                >
+                  Player
+                </Button>
+                <Button
+                  type="button"
+                  variant={analysisMode === 'model' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setAnalysisMode('model')}
+                >
+                  Model / Pro / Reboot
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {analysisMode === 'player' 
+                  ? 'Standard analysis with 4B scores and Tempo' 
+                  : 'Advanced biomechanical validation with Reboot-style metrics'}
+              </p>
+            </div>
+          </div>
 
             <div className="space-y-2">
               <Label>Notes (optional)</Label>
