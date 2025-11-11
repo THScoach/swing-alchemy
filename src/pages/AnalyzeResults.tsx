@@ -111,27 +111,35 @@ export default function AnalyzeResults() {
 
       if (error) throw error;
 
-      // Open HTML in new tab for printing/PDF
-      const printWindow = window.open('', '_blank');
-      if (printWindow && data.html) {
-        printWindow.document.write(data.html);
-        printWindow.document.close();
-        
-        // Trigger print dialog after a short delay
-        setTimeout(() => {
-          printWindow.print();
-        }, 500);
+      if (!data?.success || !data?.html) {
+        throw new Error('Invalid response from PDF generator');
       }
 
+      // Proper window.open implementation for cross-browser compatibility
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        toast({
+          title: "Pop-up Blocked",
+          description: "Please allow pop-ups to view the PDF report.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Write HTML properly without timing issues
+      printWindow.document.open();
+      printWindow.document.write(data.html);
+      printWindow.document.close();
+
       toast({
-        title: "PDF Generated",
-        description: "Opening print dialog...",
+        title: "PDF Ready",
+        description: "Report opened in new tab. Use Ctrl/Cmd+P to print or save as PDF.",
       });
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast({
         title: "Export Failed",
-        description: "Failed to generate PDF. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to generate PDF. Please try again.",
         variant: "destructive",
       });
     } finally {

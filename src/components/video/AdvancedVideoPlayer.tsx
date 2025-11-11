@@ -231,11 +231,26 @@ export function AdvancedVideoPlayer({
   };
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (activeTool !== 'angle' && activeTool !== 'marker') return;
+    if (activeTool !== 'angle' && activeTool !== 'marker' && !templateMode) return;
     
     const canvas = canvasRef.current;
     if (!canvas) return;
     const point = getCanvasCoordinates(e, canvas);
+
+    // Handle template mode
+    if (templateMode) {
+      const newPoints = [...templatePoints, point];
+      setTemplatePoints(newPoints);
+
+      const pointsNeeded = templateMode === 'hip-shoulder' ? 3 : 2;
+      
+      if (newPoints.length === pointsNeeded) {
+        applyInteractiveTemplate(templateMode, newPoints);
+        setTemplateMode(null);
+        setTemplatePoints([]);
+      }
+      return;
+    }
 
     if (activeTool === 'marker') {
       const frameNum = Math.floor(currentTime * 30);
@@ -525,75 +540,61 @@ export function AdvancedVideoPlayer({
   };
 
   const applyTemplate = (template: string) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    setActiveTool('select');
+    setTemplateMode(template as any);
+    setTemplatePoints([]);
+    
+    const pointsNeeded = template === 'hip-shoulder' ? 3 : 2;
+    toast({ 
+      title: "Template Mode Active", 
+      description: `Click ${pointsNeeded} points on the video for ${template.replace('-', ' ')} template` 
+    });
+  };
 
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
+  const applyInteractiveTemplate = (template: string, points: { x: number; y: number }[]) => {
+    const frameNum = Math.floor(currentTime * 30);
 
     switch (template) {
       case 'posture':
-        // Vertical line through center (spine)
         setDrawings(prev => [...prev, {
           type: 'line',
-          points: [
-            { x: centerX, y: centerY * 0.3 },
-            { x: centerX, y: centerY * 1.7 }
-          ],
+          points: [points[0], points[1]],
           color: '#FFD700',
-          frame: Math.floor(currentTime * 30)
+          frame: frameNum
         }]);
-        toast({ title: "Template Applied", description: "Posture line added" });
+        toast({ title: "Posture Line Added", description: "Vertical spine reference" });
         break;
       case 'base':
-        // Horizontal line at bottom (feet)
         setDrawings(prev => [...prev, {
           type: 'line',
-          points: [
-            { x: centerX * 0.6, y: centerY * 1.6 },
-            { x: centerX * 1.4, y: centerY * 1.6 }
-          ],
+          points: [points[0], points[1]],
           color: '#FFD700',
-          frame: Math.floor(currentTime * 30)
+          frame: frameNum
         }]);
-        toast({ title: "Template Applied", description: "Base width line added" });
+        toast({ title: "Base Width Added", description: "Stance width reference" });
         break;
       case 'hip-shoulder':
-        // Two lines for hip-shoulder separation
-        setDrawings(prev => [...prev, 
-          {
-            type: 'line',
-            points: [
-              { x: centerX * 0.7, y: centerY * 1.2 },
-              { x: centerX * 1.3, y: centerY * 1.2 }
-            ],
+        if (points.length === 3) {
+          // Create angle from three points
+          const angle = calculateAngle(points[0], points[1], points[2]);
+          setDrawings(prev => [...prev, {
+            type: 'angle',
+            points: points,
             color: '#00FF00',
-            frame: Math.floor(currentTime * 30)
-          },
-          {
-            type: 'line',
-            points: [
-              { x: centerX * 0.7, y: centerY * 0.7 },
-              { x: centerX * 1.3, y: centerY * 0.7 }
-            ],
-            color: '#00FFFF',
-            frame: Math.floor(currentTime * 30)
-          }
-        ]);
-        toast({ title: "Template Applied", description: "Hip-shoulder separation lines added" });
+            angleValue: angle,
+            frame: frameNum
+          }]);
+          toast({ title: "Hip-Shoulder Separation", description: `Angle: ${angle}°` });
+        }
         break;
       case 'bat-plane':
-        // Diagonal line for bat path
         setDrawings(prev => [...prev, {
           type: 'line',
-          points: [
-            { x: centerX * 0.8, y: centerY * 0.6 },
-            { x: centerX * 1.4, y: centerY * 1.3 }
-          ],
+          points: [points[0], points[1]],
           color: '#FF6B6B',
-          frame: Math.floor(currentTime * 30)
+          frame: frameNum
         }]);
-        toast({ title: "Template Applied", description: "Bat plane line added" });
+        toast({ title: "Bat Plane Added", description: "Swing path reference" });
         break;
     }
   };
@@ -628,7 +629,10 @@ export function AdvancedVideoPlayer({
           <canvas
             ref={canvasRef}
             className="absolute inset-0 w-full h-full"
-            style={{ pointerEvents: activeTool === 'select' ? 'none' : 'auto', cursor: activeTool !== 'select' ? 'crosshair' : 'default' }}
+            style={{ 
+              pointerEvents: activeTool === 'select' && !templateMode ? 'none' : 'auto', 
+              cursor: activeTool !== 'select' || templateMode ? 'crosshair' : 'default' 
+            }}
             onMouseDown={handleCanvasMouseDown}
             onMouseMove={handleCanvasMouseMove}
             onMouseUp={handleCanvasMouseUp}
@@ -637,6 +641,13 @@ export function AdvancedVideoPlayer({
           {!splitView && (
             <div className="absolute top-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
               Current
+            </div>
+          )}
+          {/* Template Helper */}
+          {templateMode && (
+            <div className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground px-4 py-2 rounded-lg shadow-lg text-sm font-medium">
+              Template: Click {templateMode === 'hip-shoulder' ? '3' : '2'} points for {templateMode.replace('-', ' ')}
+              {templatePoints.length > 0 && ` (${templatePoints.length} selected)`}
             </div>
           )}
         </div>

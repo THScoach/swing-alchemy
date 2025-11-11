@@ -60,13 +60,11 @@ serve(async (req) => {
     // In production, you might want to use a proper PDF generation service
     const pdfFilename = `4b-report-${analysis.players?.name?.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
 
-    // Return HTML for now (can be enhanced with actual PDF generation)
     return new Response(
       JSON.stringify({ 
         success: true, 
         html,
-        filename: pdfFilename,
-        message: 'PDF content generated. Use browser print or PDF library for final conversion.'
+        filename: pdfFilename
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -76,8 +74,12 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error generating PDF:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to generate PDF report';
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        success: false,
+        error: errorMessage
+      }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
