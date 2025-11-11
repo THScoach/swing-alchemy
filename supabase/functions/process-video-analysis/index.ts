@@ -1,5 +1,22 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.81.0";
+import {
+  scoreCOM,
+  scoreHead,
+  scoreSpine,
+  scoreBatSpeed,
+  scoreAttackAngle,
+  scoreTimeInZone,
+  scoreExitVelocity90,
+  scoreLaunchAngle90,
+  scoreRate,
+  computeSequenceCorrectness,
+  detectWeirdness,
+  getWeirdnessMessage,
+  safeAverage,
+  type RebootMetrics,
+  type SequencePeaks,
+} from "../_shared/rebootMetrics.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -193,154 +210,106 @@ serve(async (req) => {
     const batScore = Math.round((batData.avg_bat_speed / baseBatSpeed) * 85 + 10); // Scale relative to level
     const ballScore = Math.round((ballData.ev90 / baseEV90) * 85 + 10); // Scale relative to level
 
-    // For Model mode, compute Reboot-style metrics
-    let metricsReboot = null;
-    let weirdnessFlags = null;
+    // Determine if this is Model/Reboot mode
     const analysisMode = mode || analysis.mode || 'player';
+    const isModelMode = analysisMode === 'model' || analysis.is_pro_model === true;
 
-    if (analysisMode === 'model') {
+    // For Model mode, compute Reboot-style metrics using confirmed FPS
+    let metricsReboot: RebootMetrics | null = null;
+    
+    if (isModelMode) {
+      // Enforce confirmed FPS for model mode
+      if (!effectiveFps || effectiveFps === 60) {
+        console.warn('Model/Reboot mode without confirmed FPS. Using fallback but quality may be compromised.');
+      }
+      
       console.log('Computing Reboot metrics for model mode analysis');
-      
-      // Reboot-style scoring functions (model-level bands)
-      const scoreCOM = (pct: number): number => {
-        if (pct >= 18 && pct <= 22) return 100;
-        if (pct >= 15 && pct <= 25) return 80;
-        if (pct >= 10 && pct <= 30) return 60;
-        return 40;
+      console.log(`Using FPS: ${effectiveFps}, Level: ${effectiveLevel}, Handedness: ${effectiveHandedness}`);
+
+      // Build sequence peaks for correctness check
+      const sequencePeaks: SequencePeaks = {
+        pelvis_frame: 0,  // These would come from actual tracking data in production
+        torso_frame: 0,
+        arm_frame: 0,
+        bat_frame: 0,
       };
+
+      // Compute sequence correctness
+      const sequenceResult = computeSequenceCorrectness(
+        bodyData.sequence_correct ? sequencePeaks : null
+      );
+
+      // Score all metrics using Reboot bands
+      const comScore = scoreCOM(bodyData.com_max_forward_pct);
+      const headScore = scoreHead(bodyData.head_movement_inches);
+      const spineScore = scoreSpine(bodyData.spine_angle_var_deg);
       
-      const scoreHead = (inches: number): number => {
-        if (inches <= 4) return 100;
-        if (inches <= 6) return 80;
-        if (inches <= 10) return 60;
-        return 40;
-      };
+      const batSpeedScore = scoreBatSpeed(batData.avg_bat_speed, effectiveLevel);
+      const attackAngleScore = scoreAttackAngle(batData.attack_angle_avg);
+      const timeInZoneScore = scoreTimeInZone(batData.time_in_zone_ms);
       
-      const scoreSpine = (std: number): number => {
-        if (std <= 6) return 100;
-        if (std <= 10) return 80;
-        if (std <= 15) return 60;
-        return 40;
-      };
-      
-      const scoreBatSpeedModel = (speed: number, lvl: string): number => {
-        const targets: Record<string, number> = { 
-          'MLB': 75, 'Pro': 75, 'College': 70, 'HS': 65, 
-          'HS (14-18)': 65, 'Youth': 55, 'Youth (10-13)': 55, 'Other': 70 
-        };
-        const target = targets[lvl] || 70;
-        if (speed >= target) return 100;
-        if (speed >= target * 0.9) return 80;
-        if (speed >= target * 0.8) return 60;
-        return 40;
-      };
-      
-      const scoreAttackAngleModel = (angle: number): number => {
-        if (angle >= 8 && angle <= 20) return 100;
-        if (angle >= 5 && angle <= 25) return 80;
-        if (angle >= 0 && angle <= 30) return 60;
-        return 40;
-      };
-      
-      const scoreTimeInZoneModel = (ms: number): number => {
-        if (ms >= 150 && ms <= 200) return 100;
-        if (ms >= 120 && ms <= 220) return 80;
-        if (ms >= 100 && ms <= 250) return 60;
-        return 40;
-      };
-      
-      const scoreEVModel = (ev: number, lvl: string): number => {
-        const targets: Record<string, number> = { 
-          'MLB': 95, 'Pro': 95, 'College': 90, 'HS': 85,
-          'HS (14-18)': 85, 'Youth': 75, 'Youth (10-13)': 75, 'Other': 90 
-        };
-        const target = targets[lvl] || 90;
-        if (ev >= target) return 100;
-        if (ev >= target * 0.95) return 80;
-        if (ev >= target * 0.9) return 60;
-        return 40;
-      };
-      
-      const scoreLAModel = (la: number): number => {
-        if (la >= 10 && la <= 30) return 100;
-        if (la >= 5 && la <= 35) return 80;
-        if (la >= 0 && la <= 40) return 60;
-        return 40;
-      };
-      
-      const scoreRateModel = (rate: number, target: number = 50): number => {
-        if (rate >= target) return 100;
-        if (rate >= target * 0.8) return 80;
-        if (rate >= target * 0.6) return 60;
-        return 40;
-      };
+      const ev90Score = scoreExitVelocity90(ballData.ev90, effectiveLevel);
+      const la90Score = scoreLaunchAngle90(ballData.la90);
+      const barrelScore = scoreRate(ballData.barrel_like_rate, 50);
+      const hardHitScore = scoreRate(ballData.hard_hit_rate, 50);
+
+      // Aggregate scores
+      const bodyScore = safeAverage([comScore, headScore, spineScore, sequenceResult.score]);
+      const batScore = safeAverage([batSpeedScore, attackAngleScore, timeInZoneScore]);
+      const ballScore = safeAverage([ev90Score, la90Score, barrelScore, hardHitScore]);
+      const overallScore = safeAverage([bodyScore, batScore, ballScore]);
 
       // Detect weirdness
-      const weirdness = {
-        comOutOfRange: bodyData.com_max_forward_pct < 5 || bodyData.com_max_forward_pct > 40,
-        excessiveHeadMovement: bodyData.head_movement_inches > 18,
-        poorSpineStability: bodyData.spine_angle_var_deg > 25,
-        sequenceIncorrect: !bodyData.sequence_correct,
-        insufficientFrames: false
-      };
+      const weirdnessFlags = detectWeirdness({
+        comPct: bodyData.com_max_forward_pct,
+        headMovement: bodyData.head_movement_inches,
+        spineStd: bodyData.spine_angle_var_deg,
+        sequence: bodyData.sequence_correct ? sequencePeaks : undefined,
+        frameCount: undefined, // Would come from actual frame data
+      });
 
-      const weirdnessMessages: string[] = [];
-      if (weirdness.comOutOfRange) weirdnessMessages.push('COM% out of realistic range');
-      if (weirdness.excessiveHeadMovement) weirdnessMessages.push('Head movement > 18"');
-      if (weirdness.poorSpineStability) weirdnessMessages.push('Spine instability > 25°');
-      if (weirdness.sequenceIncorrect) weirdnessMessages.push('Kinetic sequence issues');
-
-      weirdnessFlags = {
-        flags: weirdness,
-        message: weirdnessMessages.join(', '),
-        has_any: weirdnessMessages.length > 0
-      };
+      const weirdnessMessage = getWeirdnessMessage(weirdnessFlags);
 
       metricsReboot = {
-        fps_confirmed: effectiveFps,
-        mode: 'model',
-        level: effectiveLevel,
-        handedness: effectiveHandedness,
-        
-        // Body metrics
-        com_pct: bodyData.com_max_forward_pct,
-        com_score: scoreCOM(bodyData.com_max_forward_pct),
+        fps: effectiveFps,
+        com_forward_pct: bodyData.com_max_forward_pct,
+        com_score: comScore,
         head_movement_inches: bodyData.head_movement_inches,
-        head_score: scoreHead(bodyData.head_movement_inches),
-        spine_std: bodyData.spine_angle_var_deg,
-        spine_score: scoreSpine(bodyData.spine_angle_var_deg),
-        
-        // Sequence
+        head_movement_score: headScore,
+        spine_std_deg: bodyData.spine_angle_var_deg,
+        spine_score: spineScore,
         sequence: {
-          pelvis_frame: 0,
-          torso_frame: 0,
-          arm_frame: 0,
-          bat_frame: 0,
-          score: bodyData.sequence_correct ? 100 : 50,
-          details: bodyData.sequence_correct ? '3/3 transitions correct' : 'Sequence timing off'
+          ...sequencePeaks,
+          correct: sequenceResult.value,
+          score: sequenceResult.score,
+          details: sequenceResult.details,
         },
-        
-        // Bat metrics
         bat: {
-          speed: batData.avg_bat_speed,
-          speed_score: scoreBatSpeedModel(batData.avg_bat_speed, effectiveLevel),
-          attack_angle: batData.attack_angle_avg,
-          attack_angle_score: scoreAttackAngleModel(batData.attack_angle_avg),
+          avg_bat_speed: batData.avg_bat_speed,
+          bat_speed_score: batSpeedScore,
+          attack_angle_avg: batData.attack_angle_avg,
+          attack_angle_score: attackAngleScore,
           time_in_zone_ms: batData.time_in_zone_ms,
-          time_in_zone_score: scoreTimeInZoneModel(batData.time_in_zone_ms)
+          time_in_zone_score: timeInZoneScore,
         },
-        
-        // Ball metrics
         ball: {
           ev90: ballData.ev90,
-          ev90_score: scoreEVModel(ballData.ev90, effectiveLevel),
+          ev90_score: ev90Score,
           la90: ballData.la90,
-          la90_score: scoreLAModel(ballData.la90),
+          la90_score: la90Score,
+          barrel_like_rate: ballData.barrel_like_rate,
+          barrel_like_score: barrelScore,
           hard_hit_rate: ballData.hard_hit_rate,
-          barrel_rate: ballData.barrel_like_rate
+          hard_hit_score: hardHitScore,
         },
-        
-        weirdness: weirdnessFlags
+        aggregate: {
+          body_score: bodyScore,
+          bat_score: batScore,
+          ball_score: ballScore,
+          overall_score: overallScore,
+        },
+        weirdness: weirdnessFlags,
+        weirdness_message: weirdnessMessage,
       };
 
       console.log('Reboot metrics computed:', JSON.stringify(metricsReboot, null, 2));
@@ -392,7 +361,7 @@ serve(async (req) => {
           fps: effectiveFps,
           fps_confirmed: true,
           metrics_reboot: metricsReboot,
-          weirdness_flags: weirdnessFlags,
+          weirdness_flags: metricsReboot.weirdness,
         })
         .eq('id', proSwingId);
 
