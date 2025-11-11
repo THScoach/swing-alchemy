@@ -177,16 +177,151 @@ serve(async (req) => {
     const batScore = Math.round((batData.avg_bat_speed / baseBatSpeed) * 85 + 10); // Scale relative to level
     const ballScore = Math.round((ballData.ev90 / baseEV90) * 85 + 10); // Scale relative to level
 
+    // For Model mode, compute Reboot-style metrics
+    let metricsReboot = null;
+    let weirdnessFlags = null;
+
+    if (analysis.mode === 'model' && analysis.fps_confirmed) {
+      console.log('Computing Reboot metrics for model mode analysis');
+      
+      // Use Reboot-style scoring (model-level bands)
+      const scoreCOM = (pct: number) => {
+        if (pct >= 18 && pct <= 22) return 100;
+        if (pct >= 15 && pct <= 25) return 80;
+        if (pct >= 10 && pct <= 30) return 60;
+        return 40;
+      };
+      
+      const scoreHead = (inches: number) => {
+        if (inches <= 4) return 100;
+        if (inches <= 6) return 80;
+        if (inches <= 10) return 60;
+        return 40;
+      };
+      
+      const scoreSpine = (std: number) => {
+        if (std <= 6) return 100;
+        if (std <= 10) return 80;
+        if (std <= 15) return 60;
+        return 40;
+      };
+      
+      const scoreBatSpeed = (speed: number, level: string) => {
+        const targets: Record<string, number> = { 'MLB': 75, 'Pro': 75, 'College': 70, 'HS': 65, 'Youth': 55 };
+        const target = targets[level] || 70;
+        if (speed >= target) return 100;
+        if (speed >= target * 0.9) return 80;
+        if (speed >= target * 0.8) return 60;
+        return 40;
+      };
+      
+      const scoreAttackAngle = (angle: number) => {
+        if (angle >= 8 && angle <= 20) return 100;
+        if (angle >= 5 && angle <= 25) return 80;
+        if (angle >= 0 && angle <= 30) return 60;
+        return 40;
+      };
+      
+      const scoreTimeInZone = (ms: number) => {
+        if (ms >= 150 && ms <= 200) return 100;
+        if (ms >= 120 && ms <= 220) return 80;
+        if (ms >= 100 && ms <= 250) return 60;
+        return 40;
+      };
+      
+      const scoreEV = (ev: number, level: string) => {
+        const targets: Record<string, number> = { 'MLB': 95, 'Pro': 95, 'College': 90, 'HS': 85, 'Youth': 75 };
+        const target = targets[level] || 90;
+        if (ev >= target) return 100;
+        if (ev >= target * 0.95) return 80;
+        if (ev >= target * 0.9) return 60;
+        return 40;
+      };
+      
+      const scoreLA = (la: number) => {
+        if (la >= 10 && la <= 30) return 100;
+        if (la >= 5 && la <= 35) return 80;
+        if (la >= 0 && la <= 40) return 60;
+        return 40;
+      };
+
+      // Detect weirdness
+      const weirdness = {
+        comOutOfRange: bodyData.com_max_forward_pct < 5 || bodyData.com_max_forward_pct > 40,
+        excessiveHeadMovement: bodyData.head_movement_inches > 18,
+        poorSpineStability: bodyData.spine_angle_var_deg > 25,
+        sequenceIncorrect: !bodyData.sequence_correct,
+        insufficientFrames: false // Can't check without raw frame data
+      };
+
+      const weirdnessMessages: string[] = [];
+      if (weirdness.comOutOfRange) weirdnessMessages.push('COM% out of realistic range');
+      if (weirdness.excessiveHeadMovement) weirdnessMessages.push('Head movement > 18"');
+      if (weirdness.poorSpineStability) weirdnessMessages.push('Spine instability > 25°');
+      if (weirdness.sequenceIncorrect) weirdnessMessages.push('Kinetic sequence issues');
+
+      weirdnessFlags = {
+        flags: weirdness,
+        message: weirdnessMessages.join(', '),
+        has_any: weirdnessMessages.length > 0
+      };
+
+      const levelForScoring = analysis.level || playerLevel.split(' ')[0];
+
+      metricsReboot = {
+        fps_confirmed: analysis.fps_confirmed,
+        com_pct: bodyData.com_max_forward_pct,
+        com_score: scoreCOM(bodyData.com_max_forward_pct),
+        head_movement_inches: bodyData.head_movement_inches,
+        head_score: scoreHead(bodyData.head_movement_inches),
+        spine_std: bodyData.spine_angle_var_deg,
+        spine_score: scoreSpine(bodyData.spine_angle_var_deg),
+        sequence: {
+          pelvis_frame: 0,
+          torso_frame: 0,
+          arm_frame: 0,
+          bat_frame: 0,
+          score: bodyData.sequence_correct ? 100 : 50,
+          details: bodyData.sequence_correct ? '3/3 transitions correct' : 'Sequence timing off'
+        },
+        bat: {
+          speed: batData.avg_bat_speed,
+          speed_score: scoreBatSpeed(batData.avg_bat_speed, levelForScoring),
+          attack_angle: batData.attack_angle_avg,
+          attack_angle_score: scoreAttackAngle(batData.attack_angle_avg),
+          time_in_zone_ms: batData.time_in_zone_ms,
+          time_in_zone_score: scoreTimeInZone(batData.time_in_zone_ms)
+        },
+        ball: {
+          ev90: ballData.ev90,
+          ev90_score: scoreEV(ballData.ev90, levelForScoring),
+          la90: ballData.la90,
+          la90_score: scoreLA(ballData.la90),
+          hard_hit_rate: ballData.hard_hit_rate,
+          barrel_rate: ballData.barrel_like_rate
+        },
+        weirdness: weirdnessFlags
+      };
+
+      console.log('Reboot metrics computed:', metricsReboot);
+    }
+
     // Update video_analyses with completion status and scores
+    const updateData: any = {
+      processing_status: 'completed',
+      brain_scores: Math.min(100, Math.max(0, brainScore)),
+      body_scores: Math.min(100, Math.max(0, bodyScore)),
+      bat_scores: Math.min(100, Math.max(0, batScore)),
+      ball_scores: Math.min(100, Math.max(0, ballScore)),
+    };
+
+    if (metricsReboot) {
+      updateData.metrics_reboot = metricsReboot;
+    }
+
     const { error: updateError } = await supabase
       .from('video_analyses')
-      .update({
-        processing_status: 'completed',
-        brain_scores: Math.min(100, Math.max(0, brainScore)),
-        body_scores: Math.min(100, Math.max(0, bodyScore)),
-        bat_scores: Math.min(100, Math.max(0, batScore)),
-        ball_scores: Math.min(100, Math.max(0, ballScore)),
-      })
+      .update(updateData)
       .eq('id', analysisId);
 
     if (updateError) {

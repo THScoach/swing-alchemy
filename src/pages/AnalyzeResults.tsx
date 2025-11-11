@@ -16,6 +16,7 @@ import { FourBDashboard } from "@/components/fourb/FourBDashboard";
 import { AdvancedVideoPlayer } from "@/components/video/AdvancedVideoPlayer";
 import { ComparisonModal } from "@/components/analysis/ComparisonModal";
 import { DrillRecommendations } from "@/components/analysis/DrillRecommendations";
+import { ModelRebootMetricsPanel } from "@/components/ModelRebootMetricsPanel";
 import { PlayerLevel } from "@/lib/fourb/types";
 import { useToast } from "@/hooks/use-toast";
 
@@ -294,6 +295,15 @@ export default function AnalyzeResults() {
           batData={fourbData.bat}
           ballData={fourbData.ball}
         />
+
+        {/* Model / Reboot Metrics Panel (when available) */}
+        {analysis.metrics_reboot && (
+          <ModelRebootMetricsPanel
+            metricsReboot={analysis.metrics_reboot}
+            level={analysis.level || player?.player_level}
+            handedness={analysis.handedness || player?.bats}
+          />
+        )}
 
         {/* Drill Recommendations */}
         {fourbData.brain || fourbData.body || fourbData.bat || fourbData.ball ? (

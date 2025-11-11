@@ -299,19 +299,24 @@ export default function AdminProSwings() {
               {proSwings.map((swing) => (
                 <Card key={swing.id}>
                   <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-lg">{swing.label}</CardTitle>
-                        <CardDescription className="mt-1">
-                          {swing.description}
-                        </CardDescription>
-                      </div>
-                      <div className="flex gap-1">
-                        <Button size="sm" variant="ghost" onClick={() => handleDelete(swing.id)}>
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      </div>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle className="text-lg">{swing.label}</CardTitle>
+                      <CardDescription className="mt-1">
+                        {swing.description}
+                      </CardDescription>
                     </div>
+                    <div className="flex gap-1">
+                      {swing.has_analysis && (
+                        <Badge variant="secondary" className="mr-2">
+                          Analyzed
+                        </Badge>
+                      )}
+                      <Button size="sm" variant="ghost" onClick={() => handleDelete(swing.id)}>
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
+                  </div>
                   </CardHeader>
                   <CardContent>
                     <video 
