@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ModelRebootMetricsPanel } from "@/components/ModelRebootMetricsPanel";
-import { Play, Star, Trash2 } from "lucide-react";
+import { Play, Star, Trash2, Zap } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface ModelSwing {
   id: string;
@@ -35,10 +38,125 @@ interface ModelDetailViewProps {
 }
 
 export const ModelDetailView = ({ model, open, onOpenChange, onDelete }: ModelDetailViewProps) => {
+  const { toast } = useToast();
+  const [analyzingSwings, setAnalyzingSwings] = useState<Set<string>>(new Set());
+
   if (!model) return null;
 
   const analyzedSwings = model.swings.filter(s => s.has_analysis && s.metrics_reboot);
   const swingCount = model.swings.length;
+
+  const handleAnalyzeSwing = async (swing: ModelSwing) => {
+    setAnalyzingSwings(prev => new Set(prev).add(swing.id));
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { data: orgMember } = await supabase
+        .from('organization_members')
+        .select('organization_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      // Create or find model player
+      let modelPlayerId = null;
+      const { data: existingPlayer } = await supabase
+        .from('players')
+        .select('id')
+        .eq('name', `MODEL_${model.player_name}`)
+        .eq('organization_id', orgMember?.organization_id)
+        .maybeSingle();
+
+      if (existingPlayer) {
+        modelPlayerId = existingPlayer.id;
+      } else {
+        const levelMap: Record<string, 'Youth (10-13)' | 'HS (14-18)' | 'College' | 'Pro' | 'Other'> = {
+          'Youth': 'Youth (10-13)',
+          'HS': 'HS (14-18)',
+          'College': 'College',
+          'Pro': 'Pro',
+          'MLB': 'Pro',
+          'MiLB': 'Pro',
+        };
+
+        const { data: newPlayer } = await supabase
+          .from('players')
+          .insert([{
+            name: `MODEL_${model.player_name}`,
+            organization_id: orgMember?.organization_id,
+            profile_id: user.id,
+            player_level: levelMap[model.level] || 'Other',
+            bats: model.handedness,
+            sport: 'Baseball',
+          }])
+          .select('id')
+          .single();
+        
+        if (newPlayer) modelPlayerId = newPlayer.id;
+      }
+
+      if (!modelPlayerId) throw new Error("Failed to create model player");
+
+      // Create video_analysis record
+      const { data: analysisRecord, error: analysisInsertError } = await supabase
+        .from('video_analyses')
+        .insert({
+          player_id: modelPlayerId,
+          video_url: swing.video_url,
+          mode: 'model',
+          is_pro_model: true,
+          pro_swing_id: swing.id,
+          fps: swing.fps_confirmed || 240,
+          fps_confirmed: swing.fps_confirmed || 240,
+          processing_status: 'pending',
+          uploaded_by: user.id,
+        })
+        .select()
+        .single();
+
+      if (analysisInsertError) throw analysisInsertError;
+
+      // Trigger analysis
+      const { error: analysisError } = await supabase.functions.invoke('process-video-analysis', {
+        body: {
+          analysisId: analysisRecord.id,
+          mode: 'model',
+          level: model.level,
+          handedness: model.handedness,
+          fps_confirmed: swing.fps_confirmed || 240,
+          source: 'pro_swing',
+          proSwingId: swing.id,
+        }
+      });
+      
+      if (analysisError) throw analysisError;
+
+      toast({
+        title: "Analysis Started",
+        description: "Processing swing with Reboot metrics. Refresh in a moment to see results.",
+      });
+
+      // Reload after a delay
+      setTimeout(() => {
+        window.location.reload();
+      }, 3000);
+
+    } catch (error: any) {
+      console.error('Analysis error:', error);
+      toast({
+        title: "Analysis Failed",
+        description: error.message || "Failed to start analysis.",
+        variant: "destructive",
+      });
+    } finally {
+      setAnalyzingSwings(prev => {
+        const next = new Set(prev);
+        next.delete(swing.id);
+        return next;
+      });
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -127,9 +245,25 @@ export const ModelDetailView = ({ model, open, onOpenChange, onDelete }: ModelDe
                         controls
                         className="w-full aspect-video bg-black rounded-lg"
                       />
-                      <div className="mt-2 text-xs text-muted-foreground">
-                        {new Date(swing.created_at).toLocaleDateString()}
-                        {swing.fps_confirmed && ` • ${swing.fps_confirmed} FPS`}
+                      <div className="mt-2 flex items-center justify-between">
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(swing.created_at).toLocaleDateString()}
+                          {swing.fps_confirmed && ` • ${swing.fps_confirmed} FPS`}
+                        </div>
+                        {!swing.has_analysis && (
+                          <Button
+                            size="sm"
+                            variant="default"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAnalyzeSwing(swing);
+                            }}
+                            disabled={analyzingSwings.has(swing.id)}
+                          >
+                            <Zap className="h-3 w-3 mr-1" />
+                            {analyzingSwings.has(swing.id) ? 'Analyzing...' : 'Analyze Now'}
+                          </Button>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
