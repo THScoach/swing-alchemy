@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FourBTile } from "./FourBTile";
-import { FourBModal } from "./FourBModal";
+import { FourBAccordionTile } from "./FourBAccordionTile";
 import { TileData, TileName, PlayerLevel } from "@/lib/fourb/types";
 import { 
   calculateBrainScore, 
@@ -31,9 +30,9 @@ export function FourBDashboard({
   batData,
   ballData,
 }: FourBDashboardProps) {
-  const [selectedTile, setSelectedTile] = useState<TileName | null>(null);
   const [tiles, setTiles] = useState<TileData[]>([]);
   const [summary, setSummary] = useState<any>(null);
+  const [contextFilter, setContextFilter] = useState<string>('All');
 
   useEffect(() => {
     // Calculate scores
@@ -100,42 +99,85 @@ export function FourBDashboard({
 
   return (
     <div className="space-y-6">
-      {/* Overall 4B Score */}
-      <Card className="border-2">
-        <CardHeader>
-          <CardTitle>4B Overall Score</CardTitle>
-        </CardHeader>
-        <CardContent className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className={`text-6xl font-bold ${getOverallColor()}`}>
-              {summary?.overallScore ? Math.round(summary.overallScore) : '—'}
-            </div>
-            <div>
-              <Badge 
-                variant={
-                  summary?.overallState === 'synced' ? 'default' :
-                  summary?.overallState === 'developing' ? 'secondary' :
-                  'destructive'
-                }
-                className="text-lg px-4 py-2"
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl md:text-3xl font-bold">4B Overview</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Powered by The Hitting Skool 4B System
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm">
+            Share
+          </Button>
+          <Button variant="outline" size="sm">
+            Export PDF
+          </Button>
+        </div>
+      </div>
+
+      {/* Context Filters */}
+      <Card>
+        <CardContent className="py-3">
+          <div className="flex items-center gap-2 overflow-x-auto">
+            <span className="text-sm text-muted-foreground mr-2">Context:</span>
+            {['All', 'Game', 'Practice', 'Drill'].map((filter) => (
+              <Badge
+                key={filter}
+                variant={contextFilter === filter ? 'default' : 'outline'}
+                className="cursor-pointer whitespace-nowrap"
+                onClick={() => setContextFilter(filter)}
               >
-                {summary?.overallLabel || 'No Data'}
+                {filter}
               </Badge>
-              <p className="text-sm text-muted-foreground mt-2">
-                {playerLevel} Level
-              </p>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Overall 4B Score */}
+      <Card className="border-2 border-primary/20">
+        <CardContent className="py-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-6">
+              <div className={`text-7xl md:text-8xl font-bold ${getOverallColor()}`}>
+                {summary?.overallScore ? Math.round(summary.overallScore) : '—'}
+              </div>
+              <div className="border-l pl-6">
+                <Badge 
+                  variant={
+                    summary?.overallState === 'synced' ? 'default' :
+                    summary?.overallState === 'developing' ? 'secondary' :
+                    'destructive'
+                  }
+                  className="text-xl px-6 py-2 mb-2"
+                >
+                  {summary?.overallLabel || 'No Data'}
+                </Badge>
+                <p className="text-sm text-muted-foreground">
+                  {playerLevel} Level
+                </p>
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Four Tiles */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Four Accordion Tiles */}
+      <div className="grid gap-4">
         {tiles.map((tile) => (
-          <FourBTile
+          <FourBAccordionTile
             key={tile.name}
             tile={tile}
-            onClick={() => setSelectedTile(tile.name)}
+            data={
+              tile.name === 'brain' ? brainData :
+              tile.name === 'body' ? bodyData :
+              tile.name === 'bat' ? batData :
+              ballData
+            }
+            onViewTrend={() => console.log('View trend for', tile.name)}
+            onAssignDrill={() => console.log('Assign drill for', tile.name)}
           />
         ))}
       </div>
@@ -159,13 +201,6 @@ export function FourBDashboard({
             <div className="flex items-center gap-2">
               <Badge variant="secondary">Focus Area</Badge>
               <span className="capitalize font-medium">{summary.focusArea}</span>
-              <Button 
-                variant="link" 
-                size="sm"
-                onClick={() => setSelectedTile(summary.focusArea as TileName)}
-              >
-                View Details
-              </Button>
             </div>
           )}
         </CardContent>
@@ -197,22 +232,31 @@ export function FourBDashboard({
         </CardContent>
       </Card>
 
-      {/* Modal */}
-      {selectedTile && (
-        <FourBModal
-          isOpen={!!selectedTile}
-          onClose={() => setSelectedTile(null)}
-          tileName={selectedTile}
-          score={tiles.find(t => t.name === selectedTile)?.score}
-          state={tiles.find(t => t.name === selectedTile)?.state || 'no-data'}
-          data={
-            selectedTile === 'brain' ? brainData :
-            selectedTile === 'body' ? bodyData :
-            selectedTile === 'bat' ? batData :
-            ballData
-          }
-        />
-      )}
+      {/* Recommended Training */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BookOpen className="h-5 w-5" />
+            Recommended Training
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid md:grid-cols-3 gap-4">
+            {['Timing Drill', 'Sequence Work', 'Bat Path Drill'].map((drill, idx) => (
+              <div key={idx} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
+                <div className="aspect-video bg-muted rounded-md mb-3" />
+                <h4 className="font-semibold mb-1">{drill}</h4>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Based on your {summary?.focusArea || 'performance'} area
+                </p>
+                <Button variant="outline" size="sm" className="w-full">
+                  View Drill
+                </Button>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

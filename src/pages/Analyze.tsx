@@ -26,6 +26,7 @@ export default function Analyze() {
   const [isDragging, setIsDragging] = useState(false);
   const [gamePlanModalOpen, setGamePlanModalOpen] = useState(false);
   const [contactFrame, setContactFrame] = useState<number | null>(null);
+  const [markAtContact, setMarkAtContact] = useState<boolean>(false);
   
   // Form state
   const [swingType, setSwingType] = useState<string>("");
@@ -83,7 +84,7 @@ export default function Analyze() {
     });
   };
 
-  const handleFileSelect = async (file: File, metadata?: { contactFrame?: number; fps?: number }) => {
+  const handleFileSelect = async (file: File, metadata?: { contactFrame?: number; fps?: number; markAtContact?: boolean }) => {
     if (!file.type.startsWith('video/')) {
       toast({
         title: "Invalid File",
@@ -102,9 +103,17 @@ export default function Analyze() {
     // Handle metadata from camera recording
     if (metadata) {
       setContactFrame(metadata.contactFrame || null);
-      setFps(metadata.fps || null);
+      setFps(metadata.fps || 240); // Default to 240fps
+      setMarkAtContact(metadata.markAtContact || false);
       
-      if (metadata.contactFrame) {
+      if (metadata.markAtContact) {
+        // Frame 0 = contact when marked at contact
+        setContactFrame(0);
+        toast({
+          title: "Contact Marked",
+          description: `Frame 0 marked as contact for timing reference (${metadata.fps || 240} fps capture)`,
+        });
+      } else if (metadata.contactFrame) {
         toast({
           title: "Video ready with contact marker",
           description: `Contact marked at ${(metadata.contactFrame / 1000).toFixed(2)}s. Add swing details and submit.`,
@@ -115,6 +124,7 @@ export default function Analyze() {
       const detectedFPS = await checkVideoFPS(file);
       setFps(detectedFPS);
       setContactFrame(null);
+      setMarkAtContact(false);
       
       if (detectedFPS < 240) {
         toast({
@@ -232,9 +242,9 @@ export default function Analyze() {
           session_notes: notes || null,
           context_tag: swingType || null,
           pitch_type: pitchType || null,
-          fps: fps,
-          contact_frame: contactFrame,
-          contact_time_ms: contactFrame ? contactFrame : null,
+          fps: fps || 240, // Default to 240
+          contact_frame: markAtContact ? 0 : contactFrame, // Frame 0 if marked at contact
+          contact_time_ms: markAtContact ? 0 : (contactFrame ? contactFrame : null),
         } as any)
         .select()
         .single();
