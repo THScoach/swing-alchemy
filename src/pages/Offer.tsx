@@ -22,62 +22,84 @@ const planConfigs: Record<string, PlanConfig> = {
   "free-tempo": {
     name: "Free Tempo Analysis",
     price: "$0",
-    headline: "See What You're Missing",
-    subheadline: "Upload one swing. Get instant AI feedback. No credit card required.",
+    headline: "Unlock Your Swing's Timing — Instantly.",
+    subheadline: "Upload one swing and get a free AI Tempo & Load–Fire analysis in seconds.",
     benefits: [
-      "One free video analysis with 4B metrics",
-      "View-only dashboard to see your swing data",
-      "Course previews to understand the training system",
+      "Find out if your swing's rhythm matches elite hitters",
+      "Get a personalized tempo ratio (Load : Fire)",
+      "Receive one actionable tip to improve timing today",
     ],
-    cta: "Start Free Analysis",
+    cta: "Start My Free Tempo Analysis",
     planType: "free",
   },
   "self-service": {
-    name: "Remote Starter",
+    name: "Self-Service",
     price: "$29",
     period: "/mo",
-    headline: "Train Smarter. Move Better. Hit Harder.",
-    subheadline: "Get the same AI analysis trusted by pro hitters — without the pro price tag.",
+    headline: "Train Smarter. Every Swing, Analyzed by AI.",
+    subheadline: "Get instant feedback, weekly swing reports, and community access — anywhere in the world.",
     benefits: [
-      "Instant 4B + Tempo analysis on every swing you upload",
-      "Drill recommendations that match YOUR swing flaws",
-      "Weekly 'Coach Rick Breakdown' videos with real coaching insights",
-      "Full access to The Hitting Skool community and course library",
-      "Unlimited video uploads — track your progress over time",
+      "Unlimited swing uploads with THS AI feedback",
+      "Access to Swing Rehab OS courses & drills",
+      "Private community for questions, progress, and wins",
     ],
-    cta: "Start Remote Training",
+    cta: "Join for $29 / month",
     planType: "self-service",
   },
   "group-coaching": {
-    name: "Remote Hybrid Coaching",
+    name: "Group Coaching",
     price: "$99",
     period: "/mo",
-    headline: "Get Real Coaching. From Anywhere.",
-    subheadline: "The perfect blend of AI precision and human feedback from Coach Rick.",
+    headline: "Join the Team. Weekly Coaching & Accountability.",
+    subheadline: "Work directly with Coach Rick and a community of driven players chasing the same goal.",
     benefits: [
-      "Everything in Remote Starter, plus personalized coaching",
-      "2 custom swing reviews per month with video feedback from Coach Rick",
-      "Group coaching sessions — train with others at your level",
-      "Progress reports powered by 4B + Reboot metrics",
-      "Priority support when you need help",
+      "Weekly live Zoom training sessions",
+      "Personalized drill feedback and group Q&A",
+      "Priority video analysis inside the app",
     ],
-    cta: "Join Group Coaching",
+    cta: "Join the Group for $99 / month",
     planType: "group-coaching",
+  },
+  "one-on-one": {
+    name: "1-on-1 Coaching",
+    price: "$299",
+    period: "/mo",
+    headline: "Personal Coaching. Professional Results.",
+    subheadline: "Get Coach Rick's direct feedback on your swing, mechanics, and training plan.",
+    benefits: [
+      "Private video feedback within 48 hours",
+      "Monthly 1-on-1 Zoom check-in",
+      "Custom drill plan built for your movement profile",
+    ],
+    cta: "Apply for 1-on-1 Coaching",
+    planType: "one-on-one",
+  },
+  "team": {
+    name: "Team Plan",
+    price: "$499",
+    period: "/mo",
+    headline: "Train Your Entire Team with AI Precision.",
+    subheadline: "Centralize swing data, manage rosters, and develop hitters faster.",
+    benefits: [
+      "Unlimited player profiles with analytics dashboard",
+      "Coach portal for swing comparison & reports",
+      "Monthly performance summary for every athlete",
+    ],
+    cta: "Get Team Access",
+    planType: "team",
   },
   "winter-program": {
     name: "Winter Program",
     price: "$997",
     period: " one-time",
-    headline: "Rebuild Your Swing. Keep It Forever.",
-    subheadline: "The complete hitting transformation used with MLB hitters — now available remotely.",
+    headline: "The Complete Winter Training System for Hitters.",
+    subheadline: "A full off-season program combining AI swing analysis, personalized feedback, and live coaching with Coach Rick.",
     benefits: [
-      "Complete biomechanical evaluation with full 4B assessment",
-      "Weekly live sessions with Coach Rick for personalized feedback",
-      "Fully customized training plan built around YOUR swing",
-      "Final performance report showing your transformation",
-      "Priority support throughout the entire program",
+      "Comprehensive 4B + Tempo evaluation",
+      "Weekly assignments and private video feedback",
+      "Exclusive Winter access — graduates continue at $99/mo if desired",
     ],
-    cta: "Join Winter Program",
+    cta: "Reserve My Winter Spot for $997",
     planType: "winter-program",
   },
   "4b-evaluation": {
@@ -288,6 +310,13 @@ export default function Offer() {
             >
               {config.cta}
             </Button>
+            
+            {/* AI Learning Message */}
+            <div className="pt-8 border-t border-border mt-12">
+              <p className="text-muted-foreground italic">
+                Every swing you upload helps THS AI learn your movement and tempo — the more you train, the smarter your analysis becomes.
+              </p>
+            </div>
           </div>
         </div>
       </div>
