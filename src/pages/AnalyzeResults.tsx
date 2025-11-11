@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -35,10 +35,40 @@ export default function AnalyzeResults() {
   });
   const [compareModalOpen, setCompareModalOpen] = useState(false);
   const [exportingPDF, setExportingPDF] = useState(false);
+  const emailTriggeredRef = useRef(false);
 
   useEffect(() => {
     fetchAnalysis();
   }, [id]);
+
+  // Auto-trigger instant progress email (idempotent per mount)
+  useEffect(() => {
+    if (!analysis || !analysis.id || !analysis.player_id) return;
+    if (!fourbData || (!fourbData.brain && !fourbData.body && !fourbData.bat && !fourbData.ball)) return;
+    if (emailTriggeredRef.current) return;
+
+    emailTriggeredRef.current = true;
+
+    supabase.functions
+      .invoke('send-progress-email', {
+        body: {
+          analysisId: analysis.id,
+          playerId: analysis.player_id,
+        },
+      })
+      .then((res) => {
+        if (res.error) {
+          console.error('send-progress-email error:', res.error);
+          emailTriggeredRef.current = false; // allow retry on reload if needed
+        } else {
+          console.log('send-progress-email success:', res.data);
+        }
+      })
+      .catch((err) => {
+        console.error('send-progress-email exception:', err);
+        emailTriggeredRef.current = false;
+      });
+  }, [analysis, fourbData]);
 
   const fetchAnalysis = async () => {
     try {
