@@ -121,6 +121,32 @@ const WinterActivation = ({ firstName, profileLink, uploadLink, scheduleLink }: 
     )
   );
 
+const TeamActivation = ({ coachName, seats, teamRosterLink, teamUploadLink, teamDashboardLink, supportEmail }: any) =>
+  React.createElement(Html, null,
+    React.createElement(Head, null),
+    React.createElement(Preview, null, "Your Team plan is live — Get started now"),
+    React.createElement(Body, { style: { backgroundColor: '#ffffff', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif' }},
+      React.createElement(Container, { style: { margin: '0 auto', padding: '20px 0 48px', maxWidth: '580px' }},
+        React.createElement(Heading, { style: { color: '#333', fontSize: '24px', fontWeight: '600', lineHeight: '1.3', margin: '0 0 20px' }}, `Coach ${coachName},`),
+        React.createElement(Text, { style: { color: '#333', fontSize: '16px', lineHeight: '1.6', margin: '0 0 16px' }}, `Your Team plan is live (${seats} seats).`),
+        React.createElement(Text, { style: { color: '#333', fontSize: '16px', lineHeight: '1.6', margin: '0 0 16px', fontWeight: 'bold' }}, "Do this now:"),
+        React.createElement(Text, { style: { color: '#333', fontSize: '16px', lineHeight: '1.6', margin: '0 0 8px', paddingLeft: '8px' }},
+          "1) Add roster (CSV or manual) → ", React.createElement(Link, { href: teamRosterLink, style: { color: '#2754C5', textDecoration: 'underline' }}, "Team Roster")
+        ),
+        React.createElement(Text, { style: { color: '#333', fontSize: '16px', lineHeight: '1.6', margin: '0 0 8px', paddingLeft: '8px' }},
+          "2) Share player upload link → ", React.createElement(Link, { href: teamUploadLink, style: { color: '#2754C5', textDecoration: 'underline' }}, "Upload Link")
+        ),
+        React.createElement(Text, { style: { color: '#333', fontSize: '16px', lineHeight: '1.6', margin: '0 0 8px', paddingLeft: '8px' }},
+          "3) See team dashboard → ", React.createElement(Link, { href: teamDashboardLink, style: { color: '#2754C5', textDecoration: 'underline' }}, "Dashboard")
+        ),
+        React.createElement(Text, { style: { color: '#333', fontSize: '16px', lineHeight: '1.6', margin: '0 0 16px' }},
+          "We'll auto-assign drills once first swings arrive."
+        ),
+        React.createElement(Text, { style: { color: '#333', fontSize: '16px', lineHeight: '1.6', margin: '24px 0 0', fontWeight: '500' }}, `— THS Support (${supportEmail})`)
+      )
+    )
+  );
+
 serve(async (req) => {
   const signature = req.headers.get("Stripe-Signature");
   const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
@@ -240,6 +266,8 @@ async function handleCheckoutCompleted(
       await sendWinterActivation(userId, session.customer_details.email, session.customer_details.phone, supabase);
     } else if (planCode === "hybrid") {
       await sendHybridActivation(userId, session.customer_details.email, supabase);
+    } else if (planCode?.startsWith("team")) {
+      await sendTeamActivation(userId, session.customer_details.email, session.customer_details.phone, seats, supabase);
     }
   }
 }
@@ -384,6 +412,44 @@ async function sendHybridActivation(
     subject: "Your Hybrid plan ($99/mo) is active",
     html,
   });
+}
+
+async function sendTeamActivation(
+  userId: string,
+  email: string,
+  phone: string | null | undefined,
+  seats: number,
+  supabase: any
+) {
+  logStep("Sending Team activation", { userId, email, seats });
+
+  const { data: profile } = await supabase.from("profiles").select("name").eq("id", userId).single();
+  const coachName = profile?.name || "Coach";
+  const appOrigin = "https://app.thehittingskool.com";
+
+  const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+  const html = await renderAsync(
+    React.createElement(TeamActivation, {
+      coachName,
+      seats,
+      teamRosterLink: `${appOrigin}/admin/teams`,
+      teamUploadLink: `${appOrigin}/analyze`,
+      teamDashboardLink: `${appOrigin}/admin/teams`,
+      supportEmail: "support@thehittingskool.com",
+    })
+  );
+
+  await resend.emails.send({
+    from: "THS Support <support@thehittingskool.com>",
+    to: [email],
+    subject: "Your Team plan is live — Get started now",
+    html,
+  });
+
+  if (phone) {
+    const message = `THS: Team plan live. Add roster & share upload link.\nRoster: ${appOrigin}/admin/teams | Upload: ${appOrigin}/analyze\nTxt HELP for help, STOP to opt out.`;
+    await sendSMS(phone, message);
+  }
 }
 
 async function sendSMS(phone: string, message: string) {
