@@ -12,6 +12,9 @@ import { HybridEmailReactivation } from "./_templates/hybrid-email-reactivation.
 import { HybridReactivationStep1 } from "./_templates/hybrid-reactivation-step-1.tsx";
 import { HybridReactivationStep2 } from "./_templates/hybrid-reactivation-step-2.tsx";
 import { HybridReactivationStep3 } from "./_templates/hybrid-reactivation-step-3.tsx";
+import { OnboardingStep1 } from "./_templates/onboarding-step-1.tsx";
+import { OnboardingStep2 } from "./_templates/onboarding-step-2.tsx";
+import { OnboardingStep3 } from "./_templates/onboarding-step-3.tsx";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -179,6 +182,108 @@ serve(async (req) => {
         .eq("id", sequenceId);
 
       logStep("Reactivation funnel email sent successfully", { sequenceId, step: sequence.email_number });
+
+      return new Response(
+        JSON.stringify({ success: true, sequenceId }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    // Handle new player onboarding sequence
+    if (sequence.sequence_name === 'new_player_onboarding') {
+      logStep("Processing new player onboarding email", { step: sequence.email_number });
+
+      const originUrl = Deno.env.get("SUPABASE_URL")?.replace('//', '//app.') || '';
+      const analyzeUrl = `${originUrl}/analyze`;
+      const dashboardUrl = `${originUrl}/dashboard`;
+
+      // Check if player has uploaded (exit condition for entire sequence)
+      const playerId = sequence.metadata?.player_id;
+      if (playerId) {
+        const { data: existingUpload } = await supabaseClient
+          .from("video_analyses")
+          .select("id")
+          .eq("player_id", playerId)
+          .limit(1)
+          .single();
+
+        if (existingUpload) {
+          logStep("Player uploaded swing, canceling remaining onboarding sequence");
+          
+          // Cancel all pending emails in this sequence
+          await supabaseClient
+            .from("email_sequences")
+            .update({ 
+              status: "skipped",
+              error_message: "Player uploaded first swing - onboarding complete"
+            })
+            .eq("user_id", sequence.user_id)
+            .eq("sequence_name", "new_player_onboarding")
+            .eq("status", "pending");
+
+          return new Response(
+            JSON.stringify({ success: true, skipped: true, reason: "Player completed first upload" }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+          );
+        }
+      }
+
+      let html: string;
+      let subject: string;
+
+      switch (sequence.email_number) {
+        case 1:
+          subject = "Welcome to The Hitting Skool — Here's Your First Step";
+          html = await renderAsync(
+            React.createElement(OnboardingStep1, { firstName, dashboardUrl, analyzeUrl })
+          );
+          break;
+        case 2:
+          subject = "Your Swing Tells the Story — Ready to See It?";
+          html = await renderAsync(
+            React.createElement(OnboardingStep2, { firstName, analyzeUrl })
+          );
+          break;
+        case 3:
+          subject = "Your AI Coach Is Ready to Break Down Your Swing";
+          html = await renderAsync(
+            React.createElement(OnboardingStep3, { firstName, analyzeUrl })
+          );
+          break;
+        default:
+          throw new Error(`Unknown onboarding step: ${sequence.email_number}`);
+      }
+
+      logStep("Sending onboarding email via Resend", { to: email, subject, step: sequence.email_number });
+
+      const { error: sendError } = await resend.emails.send({
+        from: "Coach Rick @ The Hitting Skool <support@thehittingskool.com>",
+        to: [email],
+        subject,
+        html,
+      });
+
+      if (sendError) {
+        logStep("ERROR sending onboarding email", { error: sendError });
+        await supabaseClient
+          .from("email_sequences")
+          .update({
+            status: "failed",
+            error_message: sendError.message || "Unknown error"
+          })
+          .eq("id", sequenceId);
+        throw new Error(`Failed to send email: ${sendError.message}`);
+      }
+
+      await supabaseClient
+        .from("email_sequences")
+        .update({
+          status: "sent",
+          sent_at: new Date().toISOString()
+        })
+        .eq("id", sequenceId);
+
+      logStep("Onboarding email sent successfully", { sequenceId, step: sequence.email_number });
 
       return new Response(
         JSON.stringify({ success: true, sequenceId }),
