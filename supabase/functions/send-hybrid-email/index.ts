@@ -15,6 +15,10 @@ import { HybridReactivationStep3 } from "./_templates/hybrid-reactivation-step-3
 import { OnboardingStep1 } from "./_templates/onboarding-step-1.tsx";
 import { OnboardingStep2 } from "./_templates/onboarding-step-2.tsx";
 import { OnboardingStep3 } from "./_templates/onboarding-step-3.tsx";
+import { TeamOnboardingStep1 } from "./_templates/team-onboarding-step-1.tsx";
+import { TeamOnboardingStep2 } from "./_templates/team-onboarding-step-2.tsx";
+import { TeamOnboardingStep3 } from "./_templates/team-onboarding-step-3.tsx";
+import { TeamOnboardingStep5 } from "./_templates/team-onboarding-step-5.tsx";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -284,6 +288,147 @@ serve(async (req) => {
         .eq("id", sequenceId);
 
       logStep("Onboarding email sent successfully", { sequenceId, step: sequence.email_number });
+
+      return new Response(
+        JSON.stringify({ success: true, sequenceId }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    // Handle team coach onboarding sequence
+    if (sequence.sequence_name === 'team_coach_onboarding') {
+      logStep("Processing team coach onboarding email", { step: sequence.email_number });
+
+      const originUrl = Deno.env.get("SUPABASE_URL")?.replace('//', '//app.') || '';
+      const dashboardUrl = `${originUrl}/dashboard`;
+      const reportsUrl = `${originUrl}/my-progress`;
+      const uploadUrl = `${originUrl}/analyze`;
+      const trendsUrl = `${originUrl}/my-progress`;
+
+      // Check for exit conditions
+      const organizationId = sequence.metadata?.organization_id;
+      
+      if (organizationId) {
+        // Check if subscription is canceled
+        const { data: org } = await supabaseClient
+          .from("organizations")
+          .select("subscription_tier")
+          .eq("id", organizationId)
+          .single();
+
+        if (!org || org.subscription_tier === 'free') {
+          logStep("Organization subscription canceled, canceling team onboarding sequence");
+          
+          await supabaseClient
+            .from("email_sequences")
+            .update({ 
+              status: "skipped",
+              error_message: "Subscription canceled"
+            })
+            .eq("user_id", sequence.user_id)
+            .eq("sequence_name", "team_coach_onboarding")
+            .eq("status", "pending");
+
+          return new Response(
+            JSON.stringify({ success: true, skipped: true, reason: "Subscription canceled" }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+          );
+        }
+
+        // Check for upload inactivity (30+ days with no uploads from team players)
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        const { data: recentTeamUploads } = await supabaseClient
+          .from("video_analyses")
+          .select("id, players!inner(organization_id)")
+          .eq("players.organization_id", organizationId)
+          .gte("created_at", thirtyDaysAgo.toISOString())
+          .limit(1);
+
+        if (!recentTeamUploads || recentTeamUploads.length === 0) {
+          logStep("No team uploads in 30 days, canceling team onboarding sequence");
+          
+          await supabaseClient
+            .from("email_sequences")
+            .update({ 
+              status: "skipped",
+              error_message: "No swing uploads after 30 days - inactive team"
+            })
+            .eq("user_id", sequence.user_id)
+            .eq("sequence_name", "team_coach_onboarding")
+            .eq("status", "pending");
+
+          return new Response(
+            JSON.stringify({ success: true, skipped: true, reason: "Team inactive for 30+ days" }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+          );
+        }
+      }
+
+      const coachName = firstName;
+      let html: string;
+      let subject: string;
+
+      switch (sequence.email_number) {
+        case 1:
+          subject = "Your Team Dashboard Is Ready — Let's Get Your Players Set Up";
+          html = await renderAsync(
+            React.createElement(TeamOnboardingStep1, { coachName, dashboardUrl })
+          );
+          break;
+        case 2:
+          subject = "How to Read Your First Team Report";
+          html = await renderAsync(
+            React.createElement(TeamOnboardingStep2, { coachName, reportsUrl })
+          );
+          break;
+        case 3:
+          subject = "Keep Your Players Uploading — AI Can't Coach What It Can't See";
+          html = await renderAsync(
+            React.createElement(TeamOnboardingStep3, { coachName, uploadUrl })
+          );
+          break;
+        case 5:
+          subject = "We've Built You a Custom Retention Bonus";
+          html = await renderAsync(
+            React.createElement(TeamOnboardingStep5, { coachName, trendsUrl })
+          );
+          break;
+        default:
+          throw new Error(`Unknown team onboarding step: ${sequence.email_number}`);
+      }
+
+      logStep("Sending team onboarding email via Resend", { to: email, subject, step: sequence.email_number });
+
+      const { error: sendError } = await resend.emails.send({
+        from: "Coach Rick @ The Hitting Skool <support@thehittingskool.com>",
+        to: [email],
+        subject,
+        html,
+      });
+
+      if (sendError) {
+        logStep("ERROR sending team onboarding email", { error: sendError });
+        await supabaseClient
+          .from("email_sequences")
+          .update({
+            status: "failed",
+            error_message: sendError.message || "Unknown error"
+          })
+          .eq("id", sequenceId);
+        throw new Error(`Failed to send email: ${sendError.message}`);
+      }
+
+      await supabaseClient
+        .from("email_sequences")
+        .update({
+          status: "sent",
+          sent_at: new Date().toISOString()
+        })
+        .eq("id", sequenceId);
+
+      logStep("Team onboarding email sent successfully", { sequenceId, step: sequence.email_number });
 
       return new Response(
         JSON.stringify({ success: true, sequenceId }),
