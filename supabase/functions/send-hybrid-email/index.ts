@@ -19,6 +19,9 @@ import { TeamOnboardingStep1 } from "./_templates/team-onboarding-step-1.tsx";
 import { TeamOnboardingStep2 } from "./_templates/team-onboarding-step-2.tsx";
 import { TeamOnboardingStep3 } from "./_templates/team-onboarding-step-3.tsx";
 import { TeamOnboardingStep5 } from "./_templates/team-onboarding-step-5.tsx";
+import { TeamExpansionStep1 } from "./_templates/team-expansion-step-1.tsx";
+import { TeamExpansionStep2 } from "./_templates/team-expansion-step-2.tsx";
+import { TeamExpansionStep3 } from "./_templates/team-expansion-step-3.tsx";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -429,6 +432,116 @@ serve(async (req) => {
         .eq("id", sequenceId);
 
       logStep("Team onboarding email sent successfully", { sequenceId, step: sequence.email_number });
+
+      return new Response(
+        JSON.stringify({ success: true, sequenceId }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    // Handle team expansion upsell sequence
+    if (sequence.sequence_name === 'team_expansion') {
+      logStep("Processing team expansion email", { step: sequence.email_number });
+
+      const originUrl = Deno.env.get("SUPABASE_URL")?.replace('//', '//app.') || '';
+      const upgradeUrl = `${originUrl}/teams-upgrade`;
+
+      // Check for exit condition: coach upgraded to next tier
+      const organizationId = sequence.metadata?.organization_id;
+      const currentSeats = sequence.metadata?.current_seats || 10;
+      
+      if (organizationId) {
+        // Count current players
+        const { data: players } = await supabaseClient
+          .from('players')
+          .select('id')
+          .eq('organization_id', organizationId);
+
+        const playerCount = players?.length || 0;
+
+        // If player count suggests upgrade happened (e.g., was at 10, now can have more than 10 active)
+        // or if they're no longer near capacity, cancel sequence
+        if (playerCount < currentSeats * 0.85) {
+          logStep("Team upgraded or capacity resolved, canceling expansion sequence");
+          
+          await supabaseClient
+            .from("email_sequences")
+            .update({ 
+              status: "skipped",
+              error_message: "Team upgraded or capacity resolved"
+            })
+            .eq("user_id", sequence.user_id)
+            .eq("sequence_name", "team_expansion")
+            .eq("status", "pending");
+
+          return new Response(
+            JSON.stringify({ success: true, skipped: true, reason: "Team upgraded" }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+          );
+        }
+      }
+
+      const coachName = firstName;
+      let html: string;
+      let subject: string;
+
+      switch (sequence.email_number) {
+        case 1:
+          subject = "You're Out of Seats — Let's Expand Your Roster";
+          html = await renderAsync(
+            React.createElement(TeamExpansionStep1, { 
+              coachName, 
+              currentSeats,
+              upgradeUrl 
+            })
+          );
+          break;
+        case 2:
+          subject = "Don't Lose Progress — Your Players Still Need You";
+          html = await renderAsync(
+            React.createElement(TeamExpansionStep2, { coachName, upgradeUrl })
+          );
+          break;
+        case 3:
+          subject = "Final Reminder — Don't Let Data Drop Off";
+          html = await renderAsync(
+            React.createElement(TeamExpansionStep3, { coachName, upgradeUrl })
+          );
+          break;
+        default:
+          throw new Error(`Unknown team expansion step: ${sequence.email_number}`);
+      }
+
+      logStep("Sending team expansion email via Resend", { to: email, subject, step: sequence.email_number });
+
+      const { error: sendError } = await resend.emails.send({
+        from: "Coach Rick @ The Hitting Skool <support@thehittingskool.com>",
+        to: [email],
+        subject,
+        html,
+      });
+
+      if (sendError) {
+        logStep("ERROR sending team expansion email", { error: sendError });
+        await supabaseClient
+          .from("email_sequences")
+          .update({
+            status: "failed",
+            error_message: sendError.message || "Unknown error"
+          })
+          .eq("id", sequenceId);
+        throw new Error(`Failed to send email: ${sendError.message}`);
+      }
+
+      await supabaseClient
+        .from("email_sequences")
+        .update({
+          status: "sent",
+          sent_at: new Date().toISOString()
+        })
+        .eq("id", sequenceId);
+
+      logStep("Team expansion email sent successfully", { sequenceId, step: sequence.email_number });
 
       return new Response(
         JSON.stringify({ success: true, sequenceId }),
