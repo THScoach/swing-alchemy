@@ -139,6 +139,25 @@ const tiers = [
 
 const inPersonTiers = [
   {
+    name: "Elite Winter Program",
+    price: "$997",
+    period: " one-time",
+    description: "Complete 4B System for serious hitters",
+    features: [
+      "Full biomechanical 4B + Tempo evaluation",
+      "Weekly live sessions with Coach Rick",
+      "Remote + in-person hybrid support",
+      "Personalized training plan that adapts weekly",
+      "Final performance report & progress summary",
+      "Priority access throughout program",
+      "Graduates continue at $99/mo if desired"
+    ],
+    sessionType: null,
+    offerPath: "/order/winter-program",
+    highlighted: true,
+    badge: "Best for Serious Hitters"
+  },
+  {
     name: "4B Elite Evaluation",
     price: "$299",
     period: " one-time",
@@ -341,7 +360,14 @@ export default function PricingPage() {
                     : ""
                 }`}
               >
-                {tier.highlighted && (
+                {tier.highlighted && tier.badge && (
+                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                    <div className="bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-semibold">
+                      {tier.badge}
+                    </div>
+                  </div>
+                )}
+                {tier.highlighted && !tier.badge && (
                   <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
                     <div className="bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-semibold">
                       Most Popular
@@ -367,14 +393,26 @@ export default function PricingPage() {
                       </li>
                     ))}
                   </ul>
-                  <Button
-                    className="w-full"
-                    variant={tier.highlighted ? "default" : "outline"}
-                    size="lg"
-                    onClick={() => handleBookSession(tier.sessionType)}
-                  >
-                    Book Session
-                  </Button>
+                  {tier.offerPath ? (
+                    <Link to={tier.offerPath} className="w-full">
+                      <Button
+                        className="w-full"
+                        variant={tier.highlighted ? "default" : "outline"}
+                        size="lg"
+                      >
+                        {tier.name.includes("Winter") ? "Join Winter Program" : "Book Session"}
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Button
+                      className="w-full"
+                      variant={tier.highlighted ? "default" : "outline"}
+                      size="lg"
+                      onClick={() => handleBookSession(tier.sessionType)}
+                    >
+                      Book Session
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             ))}
