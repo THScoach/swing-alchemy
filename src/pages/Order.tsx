@@ -40,16 +40,17 @@ const planConfigs: Record<string, PlanConfig> = {
     planType: "winter-program",
   },
   "self-service": {
-    name: "Self-Service",
+    name: "AI Adaptive Training",
     price: "$29",
     priceAmount: 29,
     period: "/mo",
-    headline: "Train Smarter. Every Swing, Analyzed by AI.",
-    subheadline: "Get instant feedback, weekly swing reports, and community access — anywhere in the world.",
+    headline: "Train Smarter, Anytime.",
+    subheadline: "Upload swings, get instant AI analysis, and watch your personalized drills evolve as your swing improves.",
     benefits: [
-      "Unlimited swing uploads with THS AI feedback",
-      "Access to Swing Rehab OS courses & drills",
-      "Private community for questions, progress, and wins",
+      "AI-powered swing analysis with instant feedback",
+      "Adaptive drill recommendations that improve with you",
+      "Access to The Hitting Skool app + community",
+      "Powered by Coach Rick AI — the smarter you train, the smarter it gets",
     ],
     cta: "Start Training Today",
     planType: "self-service",
@@ -189,7 +190,7 @@ export default function Order() {
             </div>
             <div className="flex items-center gap-2">
               <Check className="h-4 w-4 text-success" />
-              <span>Limited Winter Enrollment</span>
+              <span>{plan === "winter-program" ? "Limited Winter Enrollment" : "Cancel Anytime"}</span>
             </div>
           </div>
         </div>
@@ -210,14 +211,16 @@ export default function Order() {
       {/* Hero Section */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4 pb-12">
         <h1 className="text-4xl lg:text-5xl font-bold leading-tight">
-          Join The Hitting Skool Winter Program
+          {config.headline}
         </h1>
         <p className="text-xl text-muted-foreground">
-          Limited Spots for 2025 Training
+          {config.subheadline}
         </p>
-        <p className="text-lg">
-          Transform your swing this offseason with Coach Rick's proven 4B System and Reboot-validated biomechanics.
-        </p>
+        {plan === "winter-program" && (
+          <p className="text-lg">
+            Transform your swing this offseason with Coach Rick's proven 4B System and Reboot-validated biomechanics.
+          </p>
+        )}
       </div>
 
       {/* Video Section */}
@@ -241,7 +244,7 @@ export default function Order() {
         </Card>
         <div className="mt-6 text-center">
           <Button size="lg" onClick={() => document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth' })}>
-            Reserve My Spot in The Winter Program
+            {config.cta}
           </Button>
         </div>
       </div>
@@ -254,30 +257,28 @@ export default function Order() {
             <div className="space-y-6">
               <h2 className="text-3xl font-bold">What You Get</h2>
               <ul className="space-y-4">
-                <li className="flex items-start gap-3">
-                  <Check className="h-6 w-6 text-success flex-shrink-0 mt-1" />
-                  <span className="text-lg">Personalized biomechanical swing analysis (Tempo + Reboot integration)</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="h-6 w-6 text-success flex-shrink-0 mt-1" />
-                  <span className="text-lg">Weekly feedback and drills from Coach Rick</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="h-6 w-6 text-success flex-shrink-0 mt-1" />
-                  <span className="text-lg">Access to The Hitting Skool app + community</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="h-6 w-6 text-success flex-shrink-0 mt-1" />
-                  <span className="text-lg">Private leaderboard + player dashboard</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="h-6 w-6 text-success flex-shrink-0 mt-1" />
-                  <span className="text-lg">End-of-program report card and progress summary</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="h-6 w-6 text-success flex-shrink-0 mt-1" />
-                  <span className="text-lg">Access to the Pro Swing Library and Benchmarks</span>
-                </li>
+                {config.benefits.map((benefit, idx) => (
+                  <li key={idx} className="flex items-start gap-3">
+                    <Check className="h-6 w-6 text-success flex-shrink-0 mt-1" />
+                    <span className="text-lg">{benefit}</span>
+                  </li>
+                ))}
+                {plan === "winter-program" && (
+                  <>
+                    <li className="flex items-start gap-3">
+                      <Check className="h-6 w-6 text-success flex-shrink-0 mt-1" />
+                      <span className="text-lg">Private leaderboard + player dashboard</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <Check className="h-6 w-6 text-success flex-shrink-0 mt-1" />
+                      <span className="text-lg">End-of-program report card and progress summary</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <Check className="h-6 w-6 text-success flex-shrink-0 mt-1" />
+                      <span className="text-lg">Access to the Pro Swing Library and Benchmarks</span>
+                    </li>
+                  </>
+                )}
               </ul>
             </div>
 
@@ -292,17 +293,29 @@ export default function Order() {
                     <span className="text-muted-foreground">Your Program:</span>
                     <span className="font-semibold">{config.name}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Start Date:</span>
-                    <span className="font-semibold">December 2025</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Duration:</span>
-                    <span className="font-semibold">Full winter training cycle</span>
-                  </div>
+                  {plan === "winter-program" && (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Start Date:</span>
+                        <span className="font-semibold">December 2025</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Duration:</span>
+                        <span className="font-semibold">Full winter training cycle</span>
+                      </div>
+                    </>
+                  )}
+                  {plan === "self-service" && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Billing:</span>
+                      <span className="font-semibold">Monthly subscription</span>
+                    </div>
+                  )}
                   <div className="flex justify-between pt-4 border-t">
                     <span className="text-muted-foreground">Includes:</span>
-                    <span className="text-sm">Video analysis, AI tracking, weekly reports</span>
+                    <span className="text-sm">
+                      {plan === "winter-program" ? "Video analysis, AI tracking, weekly reports" : "AI analysis, adaptive drills, community access"}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center pt-4 border-t">
                     <span className="text-xl font-bold">Total:</span>
@@ -487,7 +500,9 @@ export default function Order() {
                         htmlFor="terms"
                         className="text-sm leading-relaxed cursor-pointer"
                       >
-                        I understand this is a one-time $997 Winter Program enrollment and I agree to The Hitting Skool terms & privacy policy.
+                        {plan === "winter-program" 
+                          ? "I understand this is a one-time $997 Winter Program enrollment and I agree to The Hitting Skool terms & privacy policy."
+                          : "I understand this is a monthly $29 subscription and I agree to The Hitting Skool terms & privacy policy."}
                       </label>
                     </div>
                   </div>

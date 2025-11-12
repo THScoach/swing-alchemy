@@ -27,15 +27,15 @@ const tiers = [
     highlighted: false,
   },
   {
-    name: "Remote Starter",
+    name: "AI Adaptive Training",
     price: "$29",
     period: "/mo",
-    description: "Fix your swing fast — without overpaying for lessons",
-    offerPath: "/offer/self-service",
+    description: "Train smarter, anytime. Your AI coach adapts as you improve.",
+    offerPath: "/order/self-service",
     features: [
       { text: "Instant 4B + Tempo analysis", included: true },
-      { text: "Drill recommendations that match your swing", included: true },
-      { text: "Weekly 'Coach Rick Breakdown' videos", included: true },
+      { text: "AI-powered drill recommendations", included: true },
+      { text: "Personalized training that evolves with you", included: true },
       { text: "Access to The Hitting Skool community", included: true },
       { text: "Full course access", included: true },
       { text: "Unlimited video uploads", included: true },
@@ -43,7 +43,7 @@ const tiers = [
       { text: "1-on-1 coaching calls", included: false },
       { text: "Team dashboard", included: false },
     ],
-    cta: "Start Remote Training",
+    cta: "Start Training",
     highlighted: false,
   },
   {
@@ -236,8 +236,8 @@ export default function PricingPage() {
             Upload your swing. Get instant feedback. Learn exactly what's holding you back — and what to fix next.
           </p>
           <p className="text-lg text-secondary-foreground/80 max-w-3xl mx-auto mt-4 italic">
-            Every swing you upload helps The Hitting Skool's AI learn your movement patterns. 
-            The smarter it gets, the better your drill recommendations become.
+            Powered by Coach Rick AI — every swing you upload helps the system learn your rhythm and tempo. 
+            The smarter you train, the faster you improve.
           </p>
         </div>
       </section>
