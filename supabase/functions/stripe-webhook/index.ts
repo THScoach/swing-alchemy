@@ -2,11 +2,6 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
-
-// Centralized email configuration
-const SUPPORT_EMAIL = Deno.env.get("SUPPORT_EMAIL") || "support@4bhitting.com";
-const FROM_BRAND = Deno.env.get("FROM_BRAND") || "Coach Rick @ 4B Hitting";
-const FROM_ADDRESS = `${FROM_BRAND} <${SUPPORT_EMAIL}>`;
 import { renderAsync } from "https://esm.sh/@react-email/components@0.0.15";
 import React from "https://esm.sh/react@18.2.0";
 import {
@@ -19,6 +14,11 @@ import {
   Preview,
   Text,
 } from "https://esm.sh/@react-email/components@0.0.15";
+
+// Centralized email configuration
+const SUPPORT_EMAIL = Deno.env.get("SUPPORT_EMAIL") || "support@4bhitting.com";
+const FROM_BRAND = Deno.env.get("FROM_BRAND") || "Coach Rick @ 4B Hitting";
+const FROM_ADDRESS = `${FROM_BRAND} <${SUPPORT_EMAIL}>`;
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
   apiVersion: "2025-08-27.basil",

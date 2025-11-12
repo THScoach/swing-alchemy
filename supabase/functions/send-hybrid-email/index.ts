@@ -3,11 +3,6 @@ import { Resend } from "https://esm.sh/resend@2.0.0";
 import { renderAsync } from "https://esm.sh/@react-email/components@0.0.15";
 import React from "https://esm.sh/react@18.2.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
-
-// Centralized email configuration
-const SUPPORT_EMAIL = Deno.env.get("SUPPORT_EMAIL") || "support@4bhitting.com";
-const FROM_BRAND = Deno.env.get("FROM_BRAND") || "Coach Rick @ 4B Hitting";
-const FROM_ADDRESS = `${FROM_BRAND} <${SUPPORT_EMAIL}>`;
 import { HybridEmail1 } from "./_templates/hybrid-email-1.tsx";
 import { HybridEmail2 } from "./_templates/hybrid-email-2.tsx";
 import { HybridEmail3 } from "./_templates/hybrid-email-3.tsx";
@@ -31,6 +26,11 @@ import { HybridToTeamStep1 } from "./_templates/hybrid-to-team-step-1.tsx";
 import { HybridToTeamStep2 } from "./_templates/hybrid-to-team-step-2.tsx";
 import { HybridToTeamStep3 } from "./_templates/hybrid-to-team-step-3.tsx";
 import { StarterActivation } from "./_templates/starter-activation.tsx";
+
+// Centralized email configuration
+const SUPPORT_EMAIL = Deno.env.get("SUPPORT_EMAIL") || "support@4bhitting.com";
+const FROM_BRAND = Deno.env.get("FROM_BRAND") || "Coach Rick @ 4B Hitting";
+const FROM_ADDRESS = `${FROM_BRAND} <${SUPPORT_EMAIL}>`;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -926,7 +926,7 @@ serve(async (req) => {
 
     // Send email
     const { error: sendError } = await resend.emails.send({
-      from: "Coach Rick <onboarding@resend.dev>", // Update with your domain
+      from: FROM_ADDRESS,
       to: [email],
       subject,
       html,

@@ -14,6 +14,11 @@ import {
   Text,
 } from 'https://esm.sh/@react-email/components@0.0.15'
 
+// Centralized email configuration
+const SUPPORT_EMAIL = Deno.env.get("SUPPORT_EMAIL") || "support@4bhitting.com";
+const FROM_BRAND = Deno.env.get("FROM_BRAND") || "Coach Rick @ 4B Hitting";
+const FROM_ADDRESS = `${FROM_BRAND} <${SUPPORT_EMAIL}>`;
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -236,10 +241,11 @@ serve(async (req) => {
       )
 
       const { data: emailData, error: emailError } = await resend.emails.send({
-        from: 'Coach Rick <onboarding@resend.dev>',
+        from: FROM_ADDRESS,
         to: [profile.email || ''],
         subject: 'Got It — Your Swing Is Being Reanalyzed',
         html: emailHtml,
+        reply_to: [SUPPORT_EMAIL],
       })
 
       if (emailError) {
