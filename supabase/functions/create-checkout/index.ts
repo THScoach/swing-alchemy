@@ -112,6 +112,11 @@ serve(async (req) => {
     const isSubscription = price.type === "recurring";
     const mode = isSubscription ? "subscription" : "payment";
 
+    // Determine success URL based on plan type
+    const successUrl = planType === "self-service" 
+      ? `${req.headers.get("origin")}/welcome-ai?transaction_id=${transaction.id}`
+      : `${req.headers.get("origin")}/thank-you?session_id={CHECKOUT_SESSION_ID}&transaction_id=${transaction.id}`;
+
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -123,7 +128,7 @@ serve(async (req) => {
         },
       ],
       mode: mode,
-      success_url: `${req.headers.get("origin")}/thank-you?session_id={CHECKOUT_SESSION_ID}&transaction_id=${transaction.id}`,
+      success_url: successUrl,
       cancel_url: `${req.headers.get("origin")}/pricing?canceled=true`,
       metadata: {
         transaction_id: transaction.id,

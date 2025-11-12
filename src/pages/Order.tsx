@@ -191,15 +191,15 @@ export default function Order() {
           <div className="flex flex-wrap items-center justify-center gap-6 text-sm">
             <div className="flex items-center gap-2">
               <Check className="h-4 w-4 text-success" />
-              <span>Safe Checkout via Stripe</span>
+              <span>{plan === "self-service" ? "Instant access after signup" : "Safe Checkout via Stripe"}</span>
             </div>
             <div className="flex items-center gap-2">
               <Check className="h-4 w-4 text-success" />
-              <span>Secure Data Encryption</span>
+              <span>{plan === "winter-program" ? "Secure Data Encryption" : "Cancel Anytime"}</span>
             </div>
             <div className="flex items-center gap-2">
               <Check className="h-4 w-4 text-success" />
-              <span>{plan === "winter-program" ? "Limited Winter Enrollment" : "Cancel Anytime"}</span>
+              <span>{plan === "winter-program" ? "Limited Winter Enrollment" : "Secure Stripe checkout"}</span>
             </div>
           </div>
         </div>
@@ -315,15 +315,23 @@ export default function Order() {
                     </>
                   )}
                   {plan === "self-service" && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Billing:</span>
-                      <span className="font-semibold">Monthly subscription</span>
-                    </div>
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Access:</span>
+                        <span className="font-semibold">Monthly Subscription — Cancel Anytime</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Billing:</span>
+                        <span className="font-semibold">$29/month, auto-renewal</span>
+                      </div>
+                    </>
                   )}
                   <div className="flex justify-between pt-4 border-t">
                     <span className="text-muted-foreground">Includes:</span>
                     <span className="text-sm">
-                      {plan === "winter-program" ? "Video analysis, AI tracking, weekly reports" : "AI analysis, adaptive drills, community access"}
+                      {plan === "winter-program" 
+                        ? "Video analysis, AI tracking, weekly reports" 
+                        : "Smart Drill Engine, Instant AI Analysis, Swing Dashboard"}
                     </span>
                   </div>
                   <div className="flex justify-between items-center pt-4 border-t">
@@ -511,9 +519,27 @@ export default function Order() {
                       >
                         {plan === "winter-program" 
                           ? "I understand this is a one-time $997 Winter Program enrollment and I agree to The Hitting Skool terms & privacy policy."
-                          : "I understand this is a monthly $29 subscription and I agree to The Hitting Skool terms & privacy policy."}
+                          : plan === "self-service"
+                          ? "I understand this is a $29/month subscription and agree to The Hitting Skool terms & privacy policy."
+                          : "I understand this is a monthly subscription and I agree to The Hitting Skool terms & privacy policy."}
                       </label>
                     </div>
+
+                    {plan === "self-service" && (
+                      <div className="flex items-start space-x-2 pt-2">
+                        <Checkbox
+                          id="ai-training"
+                          checked={true}
+                          disabled={loading}
+                        />
+                        <label
+                          htmlFor="ai-training"
+                          className="text-sm leading-relaxed cursor-pointer text-muted-foreground"
+                        >
+                          I understand this plan provides AI-guided training (no direct coaching).
+                        </label>
+                      </div>
+                    )}
                   </div>
 
                   <Button
@@ -523,7 +549,7 @@ export default function Order() {
                     disabled={loading || !formData.agreeToTerms}
                   >
                     {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                    Complete My Enrollment →
+                    {plan === "self-service" ? "Activate My Smart Training →" : "Complete My Enrollment →"}
                   </Button>
                 </div>
               </div>
@@ -540,14 +566,20 @@ export default function Order() {
               <div className="text-3xl">🔒</div>
               <h3 className="text-xl font-bold">100% Secure Checkout</h3>
               <p className="text-muted-foreground">
-                Your payment and personal information are safe. We use industry-standard SSL protection.
+                {plan === "self-service"
+                  ? "We use SSL encryption to protect your information."
+                  : "Your payment and personal information are safe. We use industry-standard SSL protection."}
               </p>
             </div>
             <div className="space-y-2">
-              <div className="text-3xl">🏆</div>
-              <h3 className="text-xl font-bold">100% Program Guarantee</h3>
+              <div className="text-3xl">{plan === "self-service" ? "🧠" : "🏆"}</div>
+              <h3 className="text-xl font-bold">
+                {plan === "self-service" ? "Smarter Every Swing Guarantee" : "100% Program Guarantee"}
+              </h3>
               <p className="text-muted-foreground">
-                If you're not satisfied after completing your first 2 weeks, you can request a full refund — no questions asked.
+                {plan === "self-service"
+                  ? "Every swing you upload helps Coach Rick AI learn your rhythm — the smarter you train, the smarter it gets."
+                  : "If you're not satisfied after completing your first 2 weeks, you can request a full refund — no questions asked."}
               </p>
             </div>
           </div>
