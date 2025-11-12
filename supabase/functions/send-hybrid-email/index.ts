@@ -6,6 +6,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { HybridEmail1 } from "./_templates/hybrid-email-1.tsx";
 import { HybridEmail2 } from "./_templates/hybrid-email-2.tsx";
 import { HybridEmail3 } from "./_templates/hybrid-email-3.tsx";
+import { HybridEmail4Active } from "./_templates/hybrid-email-4-active.tsx";
+import { HybridEmail4Inactive } from "./_templates/hybrid-email-4-inactive.tsx";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -85,6 +87,7 @@ serve(async (req) => {
     let subject: string;
     const originUrl = Deno.env.get("SUPABASE_URL")?.replace('//', '//app.') || '';
     const analyzeUrl = `${originUrl}/analyze`;
+    const dashboardUrl = `${originUrl}/feed`;
     const zoomLink = "https://zoom.us/placeholder"; // Update with actual Zoom link
 
     switch (sequence.email_number) {
@@ -105,6 +108,148 @@ serve(async (req) => {
         html = await renderAsync(
           React.createElement(HybridEmail3, { firstName })
         );
+        break;
+      case 4:
+        // Day 7 Progress Check-in - fetch user activity and metrics
+        
+        // First check if user is still subscribed to Hybrid
+        const { data: currentProfile } = await supabaseClient
+          .from("profiles")
+          .select("subscription_tier")
+          .eq("id", sequence.user_id)
+          .single();
+
+        if (!currentProfile || currentProfile.subscription_tier !== "Hybrid_Coaching") {
+          logStep("User no longer subscribed to Hybrid, skipping Day 7 email");
+          
+          // Mark as skipped
+          await supabaseClient
+            .from("email_sequences")
+            .update({
+              status: "skipped",
+              error_message: "User no longer subscribed to Hybrid"
+            })
+            .eq("id", sequenceId);
+            
+          return new Response(
+            JSON.stringify({ success: true, skipped: true, reason: "Not subscribed to Hybrid" }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+          );
+        }
+        
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        // Find user's player profile
+        const { data: player } = await supabaseClient
+          .from("players")
+          .select("id")
+          .eq("profile_id", sequence.user_id)
+          .single();
+
+        if (!player) {
+          logStep("No player profile found, sending inactive email");
+          subject = "Quick Nudge: Let's Get Your First Hybrid Results In";
+          html = await renderAsync(
+            React.createElement(HybridEmail4Inactive, { firstName, analyzeUrl })
+          );
+          break;
+        }
+
+        // Count uploads in last 7 days
+        const { data: analyses, count: uploadsCount } = await supabaseClient
+          .from("video_analyses")
+          .select("id, created_at", { count: "exact" })
+          .eq("player_id", player.id)
+          .gte("created_at", sevenDaysAgo.toISOString());
+
+        logStep("Activity check", { uploadsCount, playerId: player.id });
+
+        if (!uploadsCount || uploadsCount === 0) {
+          // No activity - send inactive email
+          subject = "Quick Nudge: Let's Get Your First Hybrid Results In";
+          html = await renderAsync(
+            React.createElement(HybridEmail4Inactive, { firstName, analyzeUrl })
+          );
+        } else {
+          // Has activity - fetch metrics and send active email
+          const { data: scores } = await supabaseClient
+            .from("fourb_scores")
+            .select("*")
+            .eq("player_id", player.id)
+            .gte("session_date", sevenDaysAgo.toISOString())
+            .order("session_date", { ascending: true });
+
+          if (!scores || scores.length === 0) {
+            // Has uploads but no scores yet - send inactive email
+            subject = "Quick Nudge: Let's Get Your First Hybrid Results In";
+            html = await renderAsync(
+              React.createElement(HybridEmail4Inactive, { firstName, analyzeUrl })
+            );
+            break;
+          }
+
+          const earliest = scores[0];
+          const latest = scores[scores.length - 1];
+
+          // Calculate directional changes
+          const getDirection = (latestVal: number | null, prevVal: number | null): string => {
+            if (!latestVal || !prevVal) return "recorded";
+            const delta = latestVal - prevVal;
+            if (delta >= 5) return "↑ up";
+            if (delta <= -5) return "↓ down";
+            return "→ steady";
+          };
+
+          // Fetch latest body data for additional metrics
+          const { data: bodyData } = await supabaseClient
+            .from("body_data")
+            .select("*")
+            .eq("player_id", player.id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .single();
+
+          // Determine tempo label (simplified - you may have more complex logic)
+          let tempoLabel = "Recorded in your dashboard";
+          if (bodyData) {
+            // Add tempo logic here if you have it in your data
+            tempoLabel = "Recorded in your dashboard";
+          }
+
+          subject = "Your First Week Results Are In ✅";
+          html = await renderAsync(
+            React.createElement(HybridEmail4Active, {
+              firstName,
+              uploadsCount: uploadsCount || 0,
+              tempoLabel,
+              overall: {
+                latest: latest.overall_score || 0,
+                direction: getDirection(latest.overall_score, earliest.overall_score),
+              },
+              brain: {
+                latest: latest.brain_score || 0,
+                direction: getDirection(latest.brain_score, earliest.brain_score),
+              },
+              body: {
+                latest: latest.body_score || 0,
+                direction: getDirection(latest.body_score, earliest.body_score),
+              },
+              bat: {
+                latest: latest.bat_score || 0,
+                direction: getDirection(latest.bat_score, earliest.bat_score),
+              },
+              ball: {
+                latest: latest.ball_score || 0,
+                direction: getDirection(latest.ball_score, earliest.ball_score),
+              },
+              comPct: bodyData?.com_max_forward_pct || undefined,
+              headMovement: bodyData?.head_movement_inches || undefined,
+              sequence: bodyData?.sequence_correct ? "Correct" : bodyData?.sequence_correct === false ? "In Review" : undefined,
+              dashboardUrl,
+            })
+          );
+        }
         break;
       default:
         throw new Error(`Unknown email number: ${sequence.email_number}`);
