@@ -81,12 +81,12 @@ serve(async (req) => {
         continue;
       }
 
-      // Check if they already have a pending reactivation email
+      // Check if they already have a pending reactivation sequence
       const { data: pendingEmail, error: pendingError } = await supabase
         .from('email_sequences')
         .select('id')
         .eq('user_id', userId)
-        .eq('sequence_name', 'hybrid_reactivation')
+        .eq('sequence_name', 'hybrid_reactivation_funnel')
         .eq('status', 'pending')
         .maybeSingle();
 
@@ -96,17 +96,17 @@ serve(async (req) => {
       }
 
       if (pendingEmail) {
-        logStep(`User ${userId} already has pending reactivation email, skipping`);
+        logStep(`User ${userId} already has pending reactivation sequence, skipping`);
         skipped++;
         continue;
       }
 
-      // Check if they received a reactivation email in the last 21 days
+      // Check if they received a reactivation sequence in the last 21 days
       const { data: recentEmail, error: recentError } = await supabase
         .from('email_sequences')
         .select('sent_at')
         .eq('user_id', userId)
-        .eq('sequence_name', 'hybrid_reactivation')
+        .eq('sequence_name', 'hybrid_reactivation_funnel')
         .eq('status', 'sent')
         .gte('sent_at', twentyOneDaysAgo.toISOString())
         .maybeSingle();
@@ -117,28 +117,50 @@ serve(async (req) => {
       }
 
       if (recentEmail) {
-        logStep(`User ${userId} received reactivation email recently, skipping`);
+        logStep(`User ${userId} received reactivation sequence recently, skipping`);
         skipped++;
         continue;
       }
 
-      // Schedule reactivation email (send immediately)
+      // Schedule 3-step reactivation sequence
+      const now = new Date();
+      const step2Date = new Date(now.getTime() + (3 * 24 * 60 * 60 * 1000)); // +3 days
+      const step3Date = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000)); // +7 days
+
+      const sequenceEmails = [
+        {
+          user_id: userId,
+          sequence_name: 'hybrid_reactivation_funnel',
+          email_number: 1,
+          scheduled_at: now.toISOString(),
+          status: 'pending'
+        },
+        {
+          user_id: userId,
+          sequence_name: 'hybrid_reactivation_funnel',
+          email_number: 2,
+          scheduled_at: step2Date.toISOString(),
+          status: 'pending'
+        },
+        {
+          user_id: userId,
+          sequence_name: 'hybrid_reactivation_funnel',
+          email_number: 3,
+          scheduled_at: step3Date.toISOString(),
+          status: 'pending'
+        }
+      ];
+
       const { error: insertError } = await supabase
         .from('email_sequences')
-        .insert({
-          user_id: userId,
-          sequence_name: 'hybrid_reactivation',
-          email_number: 1,
-          scheduled_at: new Date().toISOString(),
-          status: 'pending'
-        });
+        .insert(sequenceEmails);
 
       if (insertError) {
-        logStep(`Error scheduling reactivation email for user ${userId}`, insertError);
+        logStep(`Error scheduling reactivation sequence for user ${userId}`, insertError);
         continue;
       }
 
-      logStep(`Scheduled reactivation email for user ${userId}`);
+      logStep(`Scheduled 3-step reactivation sequence for user ${userId}`);
       scheduled++;
     }
 

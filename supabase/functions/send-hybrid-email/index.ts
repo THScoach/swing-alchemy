@@ -9,6 +9,9 @@ import { HybridEmail3 } from "./_templates/hybrid-email-3.tsx";
 import { HybridEmail4Active } from "./_templates/hybrid-email-4-active.tsx";
 import { HybridEmail4Inactive } from "./_templates/hybrid-email-4-inactive.tsx";
 import { HybridEmailReactivation } from "./_templates/hybrid-email-reactivation.tsx";
+import { HybridReactivationStep1 } from "./_templates/hybrid-reactivation-step-1.tsx";
+import { HybridReactivationStep2 } from "./_templates/hybrid-reactivation-step-2.tsx";
+import { HybridReactivationStep3 } from "./_templates/hybrid-reactivation-step-3.tsx";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -83,7 +86,107 @@ serve(async (req) => {
     
     logStep("Rendering email", { sequenceName: sequence.sequence_name, emailNumber: sequence.email_number, firstName, email });
 
-    // Handle reactivation emails
+    // Handle 3-step reactivation funnel
+    if (sequence.sequence_name === 'hybrid_reactivation_funnel') {
+      logStep("Processing reactivation funnel email", { step: sequence.email_number });
+
+      const originUrl = Deno.env.get("SUPABASE_URL")?.replace('//', '//app.') || '';
+      const analyzeUrl = `${originUrl}/analyze`;
+      const dashboardUrl = `${originUrl}/feed`;
+
+      // Check if user uploaded since scheduling (exit condition for entire sequence)
+      const { data: recentUpload } = await supabaseClient
+        .from("video_analyses")
+        .select("id")
+        .eq("user_id", sequence.user_id)
+        .gte("created_at", sequence.scheduled_at)
+        .limit(1)
+        .single();
+
+      if (recentUpload) {
+        logStep("User uploaded since scheduling, canceling remaining sequence");
+        
+        // Cancel all pending emails in this sequence
+        await supabaseClient
+          .from("email_sequences")
+          .update({ 
+            status: "skipped",
+            error_message: "User reactivated - uploaded swing"
+          })
+          .eq("user_id", sequence.user_id)
+          .eq("sequence_name", "hybrid_reactivation_funnel")
+          .eq("status", "pending");
+
+        return new Response(
+          JSON.stringify({ success: true, skipped: true, reason: "User reactivated with upload" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+        );
+      }
+
+      let html: string;
+      let subject: string;
+
+      switch (sequence.email_number) {
+        case 1:
+          subject = "Quick Check-In — Haven't Seen a Swing in a While";
+          html = await renderAsync(
+            React.createElement(HybridReactivationStep1, { firstName, analyzeUrl })
+          );
+          break;
+        case 2:
+          subject = "If You Miss a Week, You Miss Momentum";
+          html = await renderAsync(
+            React.createElement(HybridReactivationStep2, { firstName, analyzeUrl })
+          );
+          break;
+        case 3:
+          subject = "Ready for a Fresh Start? I've Reset Your Week 1 Plan.";
+          html = await renderAsync(
+            React.createElement(HybridReactivationStep3, { firstName, dashboardUrl })
+          );
+          break;
+        default:
+          throw new Error(`Unknown reactivation funnel step: ${sequence.email_number}`);
+      }
+
+      logStep("Sending reactivation funnel email via Resend", { to: email, subject, step: sequence.email_number });
+
+      const { error: sendError } = await resend.emails.send({
+        from: "Coach Rick @ The Hitting Skool <support@thehittingskool.com>",
+        to: [email],
+        subject,
+        html,
+      });
+
+      if (sendError) {
+        logStep("ERROR sending reactivation funnel email", { error: sendError });
+        await supabaseClient
+          .from("email_sequences")
+          .update({
+            status: "failed",
+            error_message: sendError.message || "Unknown error"
+          })
+          .eq("id", sequenceId);
+        throw new Error(`Failed to send email: ${sendError.message}`);
+      }
+
+      await supabaseClient
+        .from("email_sequences")
+        .update({
+          status: "sent",
+          sent_at: new Date().toISOString()
+        })
+        .eq("id", sequenceId);
+
+      logStep("Reactivation funnel email sent successfully", { sequenceId, step: sequence.email_number });
+
+      return new Response(
+        JSON.stringify({ success: true, sequenceId }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    // Handle single reactivation emails (legacy)
     if (sequence.sequence_name === 'hybrid_reactivation') {
       logStep("Processing reactivation email");
 
