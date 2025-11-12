@@ -158,6 +158,22 @@ export default function WelcomeAI() {
             </Button>
           </div>
         </div>
+
+        {/* Optional Upgrade CTA */}
+        <Card className="bg-muted/30 border-muted">
+          <CardContent className="pt-6 text-center space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Want live feedback and personal coaching from Coach Rick?
+            </p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => navigate("/upgrade-hybrid")}
+            >
+              Learn About Hybrid Coaching
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

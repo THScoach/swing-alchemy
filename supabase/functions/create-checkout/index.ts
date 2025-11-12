@@ -9,13 +9,14 @@ const corsHeaders = {
 
 interface CheckoutRequest {
   planType: string;
-  stripePriceId: string;
+  stripePriceId?: string;
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string;
   playerId?: string;
   scheduledDate?: string;
   metadata?: Record<string, any>;
+  isUpgrade?: boolean;
 }
 
 serve(async (req) => {
@@ -48,22 +49,20 @@ serve(async (req) => {
       customerPhone,
       playerId,
       scheduledDate,
-      metadata = {}
+      metadata = {},
+      isUpgrade = false
     }: CheckoutRequest = await req.json();
 
-    const name = customerName || "Customer";
-    const email = customerEmail;
+    // For upgrades, use authenticated user's email
+    const name = customerName || user?.user_metadata?.name || "Customer";
+    const email = customerEmail || user?.email;
     const phone = customerPhone;
 
     if (!email) {
       throw new Error("Email is required");
     }
 
-    if (!stripePriceId) {
-      throw new Error("Stripe price ID is required");
-    }
-
-    console.log("[CREATE-CHECKOUT] Request:", { planType, stripePriceId, email });
+    console.log("[CREATE-CHECKOUT] Request:", { planType, stripePriceId, email, isUpgrade });
 
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -76,6 +75,65 @@ serve(async (req) => {
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
       console.log("[CREATE-CHECKOUT] Existing customer found:", customerId);
+    }
+
+    // Handle upgrade flow - update existing subscription
+    if (isUpgrade && customerId) {
+      console.log("[CREATE-CHECKOUT] Processing upgrade for customer:", customerId);
+      
+      // Get hybrid price ID (you may need to configure this)
+      const hybridPriceId = stripePriceId || "price_hybrid_monthly"; // Default hybrid price
+      
+      // Find active subscription
+      const subscriptions = await stripe.subscriptions.list({
+        customer: customerId,
+        status: "active",
+        limit: 1,
+      });
+
+      if (subscriptions.data.length === 0) {
+        throw new Error("No active subscription found to upgrade");
+      }
+
+      const subscription = subscriptions.data[0];
+      
+      // Update subscription to new price
+      const updatedSubscription = await stripe.subscriptions.update(subscription.id, {
+        items: [
+          {
+            id: subscription.items.data[0].id,
+            price: hybridPriceId,
+          },
+        ],
+        proration_behavior: "always_invoice",
+      });
+
+      console.log("[CREATE-CHECKOUT] Subscription upgraded:", updatedSubscription.id);
+
+      // Update user profile tag in Supabase
+      if (user?.id) {
+        await supabaseClient
+          .from("profiles")
+          .update({ subscription_tier: "Hybrid_Coaching" })
+          .eq("id", user.id);
+        
+        console.log("[CREATE-CHECKOUT] Profile updated with Hybrid_Coaching tier");
+      }
+
+      // Return success without checkout session
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: "Subscription upgraded successfully",
+        subscriptionId: updatedSubscription.id
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    // Regular checkout flow continues below
+    if (!stripePriceId) {
+      throw new Error("Stripe price ID is required");
     }
 
     // Create transaction record

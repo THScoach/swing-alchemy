@@ -40,6 +40,7 @@ import ThankYou from "./pages/ThankYou";
 import Offer from "./pages/Offer";
 import Order from "./pages/Order";
 import WelcomeAI from "./pages/WelcomeAI";
+import UpgradeHybrid from "./pages/UpgradeHybrid";
 
 const queryClient = new QueryClient();
 
@@ -92,6 +93,7 @@ const App = () => (
           {/* Public success page */}
           <Route path="/thank-you" element={<ThankYou />} />
           <Route path="/welcome-ai" element={<WelcomeAI />} />
+          <Route path="/upgrade-hybrid" element={<ProtectedRoute><UpgradeHybrid /></ProtectedRoute>} />
           <Route path="/facility" element={<Facility />} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
