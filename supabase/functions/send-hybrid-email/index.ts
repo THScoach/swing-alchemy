@@ -8,6 +8,7 @@ import { HybridEmail2 } from "./_templates/hybrid-email-2.tsx";
 import { HybridEmail3 } from "./_templates/hybrid-email-3.tsx";
 import { HybridEmail4Active } from "./_templates/hybrid-email-4-active.tsx";
 import { HybridEmail4Inactive } from "./_templates/hybrid-email-4-inactive.tsx";
+import { HybridEmailReactivation } from "./_templates/hybrid-email-reactivation.tsx";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -80,9 +81,98 @@ serve(async (req) => {
     const email = userData.user.email;
     const firstName = profile.name?.split(' ')[0] || 'there';
     
-    logStep("Rendering email", { emailNumber: sequence.email_number, firstName, email });
+    logStep("Rendering email", { sequenceName: sequence.sequence_name, emailNumber: sequence.email_number, firstName, email });
 
-    // Render the appropriate email template
+    // Handle reactivation emails
+    if (sequence.sequence_name === 'hybrid_reactivation') {
+      logStep("Processing reactivation email");
+
+      const originUrl = Deno.env.get("SUPABASE_URL")?.replace('//', '//app.') || '';
+      const analyzeUrl = `${originUrl}/analyze`;
+
+      // Check if user uploaded in the last 24 hours (skip email if so)
+      const oneDayAgo = new Date();
+      oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+      
+      const { data: recentUpload } = await supabaseClient
+        .from("video_analyses")
+        .select("id")
+        .eq("user_id", sequence.user_id)
+        .gte("created_at", oneDayAgo.toISOString())
+        .limit(1)
+        .single();
+
+      if (recentUpload) {
+        logStep("User uploaded in last 24 hours, skipping reactivation email");
+        
+        await supabaseClient
+          .from("email_sequences")
+          .update({ 
+            status: "skipped",
+            error_message: "User uploaded within 24 hours of scheduled send"
+          })
+          .eq("id", sequenceId);
+
+        return new Response(
+          JSON.stringify({ success: true, skipped: true, reason: "Recent activity" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+        );
+      }
+
+      // Rotate subject lines (weekly rotation)
+      const subjectVariants = [
+        "Quick Check-In — Haven't Seen a Swing in a While",
+        "Let's Get You Back in Rhythm",
+        "One Upload Away from Progress"
+      ];
+      const subjectIndex = Math.floor(Date.now() / (7 * 24 * 60 * 60 * 1000)) % 3;
+
+      const html = await renderAsync(
+        React.createElement(HybridEmailReactivation, {
+          firstName,
+          analyzeUrl,
+          subjectVariant: subjectIndex + 1
+        })
+      );
+
+      logStep("Sending reactivation email via Resend", { to: email, subject: subjectVariants[subjectIndex] });
+
+      const { error: sendError } = await resend.emails.send({
+        from: "Coach Rick @ The Hitting Skool <support@thehittingskool.com>",
+        to: [email],
+        subject: subjectVariants[subjectIndex],
+        html,
+      });
+
+      if (sendError) {
+        logStep("ERROR sending reactivation email", { error: sendError });
+        await supabaseClient
+          .from("email_sequences")
+          .update({
+            status: "failed",
+            error_message: sendError.message || "Unknown error"
+          })
+          .eq("id", sequenceId);
+        throw new Error(`Failed to send email: ${sendError.message}`);
+      }
+
+      await supabaseClient
+        .from("email_sequences")
+        .update({
+          status: "sent",
+          sent_at: new Date().toISOString()
+        })
+        .eq("id", sequenceId);
+
+      logStep("Reactivation email sent successfully", { sequenceId });
+
+      return new Response(
+        JSON.stringify({ success: true, sequenceId }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    // Handle onboarding sequence emails
     let html: string;
     let subject: string;
     const originUrl = Deno.env.get("SUPABASE_URL")?.replace('//', '//app.') || '';
