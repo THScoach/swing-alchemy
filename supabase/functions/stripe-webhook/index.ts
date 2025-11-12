@@ -2,6 +2,11 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+
+// Centralized email configuration
+const SUPPORT_EMAIL = Deno.env.get("SUPPORT_EMAIL") || "support@4bhitting.com";
+const FROM_BRAND = Deno.env.get("FROM_BRAND") || "Coach Rick @ 4B Hitting";
+const FROM_ADDRESS = `${FROM_BRAND} <${SUPPORT_EMAIL}>`;
 import { renderAsync } from "https://esm.sh/@react-email/components@0.0.15";
 import React from "https://esm.sh/react@18.2.0";
 import {
@@ -332,15 +337,16 @@ async function sendStarterActivation(
       profileLink: `${appOrigin}/profile`,
       uploadLink: `${appOrigin}/analyze`,
       dashboardLink: `${appOrigin}/my-progress`,
-      supportEmail: "support@4bhitting.com",
+      supportEmail: SUPPORT_EMAIL,
     })
   );
 
   await resend.emails.send({
-    from: "Coach Rick @ The Hitting Skool <support@4bhitting.com>",
+    from: FROM_ADDRESS,
     to: [email],
     subject: "You're activated on THS Starter ($29/mo)",
     html,
+    reply_to: [SUPPORT_EMAIL],
   });
 
   if (phone) {
@@ -372,10 +378,11 @@ async function sendWinterActivation(
   );
 
   await resend.emails.send({
-    from: "Coach Rick @ The Hitting Skool <support@4bhitting.com>",
+    from: FROM_ADDRESS,
     to: [email],
     subject: "❄️ Winter Program Confirmed — Let's Build This",
     html,
+    reply_to: [SUPPORT_EMAIL],
   });
 
   if (phone) {
@@ -402,15 +409,16 @@ async function sendHybridActivation(
       goalsLink: `${appOrigin}/profile`,
       uploadLink: `${appOrigin}/analyze`,
       drillsLink: `${appOrigin}/my-progress`,
-      supportEmail: "support@4bhitting.com",
+      supportEmail: SUPPORT_EMAIL,
     })
   );
 
   await resend.emails.send({
-    from: "Coach Rick @ The Hitting Skool <support@4bhitting.com>",
+    from: FROM_ADDRESS,
     to: [email],
     subject: "Your Hybrid plan ($99/mo) is active",
     html,
+    reply_to: [SUPPORT_EMAIL],
   });
 }
 
@@ -435,15 +443,16 @@ async function sendTeamActivation(
       teamRosterLink: `${appOrigin}/admin/teams`,
       teamUploadLink: `${appOrigin}/analyze`,
       teamDashboardLink: `${appOrigin}/admin/teams`,
-      supportEmail: "support@4bhitting.com",
+      supportEmail: SUPPORT_EMAIL,
     })
   );
 
   await resend.emails.send({
-    from: "THS Support <support@4bhitting.com>",
+    from: FROM_ADDRESS,
     to: [email],
     subject: "Your Team plan is live — Get started now",
     html,
+    reply_to: [SUPPORT_EMAIL],
   });
 
   if (phone) {
