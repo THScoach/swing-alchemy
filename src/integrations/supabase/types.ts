@@ -1006,13 +1006,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "players_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
         ]
       }
       pocket_radar_readings: {
@@ -1473,37 +1466,161 @@ export type Database = {
           },
         ]
       }
-      teams: {
+      team_invites: {
         Row: {
           created_at: string
+          email: string | null
+          expires_at: string
           id: string
-          name: string
-          organization_id: string
-          updated_at: string
+          status: string
+          team_id: string
+          token: string
         }
         Insert: {
           created_at?: string
+          email?: string | null
+          expires_at?: string
           id?: string
-          name: string
-          organization_id: string
-          updated_at?: string
+          status?: string
+          team_id: string
+          token?: string
         }
         Update: {
           created_at?: string
+          email?: string | null
+          expires_at?: string
           id?: string
-          name?: string
-          organization_id?: string
-          updated_at?: string
+          status?: string
+          team_id?: string
+          token?: string
         }
         Relationships: [
           {
-            foreignKeyName: "teams_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: "team_invites_team_id_fkey"
+            columns: ["team_id"]
             isOneToOne: false
-            referencedRelation: "organizations"
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
+      }
+      team_members: {
+        Row: {
+          id: string
+          invited_at: string
+          joined_at: string | null
+          player_email: string
+          player_name: string | null
+          player_user_id: string | null
+          role: string
+          status: string
+          team_id: string
+        }
+        Insert: {
+          id?: string
+          invited_at?: string
+          joined_at?: string | null
+          player_email: string
+          player_name?: string | null
+          player_user_id?: string | null
+          role?: string
+          status?: string
+          team_id: string
+        }
+        Update: {
+          id?: string
+          invited_at?: string
+          joined_at?: string | null
+          player_email?: string
+          player_name?: string | null
+          player_user_id?: string | null
+          role?: string
+          status?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_passes: {
+        Row: {
+          amount_paid: number | null
+          duration_days: number
+          id: string
+          plan_label: string | null
+          purchased_at: string
+          stripe_session_id: string | null
+          team_id: string
+        }
+        Insert: {
+          amount_paid?: number | null
+          duration_days: number
+          id?: string
+          plan_label?: string | null
+          purchased_at?: string
+          stripe_session_id?: string | null
+          team_id: string
+        }
+        Update: {
+          amount_paid?: number | null
+          duration_days?: number
+          id?: string
+          plan_label?: string | null
+          purchased_at?: string
+          stripe_session_id?: string | null
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_passes_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          coach_email: string
+          coach_user_id: string
+          created_at: string
+          expires_on: string
+          id: string
+          name: string
+          player_limit: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          coach_email: string
+          coach_user_id: string
+          created_at?: string
+          expires_on: string
+          id?: string
+          name: string
+          player_limit?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          coach_email?: string
+          coach_user_id?: string
+          created_at?: string
+          expires_on?: string
+          id?: string
+          name?: string
+          player_limit?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       transactions: {
         Row: {
