@@ -332,12 +332,12 @@ async function sendStarterActivation(
       profileLink: `${appOrigin}/profile`,
       uploadLink: `${appOrigin}/analyze`,
       dashboardLink: `${appOrigin}/my-progress`,
-      supportEmail: "support@thehittingskool.com",
+      supportEmail: "support@4bhitting.com",
     })
   );
 
   await resend.emails.send({
-    from: "Coach Rick @ The Hitting Skool <support@thehittingskool.com>",
+    from: "Coach Rick @ The Hitting Skool <support@4bhitting.com>",
     to: [email],
     subject: "You're activated on THS Starter ($29/mo)",
     html,
@@ -372,7 +372,7 @@ async function sendWinterActivation(
   );
 
   await resend.emails.send({
-    from: "Coach Rick @ The Hitting Skool <support@thehittingskool.com>",
+    from: "Coach Rick @ The Hitting Skool <support@4bhitting.com>",
     to: [email],
     subject: "❄️ Winter Program Confirmed — Let's Build This",
     html,
@@ -402,12 +402,12 @@ async function sendHybridActivation(
       goalsLink: `${appOrigin}/profile`,
       uploadLink: `${appOrigin}/analyze`,
       drillsLink: `${appOrigin}/my-progress`,
-      supportEmail: "support@thehittingskool.com",
+      supportEmail: "support@4bhitting.com",
     })
   );
 
   await resend.emails.send({
-    from: "Coach Rick @ The Hitting Skool <support@thehittingskool.com>",
+    from: "Coach Rick @ The Hitting Skool <support@4bhitting.com>",
     to: [email],
     subject: "Your Hybrid plan ($99/mo) is active",
     html,
@@ -435,12 +435,12 @@ async function sendTeamActivation(
       teamRosterLink: `${appOrigin}/admin/teams`,
       teamUploadLink: `${appOrigin}/analyze`,
       teamDashboardLink: `${appOrigin}/admin/teams`,
-      supportEmail: "support@thehittingskool.com",
+      supportEmail: "support@4bhitting.com",
     })
   );
 
   await resend.emails.send({
-    from: "THS Support <support@thehittingskool.com>",
+    from: "THS Support <support@4bhitting.com>",
     to: [email],
     subject: "Your Team plan is live — Get started now",
     html,
