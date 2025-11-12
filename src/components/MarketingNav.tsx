@@ -11,11 +11,13 @@ export const MarketingNav = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-2xl font-bold text-primary-foreground">⚾</span>
-            </div>
-            <span className="text-xl font-bold text-foreground">The Hitting Skool</span>
+          <Link to="/" className="flex items-center space-x-3">
+            <img 
+              src="/brand/4b-icon-gold.png" 
+              alt="4B Performance Science" 
+              className="w-12 h-12 object-contain"
+            />
+            <span className="text-xl font-bold text-foreground font-header">The Hitting Skool</span>
           </Link>
 
           {/* Desktop Navigation */}
