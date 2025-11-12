@@ -32,7 +32,7 @@ export default function UpgradeHybrid() {
       // Handle direct upgrade success
       if (data?.success) {
         toast.success("Successfully upgraded to Hybrid Coaching!");
-        setTimeout(() => navigate("/feed"), 2000);
+        setTimeout(() => navigate("/hybrid-welcome"), 2000);
       } else if (data?.url) {
         // Handle checkout session redirect
         window.open(data.url, "_blank");
