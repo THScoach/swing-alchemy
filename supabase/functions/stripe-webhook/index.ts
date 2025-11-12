@@ -5,6 +5,7 @@ import { Resend } from "https://esm.sh/resend@2.0.0";
 import { renderAsync } from "https://esm.sh/@react-email/components@0.0.15";
 import React from "https://esm.sh/react@18.2.0";
 import { StarterActivation } from "../send-hybrid-email/_templates/starter-activation.tsx";
+import { HybridActivation } from "../send-hybrid-email/_templates/hybrid-activation.tsx";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
   apiVersion: "2025-08-27.basil",
@@ -94,7 +95,6 @@ async function handleCheckoutCompleted(
     return;
   }
 
-  // Upsert subscription record
   const { error: subError } = await supabase
     .from("subscriptions")
     .upsert({
@@ -119,7 +119,6 @@ async function handleCheckoutCompleted(
     logStep("Subscription upserted successfully");
   }
 
-  // Update organization winter_access if plan is winter
   if (planCode === "winter" && orgId) {
     const { error: orgError } = await supabase
       .from("organizations")
@@ -131,9 +130,12 @@ async function handleCheckoutCompleted(
     }
   }
 
-  // Send activation email and SMS for starter plan
-  if (planCode === "starter" && userId) {
-    await sendStarterActivation(userId, session.customer_details?.email, session.customer_details?.phone, supabase);
+  if (userId && session.customer_details?.email) {
+    if (planCode === "starter") {
+      await sendStarterActivation(userId, session.customer_details.email, session.customer_details.phone, supabase);
+    } else if (planCode === "hybrid") {
+      await sendHybridActivation(userId, session.customer_details.email, supabase);
+    }
   }
 }
 
@@ -168,7 +170,6 @@ async function handlePaymentSucceeded(
 ) {
   logStep("Handling payment_intent.succeeded", { paymentIntentId: paymentIntent.id });
 
-  // Update transaction if exists
   const { error } = await supabase
     .from("transactions")
     .update({ payment_status: "completed" })
@@ -181,88 +182,83 @@ async function handlePaymentSucceeded(
 
 async function sendStarterActivation(
   userId: string,
-  email: string | null | undefined,
+  email: string,
   phone: string | null | undefined,
   supabase: any
 ) {
-  logStep("Sending Starter activation notifications", { userId, email, phone });
+  logStep("Sending Starter activation", { userId, email });
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("name")
-    .eq("id", userId)
-    .single();
-
+  const { data: profile } = await supabase.from("profiles").select("name").eq("id", userId).single();
   const firstName = profile?.name?.split(" ")[0] || "there";
   const appOrigin = "https://app.thehittingskool.com";
-  const profileLink = `${appOrigin}/profile`;
-  const uploadLink = `${appOrigin}/analyze`;
-  const dashboardLink = `${appOrigin}/my-progress`;
-  const supportEmail = "support@thehittingskool.com";
 
-  // Send email using Resend
-  if (email) {
-    try {
-      const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-      const html = await renderAsync(
-        React.createElement(StarterActivation, {
-          firstName,
-          profileLink,
-          uploadLink,
-          dashboardLink,
-          supportEmail,
-        })
-      );
+  const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+  const html = await renderAsync(
+    React.createElement(StarterActivation, {
+      firstName,
+      profileLink: `${appOrigin}/profile`,
+      uploadLink: `${appOrigin}/analyze`,
+      dashboardLink: `${appOrigin}/my-progress`,
+      supportEmail: "support@thehittingskool.com",
+    })
+  );
 
-      await resend.emails.send({
-        from: "Coach Rick @ The Hitting Skool <support@thehittingskool.com>",
-        to: [email],
-        subject: "You're activated on THS Starter ($29/mo)",
-        html,
-      });
-      logStep("Email sent", { email });
-    } catch (e: any) {
-      logStep("ERROR sending email", { error: e.message });
-    }
-  }
+  await resend.emails.send({
+    from: "Coach Rick @ The Hitting Skool <support@thehittingskool.com>",
+    to: [email],
+    subject: "You're activated on THS Starter ($29/mo)",
+    html,
+  });
 
-  // Send SMS using Twilio
   if (phone) {
-    try {
-      const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
-      const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
-      const fromPhone = Deno.env.get("TWILIO_PHONE_NUMBER");
-
-      if (!accountSid || !authToken || !fromPhone) {
-        throw new Error("Twilio credentials not configured");
-      }
-
-      const message = `THS: Starter is live 🎉 Next: complete your profile & upload a swing.\nProfile: ${profileLink} | Upload: ${uploadLink}\nTxt HELP for help, STOP to opt out.`;
-
-      const response = await fetch(
-        `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            Authorization: `Basic ${btoa(`${accountSid}:${authToken}`)}`,
-          },
-          body: new URLSearchParams({
-            To: phone,
-            From: fromPhone,
-            Body: message,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`Twilio API error: ${error}`);
-      }
-
-      logStep("SMS sent", { phone });
-    } catch (e: any) {
-      logStep("ERROR sending SMS", { error: e.message });
-    }
+    const message = `THS: Starter is live 🎉 Next: complete your profile & upload a swing.\nProfile: ${appOrigin}/profile | Upload: ${appOrigin}/analyze\nTxt HELP for help, STOP to opt out.`;
+    await sendSMS(phone, message);
   }
+}
+
+async function sendHybridActivation(
+  userId: string,
+  email: string,
+  supabase: any
+) {
+  logStep("Sending Hybrid activation", { userId, email });
+
+  const { data: profile } = await supabase.from("profiles").select("name").eq("id", userId).single();
+  const firstName = profile?.name?.split(" ")[0] || "there";
+  const appOrigin = "https://app.thehittingskool.com";
+
+  const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+  const html = await renderAsync(
+    React.createElement(HybridActivation, {
+      firstName,
+      goalsLink: `${appOrigin}/profile`,
+      uploadLink: `${appOrigin}/analyze`,
+      drillsLink: `${appOrigin}/my-progress`,
+      supportEmail: "support@thehittingskool.com",
+    })
+  );
+
+  await resend.emails.send({
+    from: "Coach Rick @ The Hitting Skool <support@thehittingskool.com>",
+    to: [email],
+    subject: "Your Hybrid plan ($99/mo) is active",
+    html,
+  });
+}
+
+async function sendSMS(phone: string, message: string) {
+  const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
+  const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
+  const fromPhone = Deno.env.get("TWILIO_PHONE_NUMBER");
+
+  if (!accountSid || !authToken || !fromPhone) return;
+
+  await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Authorization: `Basic ${btoa(`${accountSid}:${authToken}`)}`,
+    },
+    body: new URLSearchParams({ To: phone, From: fromPhone, Body: message }),
+  });
 }
