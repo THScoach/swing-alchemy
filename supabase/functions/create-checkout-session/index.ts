@@ -33,7 +33,7 @@ serve(async (req) => {
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
 
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+    const stripe = new Stripe(stripeKey); // Use account default API version
     logStep("Stripe initialized");
 
     // Initialize Supabase
@@ -86,8 +86,8 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
-      payment_method_types: ["card", "klarna", "afterpay_clearpay", "affirm"],
-      success_url: `${appUrl}/thank-you?plan=${plan}&type=team`,
+      automatic_payment_methods: { enabled: true }, // Enables BNPL when available
+      success_url: `${appUrl}/thank-you?plan=${plan}&type=team&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/order-team`,
       metadata: {
         plan_type: "team",

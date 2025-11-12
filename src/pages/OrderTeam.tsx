@@ -82,11 +82,14 @@ export default function OrderTeam() {
 
       if (error) throw error;
 
-      if (data?.url) {
-        // Open Stripe checkout in new tab
-        window.open(data.url, "_blank");
+      if (data.url) {
+        window.location.href = data.url; // Same tab to avoid popup blockers
       } else {
-        throw new Error("No checkout URL returned");
+        toast({
+          title: "Checkout failed",
+          description: "No checkout URL returned",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Checkout error:", error);

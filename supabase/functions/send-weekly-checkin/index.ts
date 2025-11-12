@@ -52,7 +52,7 @@ serve(async (req) => {
     }
 
     const firstName = profile.name?.split(" ")[0] || "there";
-    const appOrigin = "https://app.thehittingskool.com";
+    const appOrigin = Deno.env.get("APP_URL") || "https://app.4bhitting.com";
     const uploadLink = `${appOrigin}/analyze`;
 
     // Week-specific messages

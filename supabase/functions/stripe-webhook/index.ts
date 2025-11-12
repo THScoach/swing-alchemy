@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@18.5.0";
+import Stripe from "https://esm.sh/stripe@14.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { render } from "https://esm.sh/@react-email/render@0.0.15";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 import { renderAsync } from "https://esm.sh/@react-email/components@0.0.15";
 import React from "https://esm.sh/react@18.2.0";
@@ -20,9 +21,7 @@ const SUPPORT_EMAIL = Deno.env.get("SUPPORT_EMAIL") || "support@4bhitting.com";
 const FROM_BRAND = Deno.env.get("FROM_BRAND") || "Coach Rick @ 4B Hitting";
 const FROM_ADDRESS = `${FROM_BRAND} <${SUPPORT_EMAIL}>`;
 
-const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-  apiVersion: "2025-08-27.basil",
-});
+const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "");
 
 const cryptoProvider = Stripe.createSubtleCryptoProvider();
 
@@ -333,7 +332,7 @@ async function sendStarterActivation(
 
   const { data: profile } = await supabase.from("profiles").select("name").eq("id", userId).single();
   const firstName = profile?.name?.split(" ")[0] || "there";
-  const appOrigin = "https://app.thehittingskool.com";
+  const appOrigin = Deno.env.get("APP_URL") || "https://app.4bhitting.com";
 
   const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
   const html = await renderAsync(
@@ -370,7 +369,7 @@ async function sendWinterActivation(
 
   const { data: profile } = await supabase.from("profiles").select("name").eq("id", userId).single();
   const firstName = profile?.name?.split(" ")[0] || "there";
-  const appOrigin = "https://app.thehittingskool.com";
+  const appOrigin = Deno.env.get("APP_URL") || "https://app.4bhitting.com";
 
   const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
   const html = await renderAsync(
@@ -405,7 +404,7 @@ async function sendHybridActivation(
 
   const { data: profile } = await supabase.from("profiles").select("name").eq("id", userId).single();
   const firstName = profile?.name?.split(" ")[0] || "there";
-  const appOrigin = "https://app.thehittingskool.com";
+  const appOrigin = Deno.env.get("APP_URL") || "https://app.4bhitting.com";
 
   const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
   const html = await renderAsync(
@@ -497,7 +496,7 @@ async function handleTeamPurchase(
     .single();
 
   const firstName = profile?.name?.split(" ")[0] || "Coach";
-  const appOrigin = "https://app.thehittingskool.com";
+  const appOrigin = Deno.env.get("APP_URL") || "https://app.4bhitting.com";
   const joinUrl = `${appOrigin}/team/join?org=${orgId}`;
 
   const planNames: Record<string, string> = {
@@ -548,7 +547,7 @@ async function sendTeamActivation(
 
   const { data: profile } = await supabase.from("profiles").select("name").eq("id", userId).single();
   const coachName = profile?.name || "Coach";
-  const appOrigin = "https://app.thehittingskool.com";
+  const appOrigin = Deno.env.get("APP_URL") || "https://app.4bhitting.com";
 
   const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
   const html = await renderAsync(
