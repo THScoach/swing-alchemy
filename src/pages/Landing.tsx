@@ -14,28 +14,29 @@ export default function Landing() {
   return (
     <MarketingLayout>
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-secondary via-secondary to-secondary/90 text-secondary-foreground py-20 lg:py-32">
+      <section className="relative bg-brand-black text-foreground py-20 lg:py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-8">
-              <h1 className="text-4xl lg:text-6xl font-bold leading-tight">
-                Master Your Swing with AI-Powered Analysis
+              <h1 className="text-5xl lg:text-7xl font-orbitron font-bold leading-tight">
+                Simplify the Science. <span className="text-brand-gold">Train the Sequence.</span>
               </h1>
-              <p className="text-xl text-secondary-foreground/90">
-                The 4B Framework: Brain, Body, Bat, Ball - Complete player development
+              <p className="text-xl text-foreground/90 font-montserrat">
+                Master the kinetic chain with biomechanics-driven training. The 4B Performance Science system analyzes
+                your swing through Ball, Bat, Body, and Brain to unlock elite power and consistency.
               </p>
-              <p className="text-lg text-secondary-foreground/80 italic">
+              <p className="text-lg text-foreground/70 font-montserrat italic">
                 Every swing you upload helps The Hitting Skool's AI learn your movement patterns. 
                 The smarter it gets, the better your drill recommendations become.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link to="/offer/free-tempo">
-                  <Button size="lg" className="w-full sm:w-auto text-lg px-8">
-                    Start Free Trial
+                  <Button size="lg" className="w-full sm:w-auto text-lg px-8 font-montserrat">
+                    Start Free Assessment
                   </Button>
                 </Link>
                 <Link to="/pricing">
-                  <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg px-8 bg-white/10 hover:bg-white/20">
+                  <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg px-8 font-montserrat border-brand-gold text-brand-gold hover:bg-brand-gold hover:text-brand-black">
                     View Pricing
                   </Button>
                 </Link>
@@ -47,7 +48,7 @@ export default function Landing() {
                 muted 
                 loop 
                 playsInline
-                className="aspect-video rounded-2xl shadow-2xl object-cover w-full"
+                className="aspect-video rounded-2xl shadow-2xl object-cover w-full border border-brand-gold/20"
               >
                 <source src="https://res.cloudinary.com/dzkwltgyd/video/upload/v1762974085/glif-run-outputs/b90klnjjxjnqj88cbrxt.mp4" type="video/mp4" />
               </video>
@@ -60,8 +61,8 @@ export default function Landing() {
       <section className="py-20 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold mb-4">The 4B Framework</h2>
-            <p className="text-xl text-muted-foreground">Complete swing analysis across four critical dimensions</p>
+            <h2 className="text-3xl lg:text-5xl font-orbitron font-bold mb-4">The 4B Framework</h2>
+            <p className="text-xl text-muted-foreground font-montserrat">Complete swing analysis across four critical dimensions</p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -70,8 +71,8 @@ export default function Landing() {
                 <div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center mb-4">
                   <Brain className="h-8 w-8 text-success" />
                 </div>
-                <CardTitle>🧠 BRAIN</CardTitle>
-                <CardDescription className="text-base">
+                <CardTitle className="font-rajdhani text-brand-gold">🧠 BRAIN</CardTitle>
+                <CardDescription className="text-base font-montserrat">
                   S2 Cognition integration for visual processing & action control
                 </CardDescription>
               </CardHeader>
@@ -82,8 +83,8 @@ export default function Landing() {
                 <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
                   <Users className="h-8 w-8 text-primary" />
                 </div>
-                <CardTitle>💪 BODY</CardTitle>
-                <CardDescription className="text-base">
+                <CardTitle className="font-rajdhani text-brand-gold">💪 BODY</CardTitle>
+                <CardDescription className="text-base font-montserrat">
                   Kinetic sequence analysis with 240fps video requirement
                 </CardDescription>
               </CardHeader>
@@ -94,8 +95,8 @@ export default function Landing() {
                 <div className="w-16 h-16 bg-warning/10 rounded-full flex items-center justify-center mb-4">
                   <Target className="h-8 w-8 text-warning" />
                 </div>
-                <CardTitle>🏏 BAT</CardTitle>
-                <CardDescription className="text-base">
+                <CardTitle className="font-rajdhani text-brand-gold">🏏 BAT</CardTitle>
+                <CardDescription className="text-base font-montserrat">
                   Swing mechanics, bat speed, attack angle, path efficiency
                 </CardDescription>
               </CardHeader>
@@ -106,8 +107,8 @@ export default function Landing() {
                 <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mb-4">
                   <TrendingUp className="h-8 w-8 text-destructive" />
                 </div>
-                <CardTitle>⚾ BALL</CardTitle>
-                <CardDescription className="text-base">
+                <CardTitle className="font-rajdhani text-brand-gold">⚾ BALL</CardTitle>
+                <CardDescription className="text-base font-montserrat">
                   Pocket Radar integration for exit velocity tracking
                 </CardDescription>
               </CardHeader>
@@ -120,8 +121,8 @@ export default function Landing() {
       <section className="py-20 bg-muted/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold mb-4">How It Works</h2>
-            <p className="text-xl text-muted-foreground">Three simple steps to better hitting</p>
+            <h2 className="text-3xl lg:text-5xl font-orbitron font-bold mb-4">How It Works</h2>
+            <p className="text-xl text-muted-foreground font-montserrat">Three simple steps to better hitting</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">

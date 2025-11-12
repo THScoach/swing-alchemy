@@ -8,43 +8,49 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 0%;
+    /* 4B Performance Science Brand Colors */
+    --brand-gold: 51 100% 50%;
+    --brand-black: 0 0% 4%;
+    --brand-gray: 0 0% 13%;
+    --brand-white: 0 0% 100%;
+
+    --background: 0 0% 4%;
     --foreground: 0 0% 100%;
 
-    --card: 0 0% 7%;
+    --card: 0 0% 13%;
     --card-foreground: 0 0% 100%;
 
-    --popover: 0 0% 7%;
+    --popover: 0 0% 13%;
     --popover-foreground: 0 0% 100%;
 
-    --primary: 45 100% 62%;
-    --primary-foreground: 0 0% 0%;
+    --primary: 51 100% 50%;
+    --primary-foreground: 0 0% 4%;
 
-    --secondary: 0 0% 15%;
+    --secondary: 0 0% 13%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 0 0% 15%;
+    --muted: 0 0% 20%;
     --muted-foreground: 0 0% 65%;
 
-    --accent: 45 100% 62%;
-    --accent-foreground: 0 0% 0%;
+    --accent: 51 100% 50%;
+    --accent-foreground: 0 0% 4%;
 
     --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
 
     --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 0%;
+    --warning-foreground: 0 0% 4%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 0 0% 20%;
     --input: 0 0% 20%;
-    --ring: 45 100% 62%;
+    --ring: 51 100% 50%;
 
     --radius: 0.75rem;
 
-    --chart-1: 45 100% 62%;
+    --chart-1: 51 100% 50%;
     --chart-2: 142 69% 58%;
     --chart-3: 217 91% 60%;
     --chart-4: 280 73% 65%;
@@ -52,26 +58,26 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 0 0% 0%;
+    --background: 0 0% 4%;
     --foreground: 0 0% 100%;
 
-    --card: 0 0% 7%;
+    --card: 0 0% 13%;
     --card-foreground: 0 0% 100%;
 
-    --popover: 0 0% 7%;
+    --popover: 0 0% 13%;
     --popover-foreground: 0 0% 100%;
 
-    --primary: 45 100% 62%;
-    --primary-foreground: 0 0% 0%;
+    --primary: 51 100% 50%;
+    --primary-foreground: 0 0% 4%;
 
-    --secondary: 0 0% 15%;
+    --secondary: 0 0% 13%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 0 0% 15%;
+    --muted: 0 0% 20%;
     --muted-foreground: 0 0% 65%;
 
-    --accent: 45 100% 62%;
-    --accent-foreground: 0 0% 0%;
+    --accent: 51 100% 50%;
+    --accent-foreground: 0 0% 4%;
 
     --success: 142 69% 58%;
     --success-foreground: 0 0% 100%;
@@ -81,9 +87,9 @@ All colors MUST be HSL.
 
     --border: 0 0% 20%;
     --input: 0 0% 20%;
-    --ring: 45 100% 62%;
+    --ring: 51 100% 50%;
 
-    --chart-1: 45 100% 62%;
+    --chart-1: 51 100% 50%;
     --chart-2: 142 69% 58%;
     --chart-3: 217 91% 60%;
     --chart-4: 280 73% 65%;

@@ -13,7 +13,16 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        'orbitron': ['Orbitron', 'sans-serif'],
+        'montserrat': ['Montserrat', 'sans-serif'],
+        'rajdhani': ['Rajdhani', 'sans-serif'],
+      },
       colors: {
+        'brand-gold': "hsl(var(--brand-gold))",
+        'brand-black': "hsl(var(--brand-black))",
+        'brand-gray': "hsl(var(--brand-gray))",
+        'brand-white': "hsl(var(--brand-white))",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
