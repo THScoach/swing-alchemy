@@ -22,6 +22,9 @@ import { TeamOnboardingStep5 } from "./_templates/team-onboarding-step-5.tsx";
 import { TeamExpansionStep1 } from "./_templates/team-expansion-step-1.tsx";
 import { TeamExpansionStep2 } from "./_templates/team-expansion-step-2.tsx";
 import { TeamExpansionStep3 } from "./_templates/team-expansion-step-3.tsx";
+import { HybridToTeamStep1 } from "./_templates/hybrid-to-team-step-1.tsx";
+import { HybridToTeamStep2 } from "./_templates/hybrid-to-team-step-2.tsx";
+import { HybridToTeamStep3 } from "./_templates/hybrid-to-team-step-3.tsx";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -542,6 +545,102 @@ serve(async (req) => {
         .eq("id", sequenceId);
 
       logStep("Team expansion email sent successfully", { sequenceId, step: sequence.email_number });
+
+      return new Response(
+        JSON.stringify({ success: true, sequenceId }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    // Handle hybrid-to-team upgrade sequence
+    if (sequence.sequence_name === 'hybrid_to_team_upgrade') {
+      logStep("Processing hybrid-to-team upgrade email", { step: sequence.email_number });
+
+      const originUrl = Deno.env.get("SUPABASE_URL")?.replace('//', '//app.') || '';
+      const upgradeUrl = `${originUrl}/teams-upgrade`;
+
+      // Check for exit condition: user already upgraded to team
+      const { data: orgMembers } = await supabaseClient
+        .from('organization_members')
+        .select('organization_id')
+        .eq('user_id', sequence.user_id)
+        .limit(1);
+
+      if (orgMembers && orgMembers.length > 0) {
+        logStep("User already upgraded to team plan, canceling sequence");
+        
+        await supabaseClient
+          .from("email_sequences")
+          .update({ 
+            status: "skipped",
+            error_message: "User upgraded to team plan"
+          })
+          .eq("user_id", sequence.user_id)
+          .eq("sequence_name", "hybrid_to_team_upgrade")
+          .eq("status", "pending");
+
+        return new Response(
+          JSON.stringify({ success: true, skipped: true, reason: "User upgraded to team" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+        );
+      }
+
+      let html: string;
+      let subject: string;
+
+      switch (sequence.email_number) {
+        case 1:
+          subject = "Looks Like You're Coaching a Team — Let's Make It Official";
+          html = await renderAsync(
+            React.createElement(HybridToTeamStep1, { firstName, upgradeUrl })
+          );
+          break;
+        case 2:
+          subject = "You're Coaching a Team — Here's How to Save $297 This Year";
+          html = await renderAsync(
+            React.createElement(HybridToTeamStep2, { firstName, upgradeUrl })
+          );
+          break;
+        case 3:
+          subject = "Keep Your Players Connected — Upgrade Before Friday";
+          html = await renderAsync(
+            React.createElement(HybridToTeamStep3, { firstName, upgradeUrl })
+          );
+          break;
+        default:
+          throw new Error(`Unknown hybrid-to-team upgrade step: ${sequence.email_number}`);
+      }
+
+      logStep("Sending hybrid-to-team upgrade email via Resend", { to: email, subject, step: sequence.email_number });
+
+      const { error: sendError } = await resend.emails.send({
+        from: "Coach Rick @ The Hitting Skool <support@thehittingskool.com>",
+        to: [email],
+        subject,
+        html,
+      });
+
+      if (sendError) {
+        logStep("ERROR sending hybrid-to-team upgrade email", { error: sendError });
+        await supabaseClient
+          .from("email_sequences")
+          .update({
+            status: "failed",
+            error_message: sendError.message || "Unknown error"
+          })
+          .eq("id", sequenceId);
+        throw new Error(`Failed to send email: ${sendError.message}`);
+      }
+
+      await supabaseClient
+        .from("email_sequences")
+        .update({
+          status: "sent",
+          sent_at: new Date().toISOString()
+        })
+        .eq("id", sequenceId);
+
+      logStep("Hybrid-to-team upgrade email sent successfully", { sequenceId, step: sequence.email_number });
 
       return new Response(
         JSON.stringify({ success: true, sequenceId }),
