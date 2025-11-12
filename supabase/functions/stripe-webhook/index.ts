@@ -3,13 +3,14 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 import { renderAsync } from "https://esm.sh/@react-email/components@0.0.15";
-import * as React from "https://esm.sh/react@18.2.0";
+import React from "https://esm.sh/react@18.2.0";
 import { StarterActivation } from "../send-hybrid-email/_templates/starter-activation.tsx";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature",
-};
+const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+  apiVersion: "2025-08-27.basil",
+});
+
+const cryptoProvider = Stripe.createSubtleCryptoProvider();
 
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : "";
@@ -17,185 +18,48 @@ const logStep = (step: string, details?: any) => {
 };
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+  const signature = req.headers.get("Stripe-Signature");
+  const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+
+  if (!signature || !webhookSecret) {
+    logStep("ERROR", { message: "Missing signature or webhook secret" });
+    return new Response("Webhook signature verification failed", { status: 400 });
   }
 
   try {
-    logStep("Webhook received");
-
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
-    
-    if (!stripeKey || !webhookSecret) {
-      throw new Error("Missing Stripe configuration");
-    }
-
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-    const signature = req.headers.get("stripe-signature");
-    
-    if (!signature) {
-      throw new Error("No signature provided");
-    }
-
     const body = await req.text();
-    const event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-    logStep("Event verified", { type: event.type });
+    const event = await stripe.webhooks.constructEventAsync(
+      body,
+      signature,
+      webhookSecret,
+      undefined,
+      cryptoProvider
+    );
 
-    const supabase = createClient(
+    logStep("Event received", { type: event.type, id: event.id });
+
+    const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Handle different event types
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
-        logStep("Checkout completed", { sessionId: session.id });
-
-        const metadata = session.metadata || {};
-        const planCode = metadata.plan_code;
-        const userId = metadata.user_id;
-        const orgId = metadata.org_id;
-        const seats = parseInt(metadata.seats || "1");
-
-        if (!planCode) {
-          logStep("No plan code in metadata");
-          break;
-        }
-
-        // Get customer info
-        const customerId = session.customer as string;
-        
-        // For subscriptions, get subscription details
-        if (session.mode === "subscription") {
-          const subscriptionId = session.subscription as string;
-          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-
-          // Upsert subscription record
-          const { error: subError } = await supabase
-            .from("subscriptions")
-            .upsert({
-              user_id: userId || null,
-              org_id: orgId || null,
-              stripe_customer_id: customerId,
-              stripe_subscription_id: subscriptionId,
-              plan_code: planCode,
-              status: subscription.status,
-              seats: seats,
-              current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-              current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-            }, {
-              onConflict: "stripe_subscription_id"
-            });
-
-          if (subError) {
-            logStep("Error upserting subscription", { error: subError });
-          } else {
-            logStep("Subscription upserted successfully");
-          }
-
-          // Update profile with stripe_customer_id
-          if (userId) {
-            await supabase
-              .from("profiles")
-              .update({ stripe_customer_id: customerId })
-              .eq("id", userId);
-          }
-
-          // Handle winter access for organizations
-          if (planCode === "winter" && orgId) {
-            await supabase
-              .from("organizations")
-              .update({ winter_access: true })
-              .eq("id", orgId);
-          }
-
-          // Send activation email and SMS for starter plan
-          if (planCode === "starter" && userId) {
-            // Get user details
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("name, phone")
-              .eq("id", userId)
-              .single();
-
-            const { data: { user } } = await supabase.auth.admin.getUserById(userId);
-
-            if (user && profile) {
-              const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-              const originUrl = Deno.env.get("SUPABASE_URL")?.replace('//', '//app.') || '';
-              
-              // Send activation email
-              const emailHtml = await renderAsync(
-                React.createElement(StarterActivation, {
-                  firstName: profile.name?.split(" ")[0] || "there",
-                  profileLink: `${originUrl}/profile`,
-                  uploadLink: `${originUrl}/analyze`,
-                  dashboardLink: `${originUrl}/my-progress`,
-                  supportEmail: "support@thehittingskool.com"
-                })
-              );
-
-              await resend.emails.send({
-                from: "The Hitting Skool <support@thehittingskool.com>",
-                to: [user.email!],
-                subject: "Welcome to THS Starter — You're Activated! 🎉",
-                html: emailHtml,
-              });
-
-              logStep("Starter activation email sent", { userId });
-
-              // Send activation SMS
-              if (profile.phone) {
-                await supabase.functions.invoke("send-booking-sms", {
-                  body: {
-                    to: profile.phone,
-                    message: `THS: Starter is live 🎉 Next: complete your profile & upload a swing.\nProfile: ${originUrl}/profile | Upload: ${originUrl}/analyze\nTxt HELP for help, STOP to opt out.`
-                  }
-                });
-
-                logStep("Starter activation SMS sent", { userId });
-              }
-            }
-          }
-        }
+        await handleCheckoutCompleted(session, supabaseClient);
         break;
       }
 
       case "customer.subscription.updated":
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
-        logStep("Subscription updated/deleted", { subscriptionId: subscription.id });
-
-        const { error } = await supabase
-          .from("subscriptions")
-          .update({
-            status: subscription.status,
-            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-          })
-          .eq("stripe_subscription_id", subscription.id);
-
-        if (error) {
-          logStep("Error updating subscription", { error });
-        }
+        await handleSubscriptionChange(subscription, supabaseClient);
         break;
       }
 
       case "payment_intent.succeeded": {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
-        logStep("Payment succeeded", { paymentIntentId: paymentIntent.id });
-        
-        // Update transaction status if exists
-        const { error } = await supabase
-          .from("transactions")
-          .update({ payment_status: "paid" })
-          .eq("stripe_payment_intent_id", paymentIntent.id);
-
-        if (error) {
-          logStep("Error updating transaction", { error });
-        }
+        await handlePaymentSucceeded(paymentIntent, supabaseClient);
         break;
       }
 
@@ -204,14 +68,201 @@ serve(async (req) => {
     }
 
     return new Response(JSON.stringify({ received: true }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" },
       status: 200,
     });
-  } catch (error: any) {
-    logStep("ERROR", { message: error.message });
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 400,
-    });
+  } catch (err: any) {
+    logStep("ERROR", { message: err.message });
+    return new Response(`Webhook Error: ${err.message}`, { status: 400 });
   }
 });
+
+async function handleCheckoutCompleted(
+  session: Stripe.Checkout.Session,
+  supabase: any
+) {
+  logStep("Handling checkout.session.completed", { sessionId: session.id });
+
+  const metadata = session.metadata || {};
+  const planCode = metadata.plan_code;
+  const userId = metadata.user_id;
+  const orgId = metadata.org_id;
+  const seats = parseInt(metadata.seats || "1");
+
+  if (!planCode) {
+    logStep("ERROR", { message: "Missing plan_code in metadata" });
+    return;
+  }
+
+  // Upsert subscription record
+  const { error: subError } = await supabase
+    .from("subscriptions")
+    .upsert({
+      user_id: userId || null,
+      org_id: orgId || null,
+      stripe_customer_id: session.customer,
+      stripe_subscription_id: session.subscription,
+      plan_code: planCode,
+      status: "active",
+      seats: seats,
+      current_period_start: new Date().toISOString(),
+      current_period_end: session.subscription
+        ? undefined
+        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    }, {
+      onConflict: "stripe_subscription_id",
+    });
+
+  if (subError) {
+    logStep("ERROR upserting subscription", { error: subError });
+  } else {
+    logStep("Subscription upserted successfully");
+  }
+
+  // Update organization winter_access if plan is winter
+  if (planCode === "winter" && orgId) {
+    const { error: orgError } = await supabase
+      .from("organizations")
+      .update({ winter_access: true })
+      .eq("id", orgId);
+
+    if (orgError) {
+      logStep("ERROR updating org winter_access", { error: orgError });
+    }
+  }
+
+  // Send activation email and SMS for starter plan
+  if (planCode === "starter" && userId) {
+    await sendStarterActivation(userId, session.customer_details?.email, session.customer_details?.phone, supabase);
+  }
+}
+
+async function handleSubscriptionChange(
+  subscription: Stripe.Subscription,
+  supabase: any
+) {
+  logStep("Handling subscription change", {
+    subscriptionId: subscription.id,
+    status: subscription.status,
+  });
+
+  const { error } = await supabase
+    .from("subscriptions")
+    .update({
+      status: subscription.status,
+      current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+      current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+    })
+    .eq("stripe_subscription_id", subscription.id);
+
+  if (error) {
+    logStep("ERROR updating subscription", { error });
+  } else {
+    logStep("Subscription updated successfully");
+  }
+}
+
+async function handlePaymentSucceeded(
+  paymentIntent: Stripe.PaymentIntent,
+  supabase: any
+) {
+  logStep("Handling payment_intent.succeeded", { paymentIntentId: paymentIntent.id });
+
+  // Update transaction if exists
+  const { error } = await supabase
+    .from("transactions")
+    .update({ payment_status: "completed" })
+    .eq("stripe_payment_intent_id", paymentIntent.id);
+
+  if (error) {
+    logStep("ERROR updating transaction", { error });
+  }
+}
+
+async function sendStarterActivation(
+  userId: string,
+  email: string | null | undefined,
+  phone: string | null | undefined,
+  supabase: any
+) {
+  logStep("Sending Starter activation notifications", { userId, email, phone });
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("name")
+    .eq("id", userId)
+    .single();
+
+  const firstName = profile?.name?.split(" ")[0] || "there";
+  const appOrigin = "https://app.thehittingskool.com";
+  const profileLink = `${appOrigin}/profile`;
+  const uploadLink = `${appOrigin}/analyze`;
+  const dashboardLink = `${appOrigin}/my-progress`;
+  const supportEmail = "support@thehittingskool.com";
+
+  // Send email using Resend
+  if (email) {
+    try {
+      const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+      const html = await renderAsync(
+        React.createElement(StarterActivation, {
+          firstName,
+          profileLink,
+          uploadLink,
+          dashboardLink,
+          supportEmail,
+        })
+      );
+
+      await resend.emails.send({
+        from: "Coach Rick @ The Hitting Skool <support@thehittingskool.com>",
+        to: [email],
+        subject: "You're activated on THS Starter ($29/mo)",
+        html,
+      });
+      logStep("Email sent", { email });
+    } catch (e: any) {
+      logStep("ERROR sending email", { error: e.message });
+    }
+  }
+
+  // Send SMS using Twilio
+  if (phone) {
+    try {
+      const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
+      const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
+      const fromPhone = Deno.env.get("TWILIO_PHONE_NUMBER");
+
+      if (!accountSid || !authToken || !fromPhone) {
+        throw new Error("Twilio credentials not configured");
+      }
+
+      const message = `THS: Starter is live 🎉 Next: complete your profile & upload a swing.\nProfile: ${profileLink} | Upload: ${uploadLink}\nTxt HELP for help, STOP to opt out.`;
+
+      const response = await fetch(
+        `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Authorization: `Basic ${btoa(`${accountSid}:${authToken}`)}`,
+          },
+          body: new URLSearchParams({
+            To: phone,
+            From: fromPhone,
+            Body: message,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`Twilio API error: ${error}`);
+      }
+
+      logStep("SMS sent", { phone });
+    } catch (e: any) {
+      logStep("ERROR sending SMS", { error: e.message });
+    }
+  }
+}
