@@ -25,6 +25,7 @@ import { TeamExpansionStep3 } from "./_templates/team-expansion-step-3.tsx";
 import { HybridToTeamStep1 } from "./_templates/hybrid-to-team-step-1.tsx";
 import { HybridToTeamStep2 } from "./_templates/hybrid-to-team-step-2.tsx";
 import { HybridToTeamStep3 } from "./_templates/hybrid-to-team-step-3.tsx";
+import { StarterActivation } from "./_templates/starter-activation.tsx";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
