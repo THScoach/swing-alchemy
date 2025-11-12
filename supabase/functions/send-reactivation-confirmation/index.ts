@@ -3,7 +3,16 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.2'
 import { Resend } from 'https://esm.sh/resend@2.0.0'
 import { renderAsync } from 'https://esm.sh/@react-email/components@0.0.15'
 import React from 'https://esm.sh/react@18.2.0'
-import { HybridReactivationConfirmation } from '../send-hybrid-email/_templates/hybrid-reactivation-confirmation.tsx'
+import {
+  Body,
+  Container,
+  Head,
+  Heading,
+  Html,
+  Link,
+  Preview,
+  Text,
+} from 'https://esm.sh/@react-email/components@0.0.15'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,6 +23,127 @@ interface RequestBody {
   playerId: string
   analysisId: string
 }
+
+// Inline email template
+const HybridReactivationConfirmation = ({ firstName, dashboardUrl }: { firstName: string; dashboardUrl: string }) => (
+  React.createElement(Html, null,
+    React.createElement(Head, null),
+    React.createElement(Preview, null, "Got It — Your Swing Is Being Reanalyzed"),
+    React.createElement(Body, { style: {
+      backgroundColor: '#ffffff',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif',
+    }},
+      React.createElement(Container, { style: {
+        margin: '0 auto',
+        padding: '20px 0 48px',
+        maxWidth: '600px',
+      }},
+        React.createElement(Heading, { style: {
+          color: '#1a1a1a',
+          fontSize: '24px',
+          fontWeight: 'bold',
+          margin: '40px 0 20px',
+          padding: '0',
+          lineHeight: '1.4',
+        }}, "Welcome back — your new swing just came through. 🔥"),
+        
+        React.createElement(Text, { style: {
+          color: '#333',
+          fontSize: '16px',
+          lineHeight: '26px',
+          margin: '16px 0',
+        }}, `Hey ${firstName},`),
+        
+        React.createElement(Text, { style: {
+          color: '#333',
+          fontSize: '16px',
+          lineHeight: '26px',
+          margin: '16px 0',
+        }}, 
+          "I've queued it for analysis, and your Hybrid AI is already recalculating your updated 4B and tempo metrics.",
+          React.createElement('br'),
+          "You'll see your refreshed data and drill recommendations inside your dashboard within 24 hours."
+        ),
+        
+        React.createElement(Heading, { style: {
+          color: '#1a1a1a',
+          fontSize: '18px',
+          fontWeight: 'bold',
+          margin: '24px 0 16px',
+          padding: '0',
+          lineHeight: '1.4',
+        }}, "Here's what's happening right now:"),
+        
+        React.createElement(Text, { style: {
+          color: '#333',
+          fontSize: '16px',
+          lineHeight: '26px',
+          margin: '16px 0',
+        }}, 
+          "✅ AI recalibrates your tempo + sequencing",
+          React.createElement('br'),
+          "✅ Reboot metrics update (if Model Mode)",
+          React.createElement('br'),
+          "✅ Coach Rick review scheduled for Monday's session"
+        ),
+        
+        React.createElement(Text, { style: {
+          color: '#333',
+          fontSize: '16px',
+          lineHeight: '26px',
+          margin: '16px 0',
+        }}, 
+          "You're back in rhythm — stay with it this week.",
+          React.createElement('br'),
+          "If you upload again within 3 days, your metrics confidence score increases automatically."
+        ),
+        
+        React.createElement(Link, { 
+          href: dashboardUrl, 
+          style: {
+            backgroundColor: '#FFD700',
+            borderRadius: '5px',
+            color: '#000',
+            display: 'inline-block',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            padding: '12px 24px',
+            textDecoration: 'none',
+            textAlign: 'center',
+            margin: '20px 0',
+          }
+        }, "View My Updated Dashboard →"),
+        
+        React.createElement(Text, { style: {
+          color: '#333',
+          fontSize: '16px',
+          lineHeight: '26px',
+          margin: '16px 0',
+        }}, "Proud of you for getting back after it."),
+        
+        React.createElement(Text, { style: {
+          color: '#333',
+          fontSize: '16px',
+          lineHeight: '26px',
+          margin: '24px 0',
+          fontStyle: 'italic',
+        }}, 
+          "— Coach Rick",
+          React.createElement('br'),
+          '"The feel makes the data make sense."'
+        ),
+        
+        React.createElement(Text, { style: {
+          color: '#898989',
+          fontSize: '12px',
+          lineHeight: '22px',
+          marginTop: '32px',
+          textAlign: 'center',
+        }}, "The Hitting Skool | Hybrid Coaching Program")
+      )
+    )
+  )
+)
 
 serve(async (req) => {
   // Handle CORS preflight
