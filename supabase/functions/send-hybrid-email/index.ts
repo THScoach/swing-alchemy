@@ -166,7 +166,7 @@ serve(async (req) => {
       logStep("Sending reactivation funnel email via Resend", { to: email, subject, step: sequence.email_number });
 
       const { error: sendError } = await resend.emails.send({
-        from: "Coach Rick @ The Hitting Skool <support@thehittingskool.com>",
+        from: "Coach Rick @ The Hitting Skool <support@4bhitting.com>",
         to: [email],
         subject,
         html,
@@ -268,7 +268,7 @@ serve(async (req) => {
       logStep("Sending onboarding email via Resend", { to: email, subject, step: sequence.email_number });
 
       const { error: sendError } = await resend.emails.send({
-        from: "Coach Rick @ The Hitting Skool <support@thehittingskool.com>",
+        from: "Coach Rick @ The Hitting Skool <support@4bhitting.com>",
         to: [email],
         subject,
         html,
@@ -409,7 +409,7 @@ serve(async (req) => {
       logStep("Sending team onboarding email via Resend", { to: email, subject, step: sequence.email_number });
 
       const { error: sendError } = await resend.emails.send({
-        from: "Coach Rick @ The Hitting Skool <support@thehittingskool.com>",
+        from: "Coach Rick @ The Hitting Skool <support@4bhitting.com>",
         to: [email],
         subject,
         html,
@@ -519,7 +519,7 @@ serve(async (req) => {
       logStep("Sending team expansion email via Resend", { to: email, subject, step: sequence.email_number });
 
       const { error: sendError } = await resend.emails.send({
-        from: "Coach Rick @ The Hitting Skool <support@thehittingskool.com>",
+        from: "Coach Rick @ The Hitting Skool <support@4bhitting.com>",
         to: [email],
         subject,
         html,
@@ -615,7 +615,7 @@ serve(async (req) => {
       logStep("Sending hybrid-to-team upgrade email via Resend", { to: email, subject, step: sequence.email_number });
 
       const { error: sendError } = await resend.emails.send({
-        from: "Coach Rick @ The Hitting Skool <support@thehittingskool.com>",
+        from: "Coach Rick @ The Hitting Skool <support@4bhitting.com>",
         to: [email],
         subject,
         html,
@@ -704,7 +704,7 @@ serve(async (req) => {
       logStep("Sending reactivation email via Resend", { to: email, subject: subjectVariants[subjectIndex] });
 
       const { error: sendError } = await resend.emails.send({
-        from: "Coach Rick @ The Hitting Skool <support@thehittingskool.com>",
+        from: "Coach Rick @ The Hitting Skool <support@4bhitting.com>",
         to: [email],
         subject: subjectVariants[subjectIndex],
         html,
@@ -920,7 +920,7 @@ serve(async (req) => {
       subject,
       html,
       ...(sequence.email_number === 1 && {
-        cc: ["support@thehittingskool.com"]
+        cc: ["support@4bhitting.com"]
       })
     });
 
