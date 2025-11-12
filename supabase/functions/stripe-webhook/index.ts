@@ -4,8 +4,16 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 import { renderAsync } from "https://esm.sh/@react-email/components@0.0.15";
 import React from "https://esm.sh/react@18.2.0";
-import { StarterActivation } from "../send-hybrid-email/_templates/starter-activation.tsx";
-import { HybridActivation } from "../send-hybrid-email/_templates/hybrid-activation.tsx";
+import {
+  Body,
+  Container,
+  Head,
+  Heading,
+  Html,
+  Link,
+  Preview,
+  Text,
+} from "https://esm.sh/@react-email/components@0.0.15";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
   apiVersion: "2025-08-27.basil",
@@ -17,6 +25,71 @@ const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : "";
   console.log(`[STRIPE-WEBHOOK] ${step}${detailsStr}`);
 };
+
+// Inline email templates
+const StarterActivation = ({ firstName, profileLink, uploadLink, dashboardLink, supportEmail }: any) =>
+  React.createElement(Html, null,
+    React.createElement(Head, null),
+    React.createElement(Preview, null, "You're activated on THS Starter ($29/mo)"),
+    React.createElement(Body, { style: { backgroundColor: '#ffffff', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif' }},
+      React.createElement(Container, { style: { margin: '0 auto', padding: '20px 0 48px', maxWidth: '600px' }},
+        React.createElement(Text, { style: { color: '#333', fontSize: '16px', lineHeight: '26px', margin: '16px 0' }}, `Hi ${firstName},`),
+        React.createElement(Text, { style: { color: '#333', fontSize: '16px', lineHeight: '26px', margin: '16px 0' }}, "✅ You're activated on THS Starter ($29/mo)."),
+        React.createElement(Heading, { style: { color: '#1a1a1a', fontSize: '18px', fontWeight: 'bold', margin: '24px 0 16px', padding: '0', lineHeight: '1.4' }}, "What you get:"),
+        React.createElement(Text, { style: { color: '#333', fontSize: '16px', lineHeight: '26px', margin: '16px 0' }},
+          "• Unlimited swing uploads (single angle)", React.createElement('br'),
+          "• Tempo (Load:Fire) + 4B snapshot (Brain/Body/Bat/Ball)", React.createElement('br'),
+          "• Coach Rick AI guidance + weekly Q&A call access (listen-in)"
+        ),
+        React.createElement(Heading, { style: { color: '#1a1a1a', fontSize: '18px', fontWeight: 'bold', margin: '24px 0 16px', padding: '0', lineHeight: '1.4' }}, "Next 3 minutes:"),
+        React.createElement(Text, { style: { color: '#333', fontSize: '16px', lineHeight: '26px', margin: '16px 0' }},
+          "1) Complete player profile → ", React.createElement(Link, { href: profileLink, style: { color: '#2754C5', textDecoration: 'underline' }}, "Profile"), React.createElement('br'),
+          "2) Upload an open-face swing (≥60fps) → ", React.createElement(Link, { href: uploadLink, style: { color: '#2754C5', textDecoration: 'underline' }}, "Upload"), React.createElement('br'),
+          "3) Get your report in-app → ", React.createElement(Link, { href: dashboardLink, style: { color: '#2754C5', textDecoration: 'underline' }}, "Dashboard")
+        ),
+        React.createElement(Text, { style: { color: '#333', fontSize: '16px', lineHeight: '26px', margin: '16px 0' }},
+          React.createElement('strong', null, "Pro tip:"), " Keep the camera steady, chest-high, home plate in frame."
+        ),
+        React.createElement(Text, { style: { color: '#333', fontSize: '16px', lineHeight: '26px', margin: '24px 0' }}, "— The Hitting Skool"),
+        React.createElement(Text, { style: { color: '#898989', fontSize: '12px', lineHeight: '22px', marginTop: '32px', textAlign: 'center' }},
+          "Support: ", React.createElement(Link, { href: `mailto:${supportEmail}`, style: { color: '#2754C5', textDecoration: 'underline' }}, supportEmail)
+        )
+      )
+    )
+  );
+
+const HybridActivation = ({ firstName, goalsLink, uploadLink, drillsLink, supportEmail }: any) =>
+  React.createElement(Html, null,
+    React.createElement(Head, null),
+    React.createElement(Preview, null, "Your Hybrid plan ($99/mo) is active"),
+    React.createElement(Body, { style: { backgroundColor: '#ffffff', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif' }},
+      React.createElement(Container, { style: { margin: '0 auto', padding: '20px 0 48px', maxWidth: '600px' }},
+        React.createElement(Text, { style: { color: '#333', fontSize: '16px', lineHeight: '26px', margin: '16px 0' }}, `Hi ${firstName},`),
+        React.createElement(Text, { style: { color: '#333', fontSize: '16px', lineHeight: '26px', margin: '16px 0' }}, "🔥 Your Hybrid plan ($99/mo) is active."),
+        React.createElement(Heading, { style: { color: '#1a1a1a', fontSize: '18px', fontWeight: 'bold', margin: '24px 0 16px', padding: '0', lineHeight: '1.4' }}, "You get:"),
+        React.createElement(Text, { style: { color: '#333', fontSize: '16px', lineHeight: '26px', margin: '16px 0' }},
+          "• Weekly personal coaching touch (DM/voice or live group)", React.createElement('br'),
+          "• App-driven training plan that adapts as you improve", React.createElement('br'),
+          "• Tempo + 4B deep dives with targeted drills", React.createElement('br'),
+          "• Priority responses + progress tracking"
+        ),
+        React.createElement(Heading, { style: { color: '#1a1a1a', fontSize: '18px', fontWeight: 'bold', margin: '24px 0 16px', padding: '0', lineHeight: '1.4' }}, "Start now (2 mins):"),
+        React.createElement(Text, { style: { color: '#333', fontSize: '16px', lineHeight: '26px', margin: '16px 0' }},
+          "1) Set your training goal → ", React.createElement(Link, { href: goalsLink, style: { color: '#2754C5', textDecoration: 'underline' }}, "Goals"), React.createElement('br'),
+          "2) Upload 2–3 swings (≥60fps) → ", React.createElement(Link, { href: uploadLink, style: { color: '#2754C5', textDecoration: 'underline' }}, "Upload"), React.createElement('br'),
+          "3) See your assigned drills → ", React.createElement(Link, { href: drillsLink, style: { color: '#2754C5', textDecoration: 'underline' }}, "Drills")
+        ),
+        React.createElement(Text, { style: { color: '#333', fontSize: '16px', lineHeight: '26px', margin: '16px 0' }},
+          React.createElement('strong', null, "First checkpoint:"), " You'll receive your plan update within 48 hours of your first upload."
+        ),
+        React.createElement(Text, { style: { color: '#333', fontSize: '16px', lineHeight: '26px', margin: '16px 0' }}, "Let's go."),
+        React.createElement(Text, { style: { color: '#333', fontSize: '16px', lineHeight: '26px', margin: '24px 0' }}, "— Coach Rick"),
+        React.createElement(Text, { style: { color: '#898989', fontSize: '12px', lineHeight: '22px', marginTop: '32px', textAlign: 'center' }},
+          "Support: ", React.createElement(Link, { href: `mailto:${supportEmail}`, style: { color: '#2754C5', textDecoration: 'underline' }}, supportEmail)
+        )
+      )
+    )
+  );
 
 serve(async (req) => {
   const signature = req.headers.get("Stripe-Signature");
