@@ -201,10 +201,29 @@ export default function TeamSettings() {
               <div>
                 <Label className="text-muted-foreground">Expires On</Label>
                 <p className="text-lg font-medium">{formatDate(team.expires_on)}</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {daysUntilExpiry > 0 ? `${daysUntilExpiry} days remaining` : "Expired"}
-                </p>
+                {daysUntilExpiry > 0 && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {daysUntilExpiry} days remaining
+                  </p>
+                )}
+                {daysUntilExpiry <= 0 && (
+                  <p className="text-sm text-destructive mt-1">
+                    Expired
+                  </p>
+                )}
               </div>
+
+              {(isExpiringSoon || isExpired) && (
+                <div className="pt-4">
+                  <Button
+                    onClick={() => navigate("/order-team")}
+                    variant={isExpired ? "destructive" : "outline"}
+                    className="w-full"
+                  >
+                    Renew Team Pass
+                  </Button>
+                </div>
+              )}
 
               <div>
                 <Label className="text-muted-foreground">Created</Label>

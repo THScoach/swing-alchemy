@@ -16,6 +16,7 @@ export default function ThankYou() {
   const [team, setTeam] = useState<any>(null);
   const [joinLink, setJoinLink] = useState("");
   const [copied, setCopied] = useState(false);
+  const [teamMembers, setTeamMembers] = useState(0);
 
   const sessionId = searchParams.get("session_id");
   const plan = searchParams.get("plan");
@@ -55,6 +56,14 @@ export default function ThankYou() {
         if (teams && teams.length > 0) {
           const latestTeam = teams[0];
           setTeam(latestTeam);
+
+          // Get member count
+          const { count } = await supabase
+            .from("team_members")
+            .select("*", { count: "exact", head: true })
+            .eq("team_id", latestTeam.id);
+          
+          setTeamMembers(count || 0);
 
           // Get join link from invite
           const inviteToken = latestTeam.team_invites?.[0]?.token;
@@ -226,8 +235,8 @@ export default function ThankYou() {
                     <span className="font-medium">{team.name}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Player Limit:</span>
-                    <span className="font-medium">{team.player_limit} players</span>
+                    <span className="text-muted-foreground">Current Members:</span>
+                    <span className="font-medium">{teamMembers} / {team.player_limit} players</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Expires:</span>
@@ -238,6 +247,10 @@ export default function ThankYou() {
                         day: "numeric",
                       })}
                     </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Status:</span>
+                    <span className="font-medium text-green-600 dark:text-green-400">Active</span>
                   </div>
                 </div>
               </div>
@@ -307,10 +320,25 @@ export default function ThankYou() {
                 </div>
               </div>
 
-              <Button onClick={() => navigate("/coach/teams")} className="w-full gap-2" size="lg">
-                <Users className="h-4 w-4" />
-                Go to Coach Dashboard
-              </Button>
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  onClick={() => navigate(`/coach/teams/${team.id}`)}
+                  className="gap-2"
+                  size="lg"
+                >
+                  <Users className="h-4 w-4" />
+                  View Team
+                </Button>
+                <Button
+                  onClick={() => navigate(`/coach/teams/${team.id}/invites`)}
+                  variant="outline"
+                  className="gap-2"
+                  size="lg"
+                >
+                  <Users className="h-4 w-4" />
+                  Invite Players
+                </Button>
+              </div>
 
               <p className="text-center text-sm text-muted-foreground pt-4">
                 Questions? Contact us at support@4bhitting.com

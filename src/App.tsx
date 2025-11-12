@@ -48,6 +48,7 @@ import UpgradeHybrid from "./pages/UpgradeHybrid";
 import HybridWelcome from "./pages/HybridWelcome";
 import Teams from "./pages/coach/Teams";
 import TeamDetail from "./pages/coach/TeamDetail";
+import AdminWebhookEvents from "./pages/AdminWebhookEvents";
 import TeamInvites from "./pages/coach/TeamInvites";
 import TeamReports from "./pages/coach/TeamReports";
 import TeamSettings from "./pages/coach/TeamSettings";
@@ -113,6 +114,7 @@ const App = () => (
           <Route path="/admin/pro-swings" element={<ProtectedRoute><AdminProSwings /></ProtectedRoute>} />
           <Route path="/admin/teams-overview" element={<ProtectedRoute><AdminTeamsOverview /></ProtectedRoute>} />
           <Route path="/admin/transactions" element={<ProtectedRoute><AdminTransactions /></ProtectedRoute>} />
+          <Route path="/admin/webhook-events" element={<ProtectedRoute><AdminWebhookEvents /></ProtectedRoute>} />
           
           {/* Public success page */}
           <Route path="/thank-you" element={<ThankYou />} />

@@ -13,11 +13,20 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
 };
 
-// Price mapping for team plans
+// Price mapping for team plans - can be overridden by environment variables
 const TEAM_PRICE_MAP: Record<string, { priceId: string; durationDays: number }> = {
-  "3m": { priceId: "price_1SSi95BleqUssXcsjJjMLySz", durationDays: 90 },
-  "4m": { priceId: "price_1SSi9gBleqUssXcs4KduJvQ1", durationDays: 120 },
-  "6m": { priceId: "price_1SSiAbBleqUssXcsVJcq8TsU", durationDays: 180 },
+  "3m": { 
+    priceId: Deno.env.get("TEAM_PRICE_3M") || "price_1SSi95BleqUssXcsjJjMLySz", 
+    durationDays: 90 
+  },
+  "4m": { 
+    priceId: Deno.env.get("TEAM_PRICE_4M") || "price_1SSi9gBleqUssXcs4KduJvQ1", 
+    durationDays: 120 
+  },
+  "6m": { 
+    priceId: Deno.env.get("TEAM_PRICE_6M") || "price_1SSiAbBleqUssXcsVJcq8TsU", 
+    durationDays: 180 
+  },
 };
 
 serve(async (req) => {
