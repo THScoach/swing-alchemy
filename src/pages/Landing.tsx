@@ -42,9 +42,15 @@ export default function Landing() {
               </div>
             </div>
             <div className="relative">
-              <div className="aspect-video bg-muted rounded-2xl shadow-2xl flex items-center justify-center">
-                <Video className="h-24 w-24 text-muted-foreground" />
-              </div>
+              <video 
+                autoPlay 
+                muted 
+                loop 
+                playsInline
+                className="aspect-video rounded-2xl shadow-2xl object-cover w-full"
+              >
+                <source src="https://res.cloudinary.com/dzkwltgyd/video/upload/v1762974085/glif-run-outputs/b90klnjjxjnqj88cbrxt.mp4" type="video/mp4" />
+              </video>
             </div>
           </div>
         </div>
