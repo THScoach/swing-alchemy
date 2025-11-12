@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { Link, useLocation } from "react-router-dom";
-import { Home, Video, BookOpen, ShoppingBag, User, Users, Shield } from "lucide-react";
+import { Home, Video, BookOpen, ShoppingBag, User, Users, Shield, Briefcase } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -31,6 +31,7 @@ export const AppTopBar = () => {
   const location = useLocation();
   const [profile, setProfile] = useState<any>(null);
   const [roles, setRoles] = useState<string[]>([]);
+  const [hasTeams, setHasTeams] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -52,6 +53,15 @@ export const AppTopBar = () => {
         if (rolesData) {
           setRoles(rolesData.map(r => r.role));
         }
+
+        // Check if user has any teams
+        const { data: teams } = await supabase
+          .from('teams')
+          .select('id')
+          .eq('coach_user_id', user.id)
+          .limit(1);
+        
+        setHasTeams((teams?.length || 0) > 0);
       }
     };
 
@@ -74,6 +84,9 @@ export const AppTopBar = () => {
 
   const conditionalNavItems = [
     ...navItems,
+    ...(hasTeams
+      ? [{ icon: Briefcase, label: "Coach", path: "/coach/teams" }] 
+      : []),
     ...(roles.includes('coach') || roles.includes('admin') 
       ? [{ icon: Users, label: "Team", path: "/team" }] 
       : []),

@@ -3,8 +3,9 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Upload, Calendar, ArrowLeft } from "lucide-react";
+import { CheckCircle2, Upload, Calendar, ArrowLeft, Copy, Users } from "lucide-react";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
 
 export default function ThankYou() {
   const [searchParams] = useSearchParams();
@@ -12,18 +13,80 @@ export default function ThankYou() {
   const [loading, setLoading] = useState(true);
   const [transaction, setTransaction] = useState<any>(null);
   const [smsSent, setSmsSent] = useState(false);
+  const [team, setTeam] = useState<any>(null);
+  const [joinLink, setJoinLink] = useState("");
+  const [copied, setCopied] = useState(false);
 
   const sessionId = searchParams.get("session_id");
+  const plan = searchParams.get("plan");
+  const type = searchParams.get("type");
   const transactionId = searchParams.get("transaction_id");
 
   useEffect(() => {
-    if (!sessionId || !transactionId) {
+    if (type === "team" && sessionId) {
+      // For team purchases, poll for team creation
+      pollForTeam();
+    } else if (sessionId && transactionId) {
+      processPaymentSuccess();
+    } else {
       navigate("/");
-      return;
     }
+  }, [sessionId, transactionId, type]);
 
-    processPaymentSuccess();
-  }, [sessionId, transactionId]);
+  const pollForTeam = async () => {
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    const poll = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setLoading(false);
+          return;
+        }
+
+        const { data: teams } = await supabase
+          .from("teams")
+          .select("*, team_invites(token)")
+          .eq("coach_user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1);
+
+        if (teams && teams.length > 0) {
+          const latestTeam = teams[0];
+          setTeam(latestTeam);
+
+          // Get join link from invite
+          const inviteToken = latestTeam.team_invites?.[0]?.token;
+          if (inviteToken) {
+            const appUrl = window.location.origin;
+            setJoinLink(`${appUrl}/team/join?token=${inviteToken}`);
+          }
+
+          setLoading(false);
+          return;
+        }
+
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 2000); // Poll every 2 seconds
+        } else {
+          setLoading(false);
+          toast.error("Team creation is taking longer than expected. Please check your coach dashboard.");
+        }
+      } catch (error) {
+        console.error("Error polling for team:", error);
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 2000);
+        } else {
+          setLoading(false);
+        }
+      }
+    };
+
+    poll();
+  };
 
   const processPaymentSuccess = async () => {
     try {
@@ -102,12 +165,158 @@ export default function ThankYou() {
     }
   };
 
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(joinLink);
+      setCopied(true);
+      toast.success("Link copied to clipboard!");
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      toast.error("Failed to copy link");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto"></div>
-          <p className="text-muted-foreground">Processing your payment...</p>
+          <p className="text-muted-foreground">
+            {type === "team" ? "Setting up your team..." : "Processing your payment..."}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Team Purchase Success
+  if (type === "team" && team) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 py-12 px-4">
+        <div className="max-w-2xl mx-auto space-y-6">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate("/coach/teams")}
+            className="gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Go to Coach Dashboard
+          </Button>
+
+          <Card className="border-primary/20 shadow-lg">
+            <CardHeader className="text-center space-y-4">
+              <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+                <CheckCircle2 className="h-10 w-10 text-primary" />
+              </div>
+              <CardTitle className="text-3xl">🎯 Your Team Is Activated!</CardTitle>
+              <CardDescription className="text-lg">
+                Welcome to The Hitting Skool Coach Dashboard
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Team Details */}
+              <div className="bg-muted/50 rounded-lg p-6 space-y-3">
+                <h3 className="font-semibold text-lg flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Team Details
+                </h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Team Name:</span>
+                    <span className="font-medium">{team.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Player Limit:</span>
+                    <span className="font-medium">{team.player_limit} players</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Expires:</span>
+                    <span className="font-medium">
+                      {new Date(team.expires_on).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Join Link */}
+              {joinLink && (
+                <div className="space-y-3">
+                  <h3 className="font-semibold">Share Your Team Join Link</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Send this link to your players so they can join your team
+                  </p>
+                  <div className="flex gap-2">
+                    <Input
+                      value={joinLink}
+                      readOnly
+                      className="font-mono text-sm"
+                    />
+                    <Button
+                      onClick={handleCopyLink}
+                      variant="outline"
+                      size="icon"
+                      className="flex-shrink-0"
+                    >
+                      {copied ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Next Steps */}
+              <div className="space-y-4">
+                <h3 className="font-semibold">Next Steps</h3>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-primary">1</span>
+                    </div>
+                    <div>
+                      <p className="font-medium">Share the Join Link</p>
+                      <p className="text-sm text-muted-foreground">
+                        Send the link above to your players via email or team chat
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-primary">2</span>
+                    </div>
+                    <div>
+                      <p className="font-medium">Manage Your Team</p>
+                      <p className="text-sm text-muted-foreground">
+                        Track player progress and manage invites from your coach dashboard
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-primary">3</span>
+                    </div>
+                    <div>
+                      <p className="font-medium">Players Upload & Train</p>
+                      <p className="text-sm text-muted-foreground">
+                        Once joined, players can upload swings and access training
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <Button onClick={() => navigate("/coach/teams")} className="w-full gap-2" size="lg">
+                <Users className="h-4 w-4" />
+                Go to Coach Dashboard
+              </Button>
+
+              <p className="text-center text-sm text-muted-foreground pt-4">
+                Questions? Contact us at support@4bhitting.com
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );

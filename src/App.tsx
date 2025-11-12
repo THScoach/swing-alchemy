@@ -46,6 +46,12 @@ import OrderTeam from "./pages/OrderTeam";
 import WelcomeAI from "./pages/WelcomeAI";
 import UpgradeHybrid from "./pages/UpgradeHybrid";
 import HybridWelcome from "./pages/HybridWelcome";
+import Teams from "./pages/coach/Teams";
+import TeamDetail from "./pages/coach/TeamDetail";
+import TeamInvites from "./pages/coach/TeamInvites";
+import TeamReports from "./pages/coach/TeamReports";
+import TeamSettings from "./pages/coach/TeamSettings";
+import TeamJoin from "./pages/TeamJoin";
 
 const queryClient = new QueryClient();
 
@@ -68,6 +74,7 @@ const App = () => (
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/team/join" element={<TeamJoin />} />
           
           {/* Protected routes */}
           <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
@@ -83,6 +90,14 @@ const App = () => (
           <Route path="/brain" element={<ProtectedRoute><Brain /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/profile/:userId" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          
+          {/* Coach routes */}
+          <Route path="/coach" element={<ProtectedRoute><Teams /></ProtectedRoute>} />
+          <Route path="/coach/teams" element={<ProtectedRoute><Teams /></ProtectedRoute>} />
+          <Route path="/coach/teams/:teamId" element={<ProtectedRoute><TeamDetail /></ProtectedRoute>} />
+          <Route path="/coach/teams/:teamId/invites" element={<ProtectedRoute><TeamInvites /></ProtectedRoute>} />
+          <Route path="/coach/teams/:teamId/reports" element={<ProtectedRoute><TeamReports /></ProtectedRoute>} />
+          <Route path="/coach/teams/:teamId/settings" element={<ProtectedRoute><TeamSettings /></ProtectedRoute>} />
           
           {/* Admin routes */}
           <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />

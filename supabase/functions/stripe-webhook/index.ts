@@ -264,8 +264,8 @@ async function handleCheckoutCompleted(
   }
 
   // Handle team purchases
-  if (metadata.plan_type === "team" && userId && session.customer_details?.email) {
-    await handleTeamPurchase(session, metadata, userId, session.customer_details.email, supabase);
+  if (metadata.plan_type === "team" && userId) {
+    await handleTeamPurchase(session, metadata, userId, session.customer_details?.email || session.customer_email || "", supabase);
   }
 
   if (userId && session.customer_details?.email) {
@@ -427,68 +427,92 @@ async function sendHybridActivation(
 }
 
 async function handleTeamPurchase(
-  session: Stripe.Checkout.Session,
+  session: any,
   metadata: any,
   userId: string,
   email: string,
   supabase: any
 ) {
-  logStep("Handling team purchase", { userId, email, planCode: metadata.plan_code });
+  logStep("Processing team purchase", { userId, email, planCode: metadata.plan_code });
 
-  const orgName = metadata.org_name || "My Team";
+  const orgName = metadata.org_name || "Team";
   const durationDays = parseInt(metadata.duration_days || "90");
   const playerLimit = parseInt(metadata.player_limit || "10");
   const expiresAt = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
 
-  // Create or get organization
-  const { data: existingOrg } = await supabase
-    .from("organizations")
-    .select("id")
-    .eq("name", orgName)
+  // Create team
+  const { data: team, error: teamError } = await supabase
+    .from("teams")
+    .insert({
+      coach_user_id: userId,
+      coach_email: email,
+      name: orgName,
+      player_limit: playerLimit,
+      expires_on: expiresAt.toISOString(),
+      status: "active",
+    })
+    .select()
     .single();
 
-  let orgId = existingOrg?.id;
-
-  if (!orgId) {
-    const { data: newOrg, error: orgError } = await supabase
-      .from("organizations")
-      .insert({
-        name: orgName,
-        subscription_tier: "team",
-      })
-      .select()
-      .single();
-
-    if (orgError) {
-      logStep("ERROR creating organization", { error: orgError });
-      return;
-    }
-    
-    orgId = newOrg.id;
-    logStep("Organization created", { orgId, orgName });
-
-    // Add user as admin
-    const { error: memberError } = await supabase
-      .from("organization_members")
-      .insert({
-        organization_id: orgId,
-        user_id: userId,
-        role: "admin",
-      });
-
-    if (memberError) {
-      logStep("ERROR adding org member", { error: memberError });
-    }
+  if (teamError) {
+    logStep("ERROR creating team", { error: teamError });
+    throw teamError;
   }
 
-  // Update subscription with org_id
-  await supabase
-    .from("subscriptions")
-    .update({ org_id: orgId })
-    .eq("user_id", userId)
-    .eq("plan_code", metadata.plan_code);
+  // Create team pass record
+  const { error: passError } = await supabase
+    .from("team_passes")
+    .insert({
+      team_id: team.id,
+      stripe_session_id: session.id,
+      duration_days: durationDays,
+      amount_paid: session.amount_total || 0,
+      plan_label: metadata.plan_code,
+    });
 
-  // Send activation email
+  if (passError) {
+    logStep("ERROR creating team pass", { error: passError });
+  }
+
+  // Create transaction record
+  const { error: txnError } = await supabase
+    .from("transactions")
+    .insert({
+      user_id: userId,
+      plan_type: "team",
+      amount: (session.amount_total || 0) / 100,
+      currency: session.currency || "usd",
+      payment_status: "completed",
+      stripe_session_id: session.id,
+      stripe_payment_intent_id: session.payment_intent as string,
+      customer_email: email,
+    });
+
+  if (txnError) {
+    logStep("ERROR creating transaction", { error: txnError });
+  }
+
+  // Generate join token
+  const { data: invite, error: inviteError } = await supabase
+    .from("team_invites")
+    .insert({
+      team_id: team.id,
+      status: "created",
+    })
+    .select()
+    .single();
+
+  if (inviteError) {
+    logStep("ERROR creating invite", { error: inviteError });
+  }
+
+  // Build join URL
+  const appOrigin = Deno.env.get("APP_URL") || "https://app.4bhitting.com";
+  const joinUrl = invite 
+    ? `${appOrigin}/team/join?token=${invite.token}`
+    : `${appOrigin}/coach/teams/${team.id}/invites`;
+
+  // Get user profile for email
   const { data: profile } = await supabase
     .from("profiles")
     .select("name")
@@ -496,13 +520,11 @@ async function handleTeamPurchase(
     .single();
 
   const firstName = profile?.name?.split(" ")[0] || "Coach";
-  const appOrigin = Deno.env.get("APP_URL") || "https://app.4bhitting.com";
-  const joinUrl = `${appOrigin}/team/join?org=${orgId}`;
 
   const planNames: Record<string, string> = {
-    "3m": "3-Month Team Pass",
-    "4m": "4-Month Team Pass",
-    "6m": "6-Month Team Pass",
+    "3m": "Team Pass (3-Month)",
+    "4m": "Team Pass (4-Month)",
+    "6m": "Team Pass (6-Month)",
   };
 
   const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
@@ -528,12 +550,12 @@ async function handleTeamPurchase(
   await resend.emails.send({
     from: FROM_ADDRESS,
     to: [email],
-    subject: "Your Team Is In — Welcome to The Hitting Skool",
+    subject: "🎯 Your Team Is Activated — Welcome to The Hitting Skool",
     html,
     reply_to: [SUPPORT_EMAIL],
   });
 
-  logStep("Team activation email sent", { email, orgId });
+  logStep("Team activation email sent", { email, teamId: team.id });
 }
 
 async function sendTeamActivation(
