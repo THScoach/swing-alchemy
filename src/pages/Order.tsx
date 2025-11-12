@@ -14,6 +14,7 @@ interface PlanConfig {
   name: string;
   price: string;
   priceAmount: number;
+  stripePriceId: string;
   period?: string;
   headline: string;
   subheadline: string;
@@ -25,40 +26,49 @@ interface PlanConfig {
 
 const planConfigs: Record<string, PlanConfig> = {
   "winter-program": {
-    name: "Winter Program",
+    name: "Elite Winter Program",
     price: "$997",
     priceAmount: 997,
+    stripePriceId: "price_1SSSuWBleqUssXcst9uWibD9",
     period: " one-time",
     headline: "The Complete Winter Training System for Hitters.",
     subheadline: "A full off-season program combining AI swing analysis, personalized feedback, and live coaching with Coach Rick.",
     benefits: [
-      "Comprehensive 4B + Tempo evaluation",
-      "Weekly assignments and private video feedback",
-      "Exclusive Winter access — graduates continue at $99/mo if desired",
+      "Full biomechanical 4B + Tempo evaluation",
+      "Weekly live sessions with Coach Rick",
+      "Remote + in-person hybrid support",
+      "Personalized training plan that adapts weekly",
+      "Final performance report & progress summary",
+      "Priority access throughout program",
+      "Graduates continue at $99/mo if desired",
     ],
     cta: "Complete My Enrollment",
     planType: "winter-program",
   },
   "self-service": {
-    name: "AI Adaptive Training",
+    name: "AI-Adaptive Training",
     price: "$29",
     priceAmount: 29,
+    stripePriceId: "price_1SSSu8BleqUssXcsdnmdc5kM",
     period: "/mo",
-    headline: "Train Smarter, Anytime.",
-    subheadline: "Upload swings, get instant AI analysis, and watch your personalized drills evolve as your swing improves.",
+    headline: "Train Smarter, Anytime — Powered by Coach Rick AI",
+    subheadline: "Upload your swing, get instant AI feedback, and let your personalized training evolve automatically. No scheduling. No waiting. Just smarter reps, powered by your data.",
     benefits: [
-      "AI-powered swing analysis with instant feedback",
-      "Adaptive drill recommendations that improve with you",
-      "Access to The Hitting Skool app + community",
-      "Powered by Coach Rick AI — the smarter you train, the smarter it gets",
+      "🔄 Personalized swing breakdowns (Tempo + Sequence AI)",
+      "🧠 Smart Drill Engine — your drills evolve as you improve",
+      "📊 Track your swing rhythm, sequence, and tempo inside the app",
+      "💬 AI feedback within 60 seconds of upload",
+      "🎯 Weekly challenges and milestones to keep you accountable",
+      "🏅 Earn badges as you level up and improve performance metrics",
     ],
-    cta: "Start Training Today",
+    cta: "Activate My Smart Training",
     planType: "self-service",
   },
   "group-coaching": {
     name: "Group Coaching",
     price: "$99",
     priceAmount: 99,
+    stripePriceId: "price_1SSSvNBleqUssXcsHtWWkcUI",
     period: "/mo",
     headline: "Join the Team. Weekly Coaching & Accountability.",
     subheadline: "Work directly with Coach Rick and a community of driven players chasing the same goal.",
@@ -122,7 +132,7 @@ export default function Order() {
 
       console.log("Creating checkout session with data:", {
         planType: config.planType,
-        amount: config.priceAmount,
+        stripePriceId: config.stripePriceId,
         playerName: validated.playerName,
         email: validated.email,
       });
@@ -131,8 +141,7 @@ export default function Order() {
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: {
           planType: config.planType,
-          sessionType: config.planType,
-          amount: config.priceAmount,
+          stripePriceId: config.stripePriceId,
           customerName: validated.playerName,
           customerEmail: validated.email,
           customerPhone: validated.phone,

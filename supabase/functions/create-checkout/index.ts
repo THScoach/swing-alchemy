@@ -9,12 +9,7 @@ const corsHeaders = {
 
 interface CheckoutRequest {
   planType: string;
-  sessionType: string;
-  amount: number;
-  // Support both naming conventions
-  playerName?: string;
-  playerEmail?: string;
-  playerPhone?: string;
+  stripePriceId: string;
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string;
@@ -47,11 +42,7 @@ serve(async (req) => {
 
     const {
       planType,
-      sessionType,
-      amount,
-      playerName,
-      playerEmail,
-      playerPhone,
+      stripePriceId,
       customerName,
       customerEmail,
       customerPhone,
@@ -60,16 +51,19 @@ serve(async (req) => {
       metadata = {}
     }: CheckoutRequest = await req.json();
 
-    // Use customer* fields if provided, fallback to player* fields
-    const name = customerName || playerName || "Customer";
-    const email = customerEmail || playerEmail;
-    const phone = customerPhone || playerPhone;
+    const name = customerName || "Customer";
+    const email = customerEmail;
+    const phone = customerPhone;
 
     if (!email) {
       throw new Error("Email is required");
     }
 
-    console.log("[CREATE-CHECKOUT] Request:", { planType, sessionType, amount, email });
+    if (!stripePriceId) {
+      throw new Error("Stripe price ID is required");
+    }
+
+    console.log("[CREATE-CHECKOUT] Request:", { planType, stripePriceId, email });
 
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -85,13 +79,17 @@ serve(async (req) => {
     }
 
     // Create transaction record
+    // Fetch price details from Stripe to get the amount
+    const price = await stripe.prices.retrieve(stripePriceId);
+    const amount = (price.unit_amount || 0) / 100; // Convert from cents to dollars
+
     const { data: transaction, error: transactionError } = await supabaseClient
       .from("transactions")
       .insert({
         user_id: user?.id || null,
         player_id: playerId || null,
         plan_type: planType,
-        session_type: sessionType,
+        session_type: planType,
         amount: amount,
         payment_status: "pending",
         customer_name: name,
@@ -110,24 +108,21 @@ serve(async (req) => {
 
     console.log("[CREATE-CHECKOUT] Transaction created:", transaction.id);
 
+    // Determine checkout mode based on price type
+    const isSubscription = price.type === "recurring";
+    const mode = isSubscription ? "subscription" : "payment";
+
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : email,
       line_items: [
         {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: `${sessionType} Session - ${planType}`,
-              description: scheduledDate ? `Scheduled for ${new Date(scheduledDate).toLocaleDateString()}` : undefined,
-            },
-            unit_amount: Math.round(amount * 100), // Convert to cents
-          },
+          price: stripePriceId,
           quantity: 1,
         },
       ],
-      mode: "payment",
+      mode: mode,
       success_url: `${req.headers.get("origin")}/thank-you?session_id={CHECKOUT_SESSION_ID}&transaction_id=${transaction.id}`,
       cancel_url: `${req.headers.get("origin")}/pricing?canceled=true`,
       metadata: {
@@ -135,7 +130,6 @@ serve(async (req) => {
         player_name: name,
         player_email: email,
         player_phone: phone || "",
-        session_type: sessionType,
         plan_type: planType,
         ...metadata, // Include any additional metadata from the order form
       },
