@@ -556,6 +556,48 @@ export type Database = {
         }
         Relationships: []
       }
+      email_sequences: {
+        Row: {
+          created_at: string
+          email_number: number
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          scheduled_at: string
+          sent_at: string | null
+          sequence_name: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_number: number
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          scheduled_at: string
+          sent_at?: string | null
+          sequence_name: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_number?: number
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          scheduled_at?: string
+          sent_at?: string | null
+          sequence_name?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           created_at: string
@@ -1672,6 +1714,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      schedule_hybrid_onboarding: {
+        Args: { p_user_id: string }
+        Returns: undefined
       }
       user_has_org_access: {
         Args: { _org_id: string; _user_id: string }

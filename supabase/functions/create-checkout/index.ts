@@ -118,6 +118,18 @@ serve(async (req) => {
           .eq("id", user.id);
         
         console.log("[CREATE-CHECKOUT] Profile updated with Hybrid_Coaching tier");
+        
+        // Schedule Hybrid onboarding email sequence
+        const { error: scheduleError } = await supabaseClient.rpc(
+          "schedule_hybrid_onboarding",
+          { p_user_id: user.id }
+        );
+        
+        if (scheduleError) {
+          console.error("[CREATE-CHECKOUT] Failed to schedule onboarding emails:", scheduleError);
+        } else {
+          console.log("[CREATE-CHECKOUT] Hybrid onboarding sequence scheduled");
+        }
       }
 
       // Return success without checkout session
