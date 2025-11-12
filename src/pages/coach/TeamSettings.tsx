@@ -107,6 +107,10 @@ export default function TeamSettings() {
     });
   };
 
+  const daysUntilExpiry = team ? Math.ceil((new Date(team.expires_on).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
+  const isExpiringSoon = daysUntilExpiry <= 7 && daysUntilExpiry > 0;
+  const isExpired = daysUntilExpiry <= 0;
+
   return (
     <AppLayout>
       <div className="container mx-auto py-8 px-4 max-w-2xl">
@@ -122,6 +126,24 @@ export default function TeamSettings() {
           <p className="text-muted-foreground">
             Configure your team preferences
           </p>
+          {isExpiringSoon && (
+            <div className="mt-4 p-4 bg-yellow-500/10 border border-yellow-500 rounded-lg">
+              <p className="text-yellow-700 dark:text-yellow-400 font-medium">
+                ⚠️ Team access expires in {daysUntilExpiry} day{daysUntilExpiry !== 1 ? 's' : ''}
+              </p>
+              <Button variant="outline" className="mt-2" onClick={() => navigate("/order-team")}>
+                Renew Team Pass
+              </Button>
+            </div>
+          )}
+          {isExpired && (
+            <div className="mt-4 p-4 bg-destructive/10 border border-destructive rounded-lg">
+              <p className="text-destructive font-medium">Team access expired. Renew to unlock features.</p>
+              <Button variant="destructive" className="mt-2" onClick={() => navigate("/order-team")}>
+                Renew Team Pass
+              </Button>
+            </div>
+          )}
         </div>
 
         <form onSubmit={handleSave} className="space-y-6">
@@ -179,6 +201,9 @@ export default function TeamSettings() {
               <div>
                 <Label className="text-muted-foreground">Expires On</Label>
                 <p className="text-lg font-medium">{formatDate(team.expires_on)}</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {daysUntilExpiry > 0 ? `${daysUntilExpiry} days remaining` : "Expired"}
+                </p>
               </div>
 
               <div>

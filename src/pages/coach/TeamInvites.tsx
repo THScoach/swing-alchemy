@@ -41,15 +41,15 @@ export default function TeamInvites() {
 
   const loadData = async () => {
     try {
-      // Load team
-      const { data: teamData, error: teamError } = await supabase
-        .from("teams")
-        .select("*")
-        .eq("id", teamId)
-        .single();
+      // Load team with member count
+      const { data, error } = await supabase.functions.invoke("team-overview", {
+        body: { teamId },
+      });
 
-      if (teamError) throw teamError;
-      setTeam(teamData);
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      setTeam(data.team);
 
       // Load invites
       const { data: invitesData, error: invitesError } = await supabase
@@ -206,6 +206,10 @@ export default function TeamInvites() {
     );
   }
 
+  const isExpired = team && new Date(team.expires_on) < new Date();
+  const isFull = team && team.activeMembers >= team.player_limit;
+  const canInvite = !isExpired && !isFull;
+
   return (
     <AppLayout>
       <div className="container mx-auto py-8 px-4 max-w-4xl">
@@ -216,8 +220,21 @@ export default function TeamInvites() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Invite Players</h1>
           <p className="text-muted-foreground">
-            Add players to {team?.name} ({team?._count?.activeMembers || 0} / {team?.player_limit || 10} seats used)
+            Add players to {team?.name} ({team?.activeMembers || 0} / {team?.player_limit || 10} seats used)
           </p>
+          {isExpired && (
+            <div className="mt-4 p-4 bg-destructive/10 border border-destructive rounded-lg">
+              <p className="text-destructive font-medium">Team access expired. Renew to unlock invites.</p>
+              <Button variant="destructive" className="mt-2" onClick={() => navigate("/order-team")}>
+                Renew Team Pass
+              </Button>
+            </div>
+          )}
+          {isFull && !isExpired && (
+            <div className="mt-4 p-4 bg-yellow-500/10 border border-yellow-500 rounded-lg">
+              <p className="text-yellow-700 dark:text-yellow-400 font-medium">All seats are full. Remove players or upgrade.</p>
+            </div>
+          )}
         </div>
 
         {/* Generic Link Card */}
@@ -248,7 +265,7 @@ export default function TeamInvites() {
                 </Button>
               </div>
             ) : (
-              <Button onClick={handleGenerateGenericLink} disabled={creating}>
+              <Button onClick={handleGenerateGenericLink} disabled={creating || !canInvite}>
                 <LinkIcon className="h-4 w-4 mr-2" />
                 Generate Join Link
               </Button>
@@ -289,7 +306,7 @@ export default function TeamInvites() {
                   onChange={(e) => setPlayerName(e.target.value)}
                 />
               </div>
-              <Button type="submit" disabled={creating || !email}>
+              <Button type="submit" disabled={creating || !email || !canInvite}>
                 <UserPlus className="h-4 w-4 mr-2" />
                 {creating ? "Sending..." : "Send Invitation"}
               </Button>

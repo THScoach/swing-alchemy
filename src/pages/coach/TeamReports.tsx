@@ -26,6 +26,7 @@ export default function TeamReports() {
   const { toast } = useToast();
   const [reports, setReports] = useState<PlayerReport[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   useEffect(() => {
     if (teamId) {
@@ -104,8 +105,39 @@ export default function TeamReports() {
     );
   }
 
+  const filteredReports = statusFilter === "all" 
+    ? reports 
+    : reports.filter(r => r.status === statusFilter);
+  
   const activeReports = reports.filter(r => r.status === "active");
   const invitedReports = reports.filter(r => r.status === "invited");
+
+  const exportToCSV = () => {
+    const headers = ["Player Name", "Email", "Status", "Last Upload", "30-day Uploads", "4B Score", "Focus Area"];
+    const rows = filteredReports.map(r => [
+      r.player_name,
+      r.player_email,
+      r.status,
+      formatDate(r.last_upload_at),
+      r.uploads_count_last_30d.toString(),
+      r.avg_overall_score?.toFixed(0) || "—",
+      r.focus_area || "—"
+    ]);
+    
+    const csv = [headers, ...rows].map(row => row.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `team-reports-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    
+    toast({
+      title: "CSV exported",
+      description: "Team reports downloaded successfully",
+    });
+  };
 
   // Calculate team stats
   const totalUploads = activeReports.reduce((sum, r) => sum + r.uploads_count_last_30d, 0);
@@ -125,11 +157,16 @@ export default function TeamReports() {
           ← Back to Team
         </Button>
 
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Team Progress Reports</h1>
-          <p className="text-muted-foreground">
-            Track player activity and performance metrics
-          </p>
+        <div className="mb-8 flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Team Progress Reports</h1>
+            <p className="text-muted-foreground">
+              Track player activity and performance metrics
+            </p>
+          </div>
+          <Button onClick={exportToCSV} variant="outline">
+            Export CSV
+          </Button>
         </div>
 
         {/* Summary Cards */}

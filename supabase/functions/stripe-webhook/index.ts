@@ -217,6 +217,24 @@ async function handleCheckoutCompleted(
 ) {
   logStep("Handling checkout.session.completed", { sessionId: session.id });
 
+  // Check for idempotency
+  const { data: existingEvent } = await supabase
+    .from("webhook_events")
+    .select("id")
+    .eq("event_id", session.id)
+    .single();
+
+  if (existingEvent) {
+    logStep("Event already processed", { sessionId: session.id });
+    return;
+  }
+
+  // Record this event
+  await supabase.from("webhook_events").insert({
+    event_id: session.id,
+    event_type: "checkout.session.completed",
+  });
+
   const metadata = session.metadata || {};
   const planCode = metadata.plan_code;
   const userId = metadata.user_id;
@@ -438,32 +456,91 @@ async function handleTeamPurchase(
   const orgName = metadata.org_name || "Team";
   const durationDays = parseInt(metadata.duration_days || "90");
   const playerLimit = parseInt(metadata.player_limit || "10");
-  const expiresAt = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
 
-  // Create team
-  const { data: team, error: teamError } = await supabase
-    .from("teams")
-    .insert({
-      coach_user_id: userId,
-      coach_email: email,
-      name: orgName,
-      player_limit: playerLimit,
-      expires_on: expiresAt.toISOString(),
-      status: "active",
-    })
-    .select()
-    .single();
+  // Check for existing team (renewal)
+  let isRenewal = false;
+  let teamId = null;
+  
+  if (orgName && orgName !== "Team") {
+    const { data: existingTeam } = await supabase
+      .from("teams")
+      .select("id, expires_on")
+      .eq("coach_user_id", userId)
+      .eq("org_name", orgName)
+      .single();
 
-  if (teamError) {
-    logStep("ERROR creating team", { error: teamError });
-    throw teamError;
+    if (existingTeam) {
+      isRenewal = true;
+      teamId = existingTeam.id;
+      logStep("Processing renewal", { teamId, orgName });
+
+      // Extend expiry from current expires_on or now, whichever is later
+      const currentExpiry = new Date(existingTeam.expires_on);
+      const startDate = currentExpiry > new Date() ? currentExpiry : new Date();
+      const newExpiry = new Date(startDate);
+      newExpiry.setDate(newExpiry.getDate() + durationDays);
+
+      const { error: updateError } = await supabase
+        .from("teams")
+        .update({
+          status: "active",
+          expires_on: newExpiry.toISOString(),
+        })
+        .eq("id", teamId);
+
+      if (updateError) {
+        logStep("ERROR updating team for renewal", { error: updateError });
+        throw updateError;
+      }
+
+      logStep("Team renewed successfully", { teamId, newExpiry });
+    }
   }
 
-  // Create team pass record
+  // Create new team if not renewal
+  if (!isRenewal) {
+    const expiresAt = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
+    
+    const { data: team, error: teamError } = await supabase
+      .from("teams")
+      .insert({
+        coach_user_id: userId,
+        coach_email: email,
+        name: orgName,
+        org_name: orgName !== "Team" ? orgName : null,
+        player_limit: playerLimit,
+        expires_on: expiresAt.toISOString(),
+        status: "active",
+      })
+      .select()
+      .single();
+
+    if (teamError) {
+      logStep("ERROR creating team", { error: teamError });
+      throw teamError;
+    }
+
+    teamId = team.id;
+    logStep("Team created", { teamId });
+
+    // Generate join token for new team
+    const { error: inviteError } = await supabase
+      .from("team_invites")
+      .insert({
+        team_id: teamId,
+        status: "created",
+      });
+
+    if (inviteError) {
+      logStep("ERROR creating invite", { error: inviteError });
+    }
+  }
+
+  // Create team pass record (for both new and renewal)
   const { error: passError } = await supabase
     .from("team_passes")
     .insert({
-      team_id: team.id,
+      team_id: teamId,
       stripe_session_id: session.id,
       duration_days: durationDays,
       amount_paid: session.amount_total || 0,
@@ -486,76 +563,64 @@ async function handleTeamPurchase(
       stripe_session_id: session.id,
       stripe_payment_intent_id: session.payment_intent as string,
       customer_email: email,
+      description: `Team Pass${isRenewal ? " (Renewal)" : ""}`,
     });
 
   if (txnError) {
     logStep("ERROR creating transaction", { error: txnError });
   }
 
-  // Generate join token
-  const { data: invite, error: inviteError } = await supabase
-    .from("team_invites")
-    .insert({
-      team_id: team.id,
-      status: "created",
-    })
-    .select()
-    .single();
+  // Send activation email (new team only)
+  if (!isRenewal) {
+    // Get join URL from invite
+    const { data: inviteData } = await supabase
+      .from("team_invites")
+      .select("token")
+      .eq("team_id", teamId)
+      .eq("status", "created")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
 
-  if (inviteError) {
-    logStep("ERROR creating invite", { error: inviteError });
+    const appOrigin = Deno.env.get("APP_URL") || "https://app.4bhitting.com";
+    const joinUrl = inviteData 
+      ? `${appOrigin}/team/join?token=${inviteData.token}`
+      : `${appOrigin}/coach/teams/${teamId}/invites`;
+
+    // Get user profile for email
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("name")
+      .eq("id", userId)
+      .single();
+
+    const firstName = profile?.name?.split(" ")[0] || "Coach";
+
+    const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+    
+    const html = await renderAsync(
+      React.createElement(TeamActivation, {
+        coachName: firstName,
+        seats: playerLimit,
+        teamRosterLink: `${appOrigin}/coach/teams/${teamId}/invites`,
+        teamUploadLink: joinUrl,
+        teamDashboardLink: `${appOrigin}/coach/teams/${teamId}`,
+        supportEmail: SUPPORT_EMAIL,
+      })
+    );
+
+    await resend.emails.send({
+      from: FROM_ADDRESS,
+      to: [email],
+      subject: "Your Team Pass is Live 🚀",
+      html,
+      reply_to: [SUPPORT_EMAIL],
+    });
+
+    logStep("Team activation email sent", { email, teamId });
+  } else {
+    logStep("Skipping activation email for renewal", { teamId });
   }
-
-  // Build join URL
-  const appOrigin = Deno.env.get("APP_URL") || "https://app.4bhitting.com";
-  const joinUrl = invite 
-    ? `${appOrigin}/team/join?token=${invite.token}`
-    : `${appOrigin}/coach/teams/${team.id}/invites`;
-
-  // Get user profile for email
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("name")
-    .eq("id", userId)
-    .single();
-
-  const firstName = profile?.name?.split(" ")[0] || "Coach";
-
-  const planNames: Record<string, string> = {
-    "3m": "Team Pass (3-Month)",
-    "4m": "Team Pass (4-Month)",
-    "6m": "Team Pass (6-Month)",
-  };
-
-  const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-  
-  // Import the TeamActivation component from templates
-  const { TeamActivation: NewTeamActivation } = await import("./_templates/team-activation.tsx");
-  
-  const html = await renderAsync(
-    React.createElement(NewTeamActivation, {
-      firstName,
-      orgName,
-      planName: planNames[metadata.plan_code] || "Team Pass",
-      joinUrl,
-      expiresDate: expiresAt.toLocaleDateString("en-US", { 
-        year: "numeric", 
-        month: "long", 
-        day: "numeric" 
-      }),
-      supportEmail: SUPPORT_EMAIL,
-    })
-  );
-
-  await resend.emails.send({
-    from: FROM_ADDRESS,
-    to: [email],
-    subject: "🎯 Your Team Is Activated — Welcome to The Hitting Skool",
-    html,
-    reply_to: [SUPPORT_EMAIL],
-  });
-
-  logStep("Team activation email sent", { email, teamId: team.id });
 }
 
 async function sendTeamActivation(

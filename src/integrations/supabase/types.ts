@@ -1594,6 +1594,7 @@ export type Database = {
           expires_on: string
           id: string
           name: string
+          org_name: string | null
           player_limit: number
           status: string
           updated_at: string
@@ -1605,6 +1606,7 @@ export type Database = {
           expires_on: string
           id?: string
           name: string
+          org_name?: string | null
           player_limit?: number
           status?: string
           updated_at?: string
@@ -1616,6 +1618,7 @@ export type Database = {
           expires_on?: string
           id?: string
           name?: string
+          org_name?: string | null
           player_limit?: number
           status?: string
           updated_at?: string
@@ -1840,6 +1843,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      webhook_events: {
+        Row: {
+          created_at: string
+          event_id: string
+          event_type: string
+          id: string
+          processed_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          event_type: string
+          id?: string
+          processed_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          event_type?: string
+          id?: string
+          processed_at?: string
+        }
+        Relationships: []
       }
       weekly_checkins: {
         Row: {
