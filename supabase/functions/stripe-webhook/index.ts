@@ -91,6 +91,36 @@ const HybridActivation = ({ firstName, goalsLink, uploadLink, drillsLink, suppor
     )
   );
 
+const WinterActivation = ({ firstName, profileLink, uploadLink, scheduleLink }: any) =>
+  React.createElement(Html, null,
+    React.createElement(Head, null),
+    React.createElement(Preview, null, "Winter Program confirmed — Let's build this"),
+    React.createElement(Body, { style: { backgroundColor: '#ffffff', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif' }},
+      React.createElement(Container, { style: { margin: '0 auto', padding: '20px 0 48px', maxWidth: '580px' }},
+        React.createElement(Heading, { style: { color: '#333', fontSize: '24px', fontWeight: '600', lineHeight: '1.3', margin: '0 0 20px' }}, `Hi ${firstName},`),
+        React.createElement(Text, { style: { color: '#333', fontSize: '16px', lineHeight: '1.6', margin: '0 0 16px' }}, "❄️ Winter Program confirmed — $997 one-time."),
+        React.createElement(Text, { style: { color: '#333', fontSize: '16px', lineHeight: '1.6', margin: '0 0 16px', fontWeight: 'bold' }}, "What's included:"),
+        React.createElement(Text, { style: { color: '#333', fontSize: '16px', lineHeight: '1.6', margin: '0 0 8px', paddingLeft: '8px' }}, "• Full winter access to THS Analyzer + evolving drill plan"),
+        React.createElement(Text, { style: { color: '#333', fontSize: '16px', lineHeight: '1.6', margin: '0 0 8px', paddingLeft: '8px' }}, "• Weekly live group session + office hours"),
+        React.createElement(Text, { style: { color: '#333', fontSize: '16px', lineHeight: '1.6', margin: '0 0 8px', paddingLeft: '8px' }}, "• Benchmarks: Tempo ratio, 4B scores, and model comparisons"),
+        React.createElement(Text, { style: { color: '#333', fontSize: '16px', lineHeight: '1.6', margin: '24px 0 0', fontWeight: 'bold' }}, "Kickoff checklist (10 mins):"),
+        React.createElement(Text, { style: { color: '#333', fontSize: '16px', lineHeight: '1.6', margin: '0 0 8px', paddingLeft: '8px' }},
+          "1) Complete player bio (level, handedness, height/weight) → ", React.createElement(Link, { href: profileLink, style: { color: '#2754C5', textDecoration: 'underline' }}, "Profile")
+        ),
+        React.createElement(Text, { style: { color: '#333', fontSize: '16px', lineHeight: '1.6', margin: '0 0 8px', paddingLeft: '8px' }},
+          "2) Upload 3–5 swings (≥120–240fps preferred) → ", React.createElement(Link, { href: uploadLink, style: { color: '#2754C5', textDecoration: 'underline' }}, "Upload")
+        ),
+        React.createElement(Text, { style: { color: '#333', fontSize: '16px', lineHeight: '1.6', margin: '0 0 8px', paddingLeft: '8px' }},
+          "3) Pick your weekly session time → ", React.createElement(Link, { href: scheduleLink, style: { color: '#2754C5', textDecoration: 'underline' }}, "Schedule")
+        ),
+        React.createElement(Text, { style: { color: '#333', fontSize: '16px', lineHeight: '1.6', margin: '0 0 16px' }},
+          "We'll post your first winter report within 72 hours of uploads. If you want to keep access year-round after winter, the $99/mo Hybrid is the move—we'll remind you later."
+        ),
+        React.createElement(Text, { style: { color: '#333', fontSize: '16px', lineHeight: '1.6', margin: '24px 0 0', fontWeight: '500' }}, "Let's build this.", React.createElement('br'), "— Coach Rick")
+      )
+    )
+  );
+
 serve(async (req) => {
   const signature = req.headers.get("Stripe-Signature");
   const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
@@ -206,6 +236,8 @@ async function handleCheckoutCompleted(
   if (userId && session.customer_details?.email) {
     if (planCode === "starter") {
       await sendStarterActivation(userId, session.customer_details.email, session.customer_details.phone, supabase);
+    } else if (planCode === "winter") {
+      await sendWinterActivation(userId, session.customer_details.email, session.customer_details.phone, supabase);
     } else if (planCode === "hybrid") {
       await sendHybridActivation(userId, session.customer_details.email, supabase);
     }
@@ -285,6 +317,41 @@ async function sendStarterActivation(
 
   if (phone) {
     const message = `THS: Starter is live 🎉 Next: complete your profile & upload a swing.\nProfile: ${appOrigin}/profile | Upload: ${appOrigin}/analyze\nTxt HELP for help, STOP to opt out.`;
+    await sendSMS(phone, message);
+  }
+}
+
+async function sendWinterActivation(
+  userId: string,
+  email: string,
+  phone: string | null | undefined,
+  supabase: any
+) {
+  logStep("Sending Winter activation", { userId, email });
+
+  const { data: profile } = await supabase.from("profiles").select("name").eq("id", userId).single();
+  const firstName = profile?.name?.split(" ")[0] || "there";
+  const appOrigin = "https://app.thehittingskool.com";
+
+  const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+  const html = await renderAsync(
+    React.createElement(WinterActivation, {
+      firstName,
+      profileLink: `${appOrigin}/profile`,
+      uploadLink: `${appOrigin}/analyze`,
+      scheduleLink: `${appOrigin}/calendar`,
+    })
+  );
+
+  await resend.emails.send({
+    from: "Coach Rick @ The Hitting Skool <support@thehittingskool.com>",
+    to: [email],
+    subject: "❄️ Winter Program Confirmed — Let's Build This",
+    html,
+  });
+
+  if (phone) {
+    const message = `❄️ Winter Program confirmed! Complete your kickoff checklist: ${appOrigin}/profile`;
     await sendSMS(phone, message);
   }
 }
