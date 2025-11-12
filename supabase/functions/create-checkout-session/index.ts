@@ -7,19 +7,21 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const PLAN_PRICE_MAP: Record<string, { priceId: string; isRecurring: boolean }> = {
-  starter: { priceId: Deno.env.get("STRIPE_PRICE_ID_STARTER") || "", isRecurring: true },
-  hybrid: { priceId: Deno.env.get("STRIPE_PRICE_ID_HYBRID") || "", isRecurring: true },
-  winter: { priceId: Deno.env.get("STRIPE_PRICE_ID_WINTER") || "", isRecurring: false },
-  team10: { priceId: Deno.env.get("STRIPE_PRICE_ID_TEAM10") || "", isRecurring: true },
-};
-
+// Helper for logging
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : "";
-  console.log(`[CREATE-CHECKOUT-SESSION] ${step}${detailsStr}`);
+  console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
+};
+
+// Price mapping for team plans
+const TEAM_PRICE_MAP: Record<string, { priceId: string; durationDays: number }> = {
+  "3m": { priceId: "price_1SSi95BleqUssXcsjJjMLySz", durationDays: 90 },
+  "4m": { priceId: "price_1SSi9gBleqUssXcs4KduJvQ1", durationDays: 120 },
+  "6m": { priceId: "price_1SSiAbBleqUssXcsVJcq8TsU", durationDays: 180 },
 };
 
 serve(async (req) => {
+  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -27,94 +29,95 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
+    // Initialize Stripe
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
 
+    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+    logStep("Stripe initialized");
+
+    // Initialize Supabase
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
-    const {
-      plan_code,
-      seats,
-      user_id,
-      org_id,
-      success_url,
-      cancel_url,
-      coupon_code,
-    } = await req.json();
+    // Get authenticated user
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) throw new Error("No authorization header");
 
-    logStep("Request payload received", { plan_code, seats, user_id, org_id });
+    const token = authHeader.replace("Bearer ", "");
+    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+    if (userError) throw new Error(`Authentication error: ${userError.message}`);
+    
+    const user = userData.user;
+    if (!user?.email) throw new Error("User email not found");
+    logStep("User authenticated", { userId: user.id, email: user.email });
 
-    if (!plan_code || !PLAN_PRICE_MAP[plan_code]) {
-      throw new Error(`Invalid plan_code: ${plan_code}`);
+    // Parse request body
+    const { plan, orgName } = await req.json();
+    if (!plan || !TEAM_PRICE_MAP[plan]) {
+      throw new Error(`Invalid plan: ${plan}`);
     }
 
-    const { priceId, isRecurring } = PLAN_PRICE_MAP[plan_code];
-    if (!priceId) {
-      throw new Error(`Price ID not configured for plan: ${plan_code}`);
-    }
-
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-
-    // Get user info if user_id provided
-    let userEmail: string | undefined;
-    if (user_id) {
-      const { data: { user } } = await supabaseClient.auth.getUser();
-      userEmail = user?.email;
-      logStep("User found", { email: userEmail });
-    }
+    const { priceId, durationDays } = TEAM_PRICE_MAP[plan];
+    logStep("Plan selected", { plan, priceId, durationDays });
 
     // Check for existing Stripe customer
+    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     let customerId: string | undefined;
-    if (userEmail) {
-      const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
-      if (customers.data.length > 0) {
-        customerId = customers.data[0].id;
-        logStep("Existing customer found", { customerId });
-      }
+    
+    if (customers.data.length > 0) {
+      customerId = customers.data[0].id;
+      logStep("Found existing customer", { customerId });
     }
 
-    // Build checkout session params
-    const sessionParams: Stripe.Checkout.SessionCreateParams = {
+    // Get app URL for redirects
+    const appUrl = req.headers.get("origin") || Deno.env.get("APP_URL") || "http://localhost:8080";
+
+    // Create checkout session
+    const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      customer_email: customerId ? undefined : userEmail,
+      customer_email: customerId ? undefined : user.email,
       line_items: [
         {
           price: priceId,
-          quantity: seats || 1,
+          quantity: 1,
         },
       ],
-      mode: isRecurring ? "subscription" : "payment",
-      success_url: success_url || `${req.headers.get("origin")}/thank-you?plan=${plan_code}`,
-      cancel_url: cancel_url || `${req.headers.get("origin")}/pricing`,
+      mode: "payment",
+      payment_method_types: ["card", "klarna", "afterpay_clearpay", "affirm"],
+      success_url: `${appUrl}/thank-you?plan=${plan}&type=team`,
+      cancel_url: `${appUrl}/order-team`,
       metadata: {
-        plan_code,
-        user_id: user_id || "",
-        org_id: org_id || "",
-        seats: seats?.toString() || "1",
+        plan_type: "team",
+        plan_code: plan,
+        duration_days: durationDays.toString(),
+        player_limit: "10",
+        user_id: user.id,
+        org_name: orgName || "",
       },
-      allow_promotion_codes: true,
-    };
+    });
 
-    // Apply coupon if provided
-    if (coupon_code) {
-      sessionParams.discounts = [{ coupon: coupon_code }];
-    }
-
-    const session = await stripe.checkout.sessions.create(sessionParams);
     logStep("Checkout session created", { sessionId: session.id, url: session.url });
 
-    return new Response(JSON.stringify({ url: session.url, session_id: session.id }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
-  } catch (error: any) {
-    logStep("ERROR", { message: error.message });
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    return new Response(
+      JSON.stringify({ url: session.url, sessionId: session.id }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      }
+    );
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logStep("ERROR", { message: errorMessage });
+    
+    return new Response(
+      JSON.stringify({ error: errorMessage }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      }
+    );
   }
 });

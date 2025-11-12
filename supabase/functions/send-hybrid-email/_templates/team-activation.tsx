@@ -7,118 +7,151 @@ import {
   Link,
   Preview,
   Text,
-} from 'npm:@react-email/components@0.0.22';
-import * as React from 'npm:react@18.3.1';
+} from 'https://esm.sh/@react-email/components@0.0.15'
+import * as React from 'https://esm.sh/react@18.2.0'
 
 interface TeamActivationProps {
-  coachName: string;
-  seats: number;
-  teamRosterLink: string;
-  teamUploadLink: string;
-  teamDashboardLink: string;
+  firstName: string;
+  orgName: string;
+  planName: string;
+  joinUrl: string;
+  expiresDate: string;
   supportEmail: string;
 }
 
-export const TeamActivation = ({
-  coachName,
-  seats,
-  teamRosterLink,
-  teamUploadLink,
-  teamDashboardLink,
-  supportEmail,
+export const TeamActivation = ({ 
+  firstName, 
+  orgName,
+  planName,
+  joinUrl, 
+  expiresDate,
+  supportEmail 
 }: TeamActivationProps) => (
   <Html>
     <Head />
-    <Preview>Your Team plan is live — Get started now</Preview>
+    <Preview>Your Team Is In — Welcome to The Hitting Skool</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Coach {coachName},</Heading>
+        <Heading style={h1}>🎯 Your Team Is Activated</Heading>
         
         <Text style={text}>
-          Your Team plan is live ({seats} seats).
+          Hey {firstName},
         </Text>
-
+        
         <Text style={text}>
-          <strong>Do this now:</strong>
+          Congrats — your {planName} is live! Your team of up to 10 players now has full access to:
         </Text>
-
-        <Text style={listItem}>
-          1) Add roster (CSV or manual) →{' '}
-          <Link href={teamRosterLink} style={link}>
-            Team Roster
-          </Link>
-        </Text>
-        <Text style={listItem}>
-          2) Share player upload link →{' '}
-          <Link href={teamUploadLink} style={link}>
-            Upload Link
-          </Link>
-        </Text>
-        <Text style={listItem}>
-          3) See team dashboard →{' '}
-          <Link href={teamDashboardLink} style={link}>
-            Dashboard
-          </Link>
-        </Text>
-
+        
         <Text style={text}>
-          We'll auto-assign drills once first swings arrive.
+          ⚾ The Hitting Skool Community<br />
+          ⚾ 4B Biomechanics Training System<br />
+          ⚾ Player Progress Tracking<br />
+          ⚾ Weekly Team Performance Reports
         </Text>
-
+        
+        <Heading style={h2}>📋 Next Steps:</Heading>
+        
+        <Text style={text}>
+          <strong>1. Share Your Team Join Link</strong><br />
+          Send this link to your players:
+        </Text>
+        
+        <Link href={joinUrl} style={button}>
+          {joinUrl}
+        </Link>
+        
+        <Text style={text}>
+          <strong>2. Access Your Coach Dashboard</strong><br />
+          Track all your players' progress and uploads in one place.
+        </Text>
+        
+        <Text style={text}>
+          <strong>3. Players Can Upgrade Anytime</strong><br />
+          Team access includes community. Players can upgrade to 1-on-1 coaching whenever they're ready.
+        </Text>
+        
+        <Text style={text}>
+          Your team access expires on <strong>{expiresDate}</strong>. We'll send a reminder before then.
+        </Text>
+        
         <Text style={signature}>
-          — THS Support ({supportEmail})
+          Let's build something special,<br />
+          — Coach Rick<br />
+          The Hitting Skool
+        </Text>
+        
+        <Text style={footer}>
+          Questions? Reply to this email or contact us at {supportEmail}
         </Text>
       </Container>
     </Body>
   </Html>
-);
+)
 
-export default TeamActivation;
+export default TeamActivation
 
 const main = {
   backgroundColor: '#ffffff',
-  fontFamily:
-    "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif",
-};
+  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif',
+}
 
 const container = {
   margin: '0 auto',
   padding: '20px 0 48px',
-  maxWidth: '580px',
-};
+  maxWidth: '600px',
+}
 
 const h1 = {
-  color: '#333',
+  color: '#1a1a1a',
   fontSize: '24px',
-  fontWeight: '600',
-  lineHeight: '1.3',
-  margin: '0 0 20px',
-};
+  fontWeight: 'bold',
+  margin: '40px 0 20px',
+  padding: '0',
+  lineHeight: '1.4',
+}
+
+const h2 = {
+  color: '#1a1a1a',
+  fontSize: '18px',
+  fontWeight: 'bold',
+  margin: '24px 0 16px',
+  padding: '0',
+  lineHeight: '1.4',
+}
 
 const text = {
   color: '#333',
   fontSize: '16px',
-  lineHeight: '1.6',
-  margin: '0 0 16px',
-};
+  lineHeight: '26px',
+  margin: '16px 0',
+}
 
-const listItem = {
-  color: '#333',
-  fontSize: '16px',
-  lineHeight: '1.6',
-  margin: '0 0 8px',
-  paddingLeft: '8px',
-};
-
-const link = {
-  color: '#2754C5',
-  textDecoration: 'underline',
-};
+const button = {
+  backgroundColor: '#FFD700',
+  borderRadius: '5px',
+  color: '#000',
+  display: 'inline-block',
+  fontSize: '14px',
+  fontWeight: 'bold',
+  padding: '12px 24px',
+  textDecoration: 'none',
+  textAlign: 'center' as const,
+  margin: '20px 0',
+  wordBreak: 'break-all' as const,
+}
 
 const signature = {
   color: '#333',
   fontSize: '16px',
-  lineHeight: '1.6',
-  margin: '24px 0 0',
-  fontWeight: '500',
-};
+  lineHeight: '26px',
+  margin: '24px 0',
+  fontStyle: 'italic',
+}
+
+const footer = {
+  color: '#898989',
+  fontSize: '12px',
+  lineHeight: '22px',
+  marginTop: '32px',
+  textAlign: 'center' as const,
+}

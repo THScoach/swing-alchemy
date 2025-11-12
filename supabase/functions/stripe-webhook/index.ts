@@ -264,6 +264,11 @@ async function handleCheckoutCompleted(
     }
   }
 
+  // Handle team purchases
+  if (metadata.plan_type === "team" && userId && session.customer_details?.email) {
+    await handleTeamPurchase(session, metadata, userId, session.customer_details.email, supabase);
+  }
+
   if (userId && session.customer_details?.email) {
     if (planCode === "starter") {
       await sendStarterActivation(userId, session.customer_details.email, session.customer_details.phone, supabase);
@@ -420,6 +425,116 @@ async function sendHybridActivation(
     html,
     reply_to: [SUPPORT_EMAIL],
   });
+}
+
+async function handleTeamPurchase(
+  session: Stripe.Checkout.Session,
+  metadata: any,
+  userId: string,
+  email: string,
+  supabase: any
+) {
+  logStep("Handling team purchase", { userId, email, planCode: metadata.plan_code });
+
+  const orgName = metadata.org_name || "My Team";
+  const durationDays = parseInt(metadata.duration_days || "90");
+  const playerLimit = parseInt(metadata.player_limit || "10");
+  const expiresAt = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
+
+  // Create or get organization
+  const { data: existingOrg } = await supabase
+    .from("organizations")
+    .select("id")
+    .eq("name", orgName)
+    .single();
+
+  let orgId = existingOrg?.id;
+
+  if (!orgId) {
+    const { data: newOrg, error: orgError } = await supabase
+      .from("organizations")
+      .insert({
+        name: orgName,
+        subscription_tier: "team",
+      })
+      .select()
+      .single();
+
+    if (orgError) {
+      logStep("ERROR creating organization", { error: orgError });
+      return;
+    }
+    
+    orgId = newOrg.id;
+    logStep("Organization created", { orgId, orgName });
+
+    // Add user as admin
+    const { error: memberError } = await supabase
+      .from("organization_members")
+      .insert({
+        organization_id: orgId,
+        user_id: userId,
+        role: "admin",
+      });
+
+    if (memberError) {
+      logStep("ERROR adding org member", { error: memberError });
+    }
+  }
+
+  // Update subscription with org_id
+  await supabase
+    .from("subscriptions")
+    .update({ org_id: orgId })
+    .eq("user_id", userId)
+    .eq("plan_code", metadata.plan_code);
+
+  // Send activation email
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("name")
+    .eq("id", userId)
+    .single();
+
+  const firstName = profile?.name?.split(" ")[0] || "Coach";
+  const appOrigin = "https://app.thehittingskool.com";
+  const joinUrl = `${appOrigin}/team/join?org=${orgId}`;
+
+  const planNames: Record<string, string> = {
+    "3m": "3-Month Team Pass",
+    "4m": "4-Month Team Pass",
+    "6m": "6-Month Team Pass",
+  };
+
+  const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+  
+  // Import the TeamActivation component from templates
+  const { TeamActivation: NewTeamActivation } = await import("./_templates/team-activation.tsx");
+  
+  const html = await renderAsync(
+    React.createElement(NewTeamActivation, {
+      firstName,
+      orgName,
+      planName: planNames[metadata.plan_code] || "Team Pass",
+      joinUrl,
+      expiresDate: expiresAt.toLocaleDateString("en-US", { 
+        year: "numeric", 
+        month: "long", 
+        day: "numeric" 
+      }),
+      supportEmail: SUPPORT_EMAIL,
+    })
+  );
+
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: [email],
+    subject: "Your Team Is In — Welcome to The Hitting Skool",
+    html,
+    reply_to: [SUPPORT_EMAIL],
+  });
+
+  logStep("Team activation email sent", { email, orgId });
 }
 
 async function sendTeamActivation(
