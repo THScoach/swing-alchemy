@@ -39,6 +39,10 @@ import Brain from "./pages/Brain";
 import ThankYou from "./pages/ThankYou";
 import Offer from "./pages/Offer";
 import Order from "./pages/Order";
+import OrderStarter from "./pages/OrderStarter";
+import OrderHybrid from "./pages/OrderHybrid";
+import OrderWinter from "./pages/OrderWinter";
+import OrderTeam from "./pages/OrderTeam";
 import WelcomeAI from "./pages/WelcomeAI";
 import UpgradeHybrid from "./pages/UpgradeHybrid";
 import HybridWelcome from "./pages/HybridWelcome";
@@ -57,6 +61,10 @@ const App = () => (
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/offer/:plan" element={<Offer />} />
           <Route path="/order/:plan" element={<Order />} />
+          <Route path="/order/starter" element={<OrderStarter />} />
+          <Route path="/order/hybrid" element={<OrderHybrid />} />
+          <Route path="/order/winter" element={<OrderWinter />} />
+          <Route path="/order/team" element={<OrderTeam />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/auth" element={<Auth />} />
