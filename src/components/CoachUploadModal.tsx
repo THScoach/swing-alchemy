@@ -187,7 +187,7 @@ export const CoachUploadModal = ({ open, onOpenChange, playerId, playerName }: C
         .getPublicUrl(fileName);
 
       // Create analysis record with confirmed FPS
-      const { error: analysisError } = await supabase
+      const { data: analysisData, error: analysisError } = await supabase
         .from('video_analyses')
         .insert({
           player_id: playerId,
@@ -203,9 +203,18 @@ export const CoachUploadModal = ({ open, onOpenChange, playerId, playerName }: C
           mode: analysisMode,
           is_pro_model: analysisMode === 'model',
           session_notes: notes || null,
-        });
+        })
+        .select()
+        .single();
 
       if (analysisError) throw analysisError;
+
+      // Trigger reactivation confirmation check
+      if (analysisData?.id) {
+        supabase.functions.invoke('send-reactivation-confirmation', {
+          body: { playerId, analysisId: analysisData.id }
+        }).catch(err => console.warn('Reactivation check failed:', err));
+      }
 
       setUploadProgress(100);
 
