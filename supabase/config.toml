@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.stripe-webhook]
 verify_jwt = false
+
+[functions.send-weekly-checkin]
+verify_jwt = false
