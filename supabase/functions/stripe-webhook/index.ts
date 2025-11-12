@@ -572,52 +572,73 @@ async function handleTeamPurchase(
 
   // Send activation email (new team only)
   if (!isRenewal) {
-    // Get join URL from invite
-    const { data: inviteData } = await supabase
-      .from("team_invites")
-      .select("token")
-      .eq("team_id", teamId)
-      .eq("status", "created")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
+    try {
+      // Get join URL from invite
+      const { data: inviteData } = await supabase
+        .from("team_invites")
+        .select("token")
+        .eq("team_id", teamId)
+        .eq("status", "created")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
 
-    const appOrigin = Deno.env.get("APP_URL") || "https://app.4bhitting.com";
-    const joinUrl = inviteData 
-      ? `${appOrigin}/team/join?token=${inviteData.token}`
-      : `${appOrigin}/coach/teams/${teamId}/invites`;
+      const appOrigin = Deno.env.get("APP_URL") || "https://app.4bhitting.com";
+      const joinUrl = inviteData 
+        ? `${appOrigin}/team/join?token=${inviteData.token}`
+        : `${appOrigin}/coach/teams/${teamId}/invites`;
 
-    // Get user profile for email
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("name")
-      .eq("id", userId)
-      .single();
+      // Get user profile for email
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("name")
+        .eq("id", userId)
+        .single();
 
-    const firstName = profile?.name?.split(" ")[0] || "Coach";
+      const firstName = profile?.name?.split(" ")[0] || "Coach";
 
-    const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-    
-    const html = await renderAsync(
-      React.createElement(TeamActivation, {
-        coachName: firstName,
-        seats: playerLimit,
-        teamRosterLink: `${appOrigin}/coach/teams/${teamId}/invites`,
-        teamUploadLink: joinUrl,
-        teamDashboardLink: `${appOrigin}/coach/teams/${teamId}`,
-        supportEmail: SUPPORT_EMAIL,
-      })
-    );
+      const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+      
+      const html = await renderAsync(
+        React.createElement(TeamActivation, {
+          coachName: firstName,
+          seats: playerLimit,
+          teamRosterLink: `${appOrigin}/coach/teams/${teamId}/invites`,
+          teamUploadLink: joinUrl,
+          teamDashboardLink: `${appOrigin}/coach/teams/${teamId}`,
+          supportEmail: SUPPORT_EMAIL,
+        })
+      );
 
-    await resend.emails.send({
-      from: FROM_ADDRESS,
-      to: [email],
-      subject: "Your Team Pass is Live 🚀",
-      html,
-      reply_to: [SUPPORT_EMAIL],
-    });
+      await resend.emails.send({
+        from: FROM_ADDRESS,
+        to: [email],
+        subject: "Your Team Pass is Live 🚀",
+        html,
+        reply_to: [SUPPORT_EMAIL],
+      });
 
-    logStep("Team activation email sent", { email, teamId });
+      logStep("Team activation email sent", { email, teamId });
+    } catch (emailError) {
+      logStep("ERROR sending team activation email", { 
+        error: emailError instanceof Error ? emailError.message : String(emailError),
+        email, 
+        teamId 
+      });
+      
+      // Log email failure for monitoring
+      try {
+        await supabase.from("webhook_events").insert({
+          event_id: `email_failure_${Date.now()}_${teamId}`,
+          event_type: "email.team_activation_failed",
+          processed_at: new Date().toISOString(),
+        });
+      } catch (logError) {
+        logStep("Failed to log email error", { error: logError });
+      }
+      
+      // Continue - don't fail the whole webhook if email fails
+    }
   } else {
     logStep("Skipping activation email for renewal", { teamId });
   }

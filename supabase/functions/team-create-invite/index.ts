@@ -15,7 +15,7 @@ import {
 } from "https://esm.sh/@react-email/components@0.0.15";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": Deno.env.get("APP_URL") || "https://app.4bhitting.com",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
@@ -204,6 +204,18 @@ serve(async (req) => {
           .eq("id", invite.id);
       } catch (emailError) {
         logStep("Email sending failed", { error: emailError });
+        
+        // Log email failure to webhook_events for monitoring
+        try {
+          await supabase.from("webhook_events").insert({
+            event_id: `email_failure_${Date.now()}`,
+            event_type: "email.invite_failed",
+            processed_at: new Date().toISOString(),
+          });
+        } catch (logError) {
+          logStep("Failed to log email error", { error: logError });
+        }
+        
         // Don't fail the request if email fails
       }
     }
