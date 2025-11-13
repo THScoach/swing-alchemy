@@ -19,6 +19,9 @@ import { DrillRecommendations } from "@/components/analysis/DrillRecommendations
 import { ModelRebootMetricsPanel } from "@/components/ModelRebootMetricsPanel";
 import { PlayerLevel } from "@/lib/fourb/types";
 import { useToast } from "@/hooks/use-toast";
+import { ThreePillarScores } from "@/components/analysis/ThreePillarScores";
+import { computeSwingScore } from "@/lib/analysis/scoring";
+import { SwingScore } from "@/lib/analysis/types";
 
 export default function AnalyzeResults() {
   const { id } = useParams();
@@ -37,6 +40,7 @@ export default function AnalyzeResults() {
   const [compareModalOpen, setCompareModalOpen] = useState(false);
   const [exportingPDF, setExportingPDF] = useState(false);
   const emailTriggeredRef = useRef(false);
+  const [swingScore, setSwingScore] = useState<SwingScore | null>(null);
 
   useEffect(() => {
     fetchAnalysis();
@@ -98,6 +102,29 @@ export default function AnalyzeResults() {
           bat: batRes.data,
           ball: ballRes.data,
         });
+
+        // Compute 3-pillar swing score
+        const score = computeSwingScore(
+          bodyRes.data,
+          batRes.data,
+          ballRes.data,
+          data
+        );
+        setSwingScore(score);
+
+        // Store scores in database (convert to JSON for storage)
+        await supabase
+          .from('video_analyses')
+          .update({
+            anchor_score: score.anchor.score,
+            stability_score: score.stability.score,
+            whip_score: score.whip.score,
+            overall_swing_score: score.overall,
+            anchor_submetrics: JSON.parse(JSON.stringify(score.anchor.subMetrics)),
+            stability_submetrics: JSON.parse(JSON.stringify(score.stability.subMetrics)),
+            whip_submetrics: JSON.parse(JSON.stringify(score.whip.subMetrics)),
+          })
+          .eq('id', data.id);
       }
     } catch (error) {
       console.error('Error fetching analysis:', error);
@@ -289,6 +316,13 @@ export default function AnalyzeResults() {
               showPoseOverlay={!!fourbData.body}
               skeletonData={analysis.skeleton_data}
             />
+          </div>
+        )}
+
+        {/* Three Pillar Scores */}
+        {swingScore && (
+          <div className="mb-8">
+            <ThreePillarScores swingScore={swingScore} />
           </div>
         )}
 
