@@ -12,18 +12,17 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
-import { FourBDashboard } from "@/components/fourb/FourBDashboard";
 import { AdvancedVideoPlayer } from "@/components/video/AdvancedVideoPlayer";
 import { ComparisonModal } from "@/components/analysis/ComparisonModal";
 import { DrillRecommendations } from "@/components/analysis/DrillRecommendations";
-import { ModelRebootMetricsPanel } from "@/components/ModelRebootMetricsPanel";
-import { PlayerLevel } from "@/lib/fourb/types";
 import { useToast } from "@/hooks/use-toast";
 import { ThreePillarScores } from "@/components/analysis/ThreePillarScores";
 import { computeSwingScore } from "@/lib/analysis/scoring";
 import { SwingScore } from "@/lib/analysis/types";
 import { KineticSequencePanel } from "@/components/analysis/KineticSequencePanel";
 import { computeKineticSequenceScore, KineticSequenceScore } from "@/lib/analysis/kineticSequenceScoring";
+import { RecentSwings } from "@/components/analysis/RecentSwings";
+import { CoachRickInsights } from "@/components/analysis/CoachRickInsights";
 
 export default function AnalyzeResults() {
   const { id } = useParams();
@@ -33,50 +32,15 @@ export default function AnalyzeResults() {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [player, setPlayer] = useState<any>(null);
-  const [fourbData, setFourbData] = useState<any>({
-    brain: null,
-    body: null,
-    bat: null,
-    ball: null,
-  });
   const [compareModalOpen, setCompareModalOpen] = useState(false);
   const [exportingPDF, setExportingPDF] = useState(false);
-  const emailTriggeredRef = useRef(false);
   const [swingScore, setSwingScore] = useState<SwingScore | null>(null);
   const [kineticScore, setKineticScore] = useState<KineticSequenceScore | null>(null);
+  const [recentSwings, setRecentSwings] = useState<any[]>([]);
 
   useEffect(() => {
     fetchAnalysis();
   }, [id]);
-
-  // Auto-trigger instant progress email (idempotent per mount)
-  useEffect(() => {
-    if (!analysis || !analysis.id || !analysis.player_id) return;
-    if (!fourbData || (!fourbData.brain && !fourbData.body && !fourbData.bat && !fourbData.ball)) return;
-    if (emailTriggeredRef.current) return;
-
-    emailTriggeredRef.current = true;
-
-    supabase.functions
-      .invoke('send-progress-email', {
-        body: {
-          analysisId: analysis.id,
-          playerId: analysis.player_id,
-        },
-      })
-      .then((res) => {
-        if (res.error) {
-          console.error('send-progress-email error:', res.error);
-          emailTriggeredRef.current = false; // allow retry on reload if needed
-        } else {
-          console.log('send-progress-email success:', res.data);
-        }
-      })
-      .catch((err) => {
-        console.error('send-progress-email exception:', err);
-        emailTriggeredRef.current = false;
-      });
-  }, [analysis, fourbData]);
 
   const fetchAnalysis = async () => {
     try {
@@ -90,44 +54,63 @@ export default function AnalyzeResults() {
       setAnalysis(data);
       setPlayer(data.players);
 
-      // Fetch 4B data for this specific analysis
+      // Fetch body data for swing score calculation
       if (data.id) {
-        const [brainRes, bodyRes, batRes, ballRes] = await Promise.all([
-          supabase.from('brain_data').select('*').eq('analysis_id', data.id).maybeSingle(),
-          supabase.from('body_data').select('*').eq('analysis_id', data.id).maybeSingle(),
-          supabase.from('bat_data').select('*').eq('analysis_id', data.id).maybeSingle(),
-          supabase.from('ball_data').select('*').eq('analysis_id', data.id).maybeSingle(),
-        ]);
-
-        setFourbData({
-          brain: brainRes.data,
-          body: bodyRes.data,
-          bat: batRes.data,
-          ball: ballRes.data,
-        });
+        const bodyRes = await supabase
+          .from('body_data')
+          .select('*')
+          .eq('analysis_id', data.id)
+          .maybeSingle();
 
         // Compute 3-pillar swing score
         const score = computeSwingScore(
           bodyRes.data,
-          batRes.data,
-          ballRes.data,
+          null, // No bat data
+          null, // No ball data
           data
         );
         setSwingScore(score);
 
-        // Store scores in database (convert to JSON for storage)
+        // Compute kinematic sequence score if kinematics data exists
+        const dataWithKinematics: any = data;
+        if (dataWithKinematics.kinematics || dataWithKinematics.pose_landmarks) {
+          const kineticSeq = computeKineticSequenceScore(
+            dataWithKinematics.kinematics,
+            dataWithKinematics.pose_landmarks
+          );
+          setKineticScore(kineticSeq);
+        }
+
+        // Store scores in database
         await supabase
           .from('video_analyses')
           .update({
             anchor_score: score.anchor.score,
             stability_score: score.stability.score,
             whip_score: score.whip.score,
-            overall_swing_score: score.overall,
             anchor_submetrics: JSON.parse(JSON.stringify(score.anchor.subMetrics)),
             stability_submetrics: JSON.parse(JSON.stringify(score.stability.subMetrics)),
             whip_submetrics: JSON.parse(JSON.stringify(score.whip.subMetrics)),
           } as any)
           .eq('id', data.id);
+
+        // Fetch recent swings for this player
+        if (data.player_id) {
+          const query: any = supabase.from('video_analyses');
+          const { data: recentData }: any = await query
+            .select('id, created_at, anchor_score, stability_score, whip_score')
+            .eq('player_id', data.player_id)
+            .order('created_at', { ascending: false })
+            .limit(5);
+
+          if (recentData) {
+            setRecentSwings(recentData.map((swing: any) => ({
+              ...swing,
+              overall_score: Math.round((swing.anchor_score + swing.stability_score + swing.whip_score) / 3),
+              kinetic_score: 0, // Will be populated later if available
+            })));
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching analysis:', error);
@@ -316,7 +299,7 @@ export default function AnalyzeResults() {
             <AdvancedVideoPlayer 
               videoUrl={analysis.video_url}
               analysisId={analysis.id}
-              showPoseOverlay={!!fourbData.body}
+              showPoseOverlay={!!analysis.skeleton_data}
               skeletonData={analysis.skeleton_data}
             />
           </div>
@@ -336,44 +319,33 @@ export default function AnalyzeResults() {
           </div>
         )}
 
-        {/* Unified 4B Dashboard - No Tabs */}
-        <FourBDashboard
-          playerId={analysis.player_id}
-          playerLevel={(player?.player_level || 'Other') as PlayerLevel}
-          brainData={fourbData.brain}
-          bodyData={fourbData.body}
-          batData={fourbData.bat}
-          ballData={fourbData.ball}
-        />
+        {/* Recent Swings */}
+        {recentSwings.length > 0 && (
+          <div className="mb-8">
+            <RecentSwings swings={recentSwings} currentSwingId={analysis.id} />
+          </div>
+        )}
 
-        {/* Model / Reboot Metrics Panel (when available) */}
-        {analysis.metrics_reboot && (
-          <ModelRebootMetricsPanel
-            metricsReboot={analysis.metrics_reboot}
-            level={analysis.level || player?.player_level}
-            handedness={analysis.handedness || player?.bats}
-          />
+        {/* Coach Rick Insights */}
+        {swingScore && kineticScore && (
+          <div className="mb-8">
+            <CoachRickInsights swingScore={swingScore} kineticScore={kineticScore} />
+          </div>
         )}
 
         {/* Drill Recommendations */}
-        {fourbData.brain || fourbData.body || fourbData.bat || fourbData.ball ? (
+        {swingScore && (
           <div className="mt-8">
             <DrillRecommendations
-              fourbScores={{
-                brain_score: fourbData.brain?.brain_score,
-                body_score: fourbData.body?.body_score,
-                bat_score: fourbData.bat?.bat_score,
-                ball_score: fourbData.ball?.ball_score,
-                overall_score: (fourbData.brain?.brain_score + fourbData.body?.body_score + fourbData.bat?.bat_score + fourbData.ball?.ball_score) / 4
-              }}
-              brainData={fourbData.brain}
-              bodyData={fourbData.body}
-              batData={fourbData.bat}
-              ballData={fourbData.ball}
-              swingScore={swingScore || undefined}
+              fourbScores={null}
+              brainData={null}
+              bodyData={null}
+              batData={null}
+              ballData={null}
+              swingScore={swingScore}
             />
           </div>
-        ) : null}
+        )}
 
         {/* Comparison Modal */}
         <ComparisonModal

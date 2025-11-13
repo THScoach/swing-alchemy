@@ -52,20 +52,31 @@ export default function AdminDrills() {
   }, [drills, searchQuery, categoryFilter, priorityFilter]);
 
   const loadDrills = async () => {
-    const { data, error } = await supabase
-      .from('drills')
-      .select('*')
-      .eq('archived', false)
-      .order('updated_at', { ascending: false });
+    try {
+      const query: any = supabase.from('drills');
+      const result: any = await query
+        .select('*')
+        .eq('archived', false)
+        .order('updated_at', { ascending: false });
+      
+      const data = result.data;
+      const error = result.error;
 
-    if (error) {
+      if (error) {
+        toast({
+          title: "Error loading drills",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else if (data) {
+        setDrills(data as Drill[]);
+      }
+    } catch (err: any) {
       toast({
         title: "Error loading drills",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
-    } else if (data) {
-      setDrills(data as Drill[]);
     }
     setLoading(false);
   };
@@ -117,7 +128,7 @@ export default function AdminDrills() {
 
     const { error } = await supabase
       .from('drills')
-      .update({ archived: true })
+      .update({ archived: true } as any)
       .eq('id', drillToArchive.id);
 
     if (error) {
