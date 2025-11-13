@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const playerNavItems = [
-  { icon: Home, label: "Feed", path: "/feed" },
+  { icon: Home, label: "Home", path: "/dashboard" },
   { icon: Video, label: "Analyze", path: "/analyze" },
   { icon: BookOpen, label: "Courses", path: "/courses" },
   { icon: ShoppingBag, label: "Store", path: "/store" },
@@ -61,7 +61,7 @@ export const AppSidebar = () => {
     <aside className="hidden lg:flex lg:flex-col lg:w-60 bg-secondary text-secondary-foreground border-r border-border h-screen fixed left-0 top-0">
       {/* Logo */}
       <div className="h-16 flex items-center px-6 border-b border-border/50">
-        <Link to="/feed" className="flex items-center gap-2">
+        <Link to="/dashboard" className="flex items-center gap-2">
           <div className="w-8 h-8 rounded bg-primary flex items-center justify-center">
             <span className="text-primary-foreground font-bold text-lg">HS</span>
           </div>

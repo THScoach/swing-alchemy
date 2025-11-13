@@ -9,6 +9,11 @@ import { useNavigate } from "react-router-dom";
 
 export default function Feed() {
   const navigate = useNavigate();
+
+  // Redirect to the new Dashboard
+  useEffect(() => {
+    navigate('/dashboard', { replace: true });
+  }, [navigate]);
   const [checkInModalOpen, setCheckInModalOpen] = useState(false);
   const [playerId, setPlayerId] = useState<string>("");
   const [hasCheckedIn, setHasCheckedIn] = useState(false);
