@@ -19,11 +19,13 @@ import { useToast } from "@/hooks/use-toast";
 import { ThreePillarScores } from "@/components/analysis/ThreePillarScores";
 import { computeSwingScore } from "@/lib/analysis/scoring";
 import { SwingScore } from "@/lib/analysis/types";
-import { KineticSequencePanel } from "@/components/analysis/KineticSequencePanel";
 import { computeKineticSequenceScore, KineticSequenceScore } from "@/lib/analysis/kineticSequenceScoring";
 import { CoachRickInsights } from "@/components/analysis/CoachRickInsights";
-import { TempoScore } from "@/components/analysis/TempoScore";
-import { COMMovement } from "@/components/analysis/COMMovement";
+import { KineticSequenceGraph } from "@/components/analysis/KineticSequenceGraph";
+import { COMGraph } from "@/components/analysis/COMGraph";
+import { AdvancedDetailsAccordion } from "@/components/analysis/AdvancedDetailsAccordion";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 export default function AnalyzeResults() {
   const { id } = useParams();
@@ -38,6 +40,9 @@ export default function AnalyzeResults() {
   const [swingScore, setSwingScore] = useState<SwingScore | null>(null);
   const [kineticScore, setKineticScore] = useState<KineticSequenceScore | null>(null);
   const [comTraceEnabled, setComTraceEnabled] = useState(false);
+  const [syncGraphs, setSyncGraphs] = useState(false);
+  const [videoCurrentTime, setVideoCurrentTime] = useState(0);
+  const [videoDuration, setVideoDuration] = useState(0);
 
   useEffect(() => {
     fetchAnalysis();
@@ -224,7 +229,17 @@ export default function AnalyzeResults() {
                 {formatDistanceToNow(new Date(analysis.created_at), { addSuffix: true })}
               </p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-card">
+                <Switch 
+                  id="sync-graphs" 
+                  checked={syncGraphs}
+                  onCheckedChange={setSyncGraphs}
+                />
+                <Label htmlFor="sync-graphs" className="cursor-pointer text-sm font-medium">
+                  Sync Graphs to Video
+                </Label>
+              </div>
               <Button
                 onClick={() => setCompareModalOpen(true)}
                 variant="outline"
@@ -295,25 +310,35 @@ export default function AnalyzeResults() {
           </div>
         )}
 
-        {/* Kinematic Sequence Section */}
+        {/* Kinematic Sequence Graph */}
         {kineticScore && (
           <div className="mb-8">
-            <KineticSequencePanel sequenceScore={kineticScore} />
+            <KineticSequenceGraph 
+              sequenceScore={kineticScore}
+              currentTime={videoCurrentTime}
+              duration={videoDuration}
+              syncEnabled={syncGraphs}
+              onTimeClick={(time) => {
+                // This would seek the video to the clicked time
+                const video = document.querySelector('video');
+                if (video) video.currentTime = time;
+              }}
+            />
           </div>
         )}
 
-        {/* Tempo Score Section */}
-        {analysis.kinematics && (
-          <div className="mb-8">
-            <TempoScore kinematics={analysis.kinematics} />
-          </div>
-        )}
-
-        {/* COM Movement Section */}
+        {/* COM Movement Graph */}
         {analysis.com_data && (
           <div className="mb-8">
-            <COMMovement 
+            <COMGraph 
               comData={analysis.com_data}
+              currentTime={videoCurrentTime}
+              duration={videoDuration}
+              syncEnabled={syncGraphs}
+              onTimeClick={(time) => {
+                const video = document.querySelector('video');
+                if (video) video.currentTime = time;
+              }}
               onToggleCOMTrace={setComTraceEnabled}
               comTraceEnabled={comTraceEnabled}
             />
@@ -329,7 +354,7 @@ export default function AnalyzeResults() {
 
         {/* Drill Recommendations */}
         {swingScore && (
-          <div className="mt-8">
+          <div className="mb-8">
             <DrillRecommendations
               fourbScores={null}
               brainData={null}
@@ -337,6 +362,16 @@ export default function AnalyzeResults() {
               batData={null}
               ballData={null}
               swingScore={swingScore}
+            />
+          </div>
+        )}
+
+        {/* Advanced Details Accordion */}
+        {swingScore && (
+          <div className="mb-8">
+            <AdvancedDetailsAccordion 
+              swingScore={swingScore}
+              kineticScore={kineticScore}
             />
           </div>
         )}
