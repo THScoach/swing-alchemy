@@ -1,4 +1,4 @@
-import { Home, Video, TrendingUp, Library, User, Shield, Users, MessageSquare, BookOpen } from "lucide-react";
+import { Home, Video, TrendingUp, Library, User, Shield, Users, MessageSquare, BookOpen, Target } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
@@ -7,16 +7,16 @@ import { supabase } from "@/integrations/supabase/client";
 const playerNavItems = [
   { icon: Home, label: "Feed", path: "/feed" },
   { icon: Video, label: "Analyze", path: "/analyze" },
+  { icon: Target, label: "Drills", path: "/drills" },
   { icon: TrendingUp, label: "Progress", path: "/my-progress" },
-  { icon: Library, label: "KB", path: "/knowledge-base" },
   { icon: User, label: "Profile", path: "/profile" },
 ];
 
 const adminNavItems = [
   { icon: Shield, label: "Dashboard", path: "/admin" },
   { icon: Users, label: "Players", path: "/admin/players" },
+  { icon: Target, label: "Drills", path: "/admin/drills" },
   { icon: MessageSquare, label: "Messages", path: "/admin/messaging" },
-  { icon: BookOpen, label: "Content", path: "/admin/content" },
   { icon: User, label: "Profile", path: "/profile" },
 ];
 
