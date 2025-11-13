@@ -31,6 +31,8 @@ import AdminBookings from "./pages/AdminBookings";
 import AdminProSwings from "./pages/AdminProSwings";
 import AdminTeamsOverview from "./pages/AdminTeamsOverview";
 import AdminTransactions from "./pages/AdminTransactions";
+import AdminDrills from "./pages/AdminDrills";
+import DrillLibrary from "./pages/DrillLibrary";
 import MyProgress from "./pages/MyProgress";
 import Calendar from "./pages/Calendar";
 import KnowledgeBase from "./pages/KnowledgeBase";
@@ -89,6 +91,7 @@ const App = () => (
           <Route path="/knowledge-base" element={<ProtectedRoute><KnowledgeBase /></ProtectedRoute>} />
           <Route path="/team" element={<ProtectedRoute><Team /></ProtectedRoute>} />
           <Route path="/brain" element={<ProtectedRoute><Brain /></ProtectedRoute>} />
+          <Route path="/drills" element={<ProtectedRoute><DrillLibrary /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/profile/:userId" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           
@@ -104,6 +107,7 @@ const App = () => (
           <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
           <Route path="/admin/players" element={<ProtectedRoute><AdminPlayers /></ProtectedRoute>} />
           <Route path="/admin/teams" element={<ProtectedRoute><AdminTeams /></ProtectedRoute>} />
+          <Route path="/admin/drills" element={<ProtectedRoute><AdminDrills /></ProtectedRoute>} />
           <Route path="/admin/messaging" element={<ProtectedRoute><AdminMessaging /></ProtectedRoute>} />
           <Route path="/admin/automations" element={<ProtectedRoute><AdminAutomations /></ProtectedRoute>} />
           <Route path="/admin/content" element={<ProtectedRoute><AdminContent /></ProtectedRoute>} />

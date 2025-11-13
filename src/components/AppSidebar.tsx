@@ -1,4 +1,4 @@
-import { Home, Video, BookOpen, ShoppingBag, User, Users, Shield, TrendingUp, Calendar as CalendarIcon, Library, UsersRound, MessageSquare, Zap, Upload, Gift, DollarSign, ClipboardList } from "lucide-react";
+import { Home, Video, BookOpen, ShoppingBag, User, Users, Shield, TrendingUp, Calendar as CalendarIcon, Library, UsersRound, MessageSquare, Zap, Upload, Gift, DollarSign, ClipboardList, Target } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
@@ -12,6 +12,7 @@ const playerNavItems = [
   { icon: TrendingUp, label: "My Progress", path: "/my-progress" },
   { icon: CalendarIcon, label: "Calendar", path: "/calendar" },
   { icon: Library, label: "Knowledge Base", path: "/knowledge-base" },
+  { icon: Target, label: "Drills", path: "/drills" },
   { icon: UsersRound, label: "Team", path: "/team" },
   { icon: User, label: "Profile", path: "/profile" },
 ];
@@ -20,6 +21,7 @@ const adminNavItems = [
   { icon: Shield, label: "Dashboard", path: "/admin" },
   { icon: Users, label: "Players", path: "/admin/players" },
   { icon: UsersRound, label: "Teams", path: "/admin/teams" },
+  { icon: Target, label: "Drill Library", path: "/admin/drills" },
   { icon: ClipboardList, label: "Bookings", path: "/admin/bookings" },
   { icon: MessageSquare, label: "Messaging", path: "/admin/messaging" },
   { icon: Zap, label: "Automations", path: "/admin/automations" },

@@ -21,6 +21,9 @@ export interface Drill {
   difficulty?: string;
   duration_minutes?: number;
   focus_metric?: string;
+  archived?: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface DrillRecommendation {
