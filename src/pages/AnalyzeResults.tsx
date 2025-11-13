@@ -305,14 +305,14 @@ export default function AnalyzeResults() {
           </div>
         )}
 
-        {/* Three Pillar Scores */}
+        {/* Overall Score & Three Pillar Scores */}
         {swingScore && (
           <div className="mb-8">
             <ThreePillarScores swingScore={swingScore} />
           </div>
         )}
 
-        {/* Kinematic Sequence Panel */}
+        {/* Kinematic Sequence Section */}
         {kineticScore && (
           <div className="mb-8">
             <KineticSequencePanel sequenceScore={kineticScore} />
