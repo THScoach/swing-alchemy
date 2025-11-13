@@ -370,6 +370,7 @@ export default function AnalyzeResults() {
               bodyData={fourbData.body}
               batData={fourbData.bat}
               ballData={fourbData.ball}
+              swingScore={swingScore || undefined}
             />
           </div>
         ) : null}

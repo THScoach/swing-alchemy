@@ -44,14 +44,25 @@ interface BallData {
   hard_hit_rate?: number | null;
 }
 
+import type { SwingScore } from "./analysis/types";
+import { selectDrills, type Drill as PrescriptionDrill } from "./drillPrescription";
+
 export function getRecommendedDrills(
   fourbScores: FourBScores,
   allDrills: Drill[],
   brainData?: BrainData,
   bodyData?: BodyData,
   batData?: BatData,
-  ballData?: BallData
+  ballData?: BallData,
+  swingScore?: SwingScore
 ): Drill[] {
+  // If we have the new swing score system, use the intelligent algorithm
+  if (swingScore && allDrills.length > 0) {
+    const recommendations = selectDrills(swingScore, allDrills as PrescriptionDrill[]);
+    return recommendations.map(rec => rec.drill as Drill);
+  }
+  
+  // Fallback to legacy algorithm
   const recommendations: Drill[] = [];
   const scores = {
     Brain: fourbScores.brain_score ?? 0,
