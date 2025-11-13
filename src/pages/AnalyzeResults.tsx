@@ -22,6 +22,8 @@ import { useToast } from "@/hooks/use-toast";
 import { ThreePillarScores } from "@/components/analysis/ThreePillarScores";
 import { computeSwingScore } from "@/lib/analysis/scoring";
 import { SwingScore } from "@/lib/analysis/types";
+import { KineticSequencePanel } from "@/components/analysis/KineticSequencePanel";
+import { computeKineticSequenceScore, KineticSequenceScore } from "@/lib/analysis/kineticSequenceScoring";
 
 export default function AnalyzeResults() {
   const { id } = useParams();
@@ -41,6 +43,7 @@ export default function AnalyzeResults() {
   const [exportingPDF, setExportingPDF] = useState(false);
   const emailTriggeredRef = useRef(false);
   const [swingScore, setSwingScore] = useState<SwingScore | null>(null);
+  const [kineticScore, setKineticScore] = useState<KineticSequenceScore | null>(null);
 
   useEffect(() => {
     fetchAnalysis();
@@ -323,6 +326,13 @@ export default function AnalyzeResults() {
         {swingScore && (
           <div className="mb-8">
             <ThreePillarScores swingScore={swingScore} />
+          </div>
+        )}
+
+        {/* Kinematic Sequence Panel */}
+        {kineticScore && (
+          <div className="mb-8">
+            <KineticSequencePanel sequenceScore={kineticScore} />
           </div>
         )}
 
