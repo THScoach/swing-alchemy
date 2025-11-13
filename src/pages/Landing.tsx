@@ -1,7 +1,7 @@
 import { MarketingLayout } from "@/components/MarketingLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Brain, Users, Target, TrendingUp, Video, BarChart3, CheckCircle2, Star } from "lucide-react";
 import {
   Accordion,
@@ -9,8 +9,22 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Landing() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        navigate('/dashboard');
+      }
+    };
+    checkAuth();
+  }, [navigate]);
+
   return (
     <MarketingLayout>
       {/* Hero Section */}
