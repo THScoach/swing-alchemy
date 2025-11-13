@@ -23,6 +23,7 @@ export default {
         'brand-black': "hsl(var(--brand-black))",
         'brand-gray': "hsl(var(--brand-gray))",
         'brand-white': "hsl(var(--brand-white))",
+        'athlete-red': "hsl(var(--athlete-red))",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
