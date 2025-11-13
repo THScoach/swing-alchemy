@@ -21,8 +21,9 @@ import { computeSwingScore } from "@/lib/analysis/scoring";
 import { SwingScore } from "@/lib/analysis/types";
 import { KineticSequencePanel } from "@/components/analysis/KineticSequencePanel";
 import { computeKineticSequenceScore, KineticSequenceScore } from "@/lib/analysis/kineticSequenceScoring";
-import { RecentSwings } from "@/components/analysis/RecentSwings";
 import { CoachRickInsights } from "@/components/analysis/CoachRickInsights";
+import { TempoScore } from "@/components/analysis/TempoScore";
+import { COMMovement } from "@/components/analysis/COMMovement";
 
 export default function AnalyzeResults() {
   const { id } = useParams();
@@ -36,7 +37,7 @@ export default function AnalyzeResults() {
   const [exportingPDF, setExportingPDF] = useState(false);
   const [swingScore, setSwingScore] = useState<SwingScore | null>(null);
   const [kineticScore, setKineticScore] = useState<KineticSequenceScore | null>(null);
-  const [recentSwings, setRecentSwings] = useState<any[]>([]);
+  const [comTraceEnabled, setComTraceEnabled] = useState(false);
 
   useEffect(() => {
     fetchAnalysis();
@@ -93,24 +94,6 @@ export default function AnalyzeResults() {
             whip_submetrics: JSON.parse(JSON.stringify(score.whip.subMetrics)),
           } as any)
           .eq('id', data.id);
-
-        // Fetch recent swings for this player
-        if (data.player_id) {
-          const query: any = supabase.from('video_analyses');
-          const { data: recentData }: any = await query
-            .select('id, created_at, anchor_score, stability_score, whip_score')
-            .eq('player_id', data.player_id)
-            .order('created_at', { ascending: false })
-            .limit(5);
-
-          if (recentData) {
-            setRecentSwings(recentData.map((swing: any) => ({
-              ...swing,
-              overall_score: Math.round((swing.anchor_score + swing.stability_score + swing.whip_score) / 3),
-              kinetic_score: 0, // Will be populated later if available
-            })));
-          }
-        }
       }
     } catch (error) {
       console.error('Error fetching analysis:', error);
@@ -319,10 +302,21 @@ export default function AnalyzeResults() {
           </div>
         )}
 
-        {/* Recent Swings */}
-        {recentSwings.length > 0 && (
+        {/* Tempo Score Section */}
+        {analysis.kinematics && (
           <div className="mb-8">
-            <RecentSwings swings={recentSwings} currentSwingId={analysis.id} />
+            <TempoScore kinematics={analysis.kinematics} />
+          </div>
+        )}
+
+        {/* COM Movement Section */}
+        {analysis.com_data && (
+          <div className="mb-8">
+            <COMMovement 
+              comData={analysis.com_data}
+              onToggleCOMTrace={setComTraceEnabled}
+              comTraceEnabled={comTraceEnabled}
+            />
           </div>
         )}
 
