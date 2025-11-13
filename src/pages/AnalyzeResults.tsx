@@ -123,7 +123,7 @@ export default function AnalyzeResults() {
             anchor_submetrics: JSON.parse(JSON.stringify(score.anchor.subMetrics)),
             stability_submetrics: JSON.parse(JSON.stringify(score.stability.subMetrics)),
             whip_submetrics: JSON.parse(JSON.stringify(score.whip.subMetrics)),
-          })
+          } as any)
           .eq('id', data.id);
       }
     } catch (error) {
