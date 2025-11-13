@@ -75,6 +75,35 @@ When discussing swing mechanics:
 - Identify lowest sub-metrics as root causes
 - Prioritize 2-3 specific issues to address
 - Map drills to categories: Anchor (rear leg/COM), Stability (sequence/trunk), Whip (bat lag/hand path)`;
+
+      // Query drill database for recommendations based on weak areas
+      const weakPillars = [];
+      if (swingScoreData.anchor_score < 60) weakPillars.push('anchor');
+      if (swingScoreData.stability_score < 60) weakPillars.push('stability');
+      if (swingScoreData.whip_score < 60) weakPillars.push('whip');
+
+      if (weakPillars.length > 0) {
+        const { data: recommendedDrills } = await supabase
+          .from('drills')
+          .select('title, category, simple_explanation, coach_rick_says, priority_level')
+          .in('category', weakPillars)
+          .in('priority_level', ['very_high', 'high'])
+          .limit(5);
+
+        if (recommendedDrills && recommendedDrills.length > 0) {
+          userContext += `\n\nRECOMMENDED DRILLS FOR WEAK AREAS:\n`;
+          recommendedDrills.forEach((drill, i) => {
+            userContext += `${i + 1}. ${drill.title} (${drill.category})\n`;
+            if (drill.simple_explanation) {
+              userContext += `   ${drill.simple_explanation}\n`;
+            }
+            if (drill.coach_rick_says) {
+              userContext += `   Coach Rick: "${drill.coach_rick_says}"\n`;
+            }
+          });
+          userContext += `\nWhen users ask for drill recommendations, reference these drills by name and explain why they're helpful.`;
+        }
+      }
     }
 
     // Coach Rick system prompt

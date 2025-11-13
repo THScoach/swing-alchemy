@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { getRecommendedDrills } from "@/lib/drillRecommendations";
-import { Clock, Target } from "lucide-react";
+import { Clock, Target, ExternalLink } from "lucide-react";
+import type { SwingScore } from "@/lib/analysis/types";
 
 interface DrillRecommendationsProps {
   fourbScores: any;
@@ -11,6 +13,7 @@ interface DrillRecommendationsProps {
   bodyData?: any;
   batData?: any;
   ballData?: any;
+  swingScore?: SwingScore;
 }
 
 export function DrillRecommendations({
@@ -18,14 +21,15 @@ export function DrillRecommendations({
   brainData,
   bodyData,
   batData,
-  ballData
+  ballData,
+  swingScore
 }: DrillRecommendationsProps) {
   const [drills, setDrills] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadRecommendations();
-  }, [fourbScores]);
+  }, [fourbScores, swingScore]);
 
   const loadRecommendations = async () => {
     // Fetch all drills from database
@@ -45,7 +49,8 @@ export function DrillRecommendations({
       brainData,
       bodyData,
       batData,
-      ballData
+      ballData,
+      swingScore
     );
 
     setDrills(recommended);
@@ -120,6 +125,18 @@ export function DrillRecommendations({
                     Focus: {drill.focus_metric.replace(/_/g, ' ')}
                   </span>
                 </div>
+              )}
+
+              {drill.video_url && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-3 w-full"
+                  onClick={() => window.open(drill.video_url, '_blank')}
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Watch Tutorial
+                </Button>
               )}
             </div>
           ))}
