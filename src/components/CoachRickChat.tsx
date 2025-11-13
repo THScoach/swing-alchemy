@@ -53,10 +53,35 @@ export function CoachRickChat({ minimized = false, onMinimize }: CoachRickChatPr
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
+      // Fetch player's latest analysis with swing scores
+      let swingScoreData = null;
+      if (user?.id) {
+        const { data: playerData } = await supabase
+          .from('players')
+          .select('id')
+          .eq('profile_id', user.id)
+          .maybeSingle();
+
+        if (playerData) {
+          const { data: latestAnalysis } = await supabase
+            .from('video_analyses')
+            .select('anchor_score, stability_score, whip_score, overall_swing_score, anchor_submetrics, stability_submetrics, whip_submetrics')
+            .eq('player_id', playerData.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (latestAnalysis) {
+            swingScoreData = latestAnalysis;
+          }
+        }
+      }
+      
       const { data, error } = await supabase.functions.invoke("coach-rick-assistant", {
         body: {
           message: input,
           userId: user?.id,
+          swingScoreData, // Pass the new 3-pillar scoring data
         },
       });
 

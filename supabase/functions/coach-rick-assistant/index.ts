@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message, userId, phoneNumber } = await req.json();
+    const { message, userId, phoneNumber, swingScoreData } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
@@ -60,6 +60,21 @@ serve(async (req) => {
           userContext = `\n\nUSER CONTEXT:\nPlayer: ${player.name}\nNo upcoming sessions booked.`;
         }
       }
+    }
+
+    // Add swing score data to context
+    if (swingScoreData) {
+      userContext += `\n\nLATEST SWING ANALYSIS (3-Pillar System):
+- Anchor: ${swingScoreData.anchor_score}/100 (rear leg stability, COM control)
+- Stability: ${swingScoreData.stability_score}/100 (kinematic sequence)
+- Whip: ${swingScoreData.whip_score}/100 (bat lag, distal whip)
+- Overall: ${swingScoreData.overall_swing_score}/100
+
+When discussing swing mechanics:
+- Use biomechanically accurate language (COM control, kinematic sequence, double pendulum)
+- Identify lowest sub-metrics as root causes
+- Prioritize 2-3 specific issues to address
+- Map drills to categories: Anchor (rear leg/COM), Stability (sequence/trunk), Whip (bat lag/hand path)`;
     }
 
     // Coach Rick system prompt

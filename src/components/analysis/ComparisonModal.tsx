@@ -15,6 +15,10 @@ import { Download, Play, Pause, TrendingUp, TrendingDown, Minus, Ghost } from "l
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { ComparisonMetricStrip } from "./ComparisonMetricStrip";
+import { CategoryBreakdownModal } from "./CategoryBreakdownModal";
+import { SwingScore } from "@/lib/analysis/types";
+import { computeSwingScore } from "@/lib/analysis/scoring";
 
 interface ComparisonModalProps {
   isOpen: boolean;
@@ -35,6 +39,9 @@ export function ComparisonModal({ isOpen, onClose, currentAnalysisId, playerId }
   const [isPlaying, setIsPlaying] = useState(false);
   const [proSwings, setProSwings] = useState<any[]>([]);
   const [syncPlay, setSyncPlay] = useState(true);
+  const [currentSwingScore, setCurrentSwingScore] = useState<SwingScore | null>(null);
+  const [compareSwingScore, setCompareSwingScore] = useState<SwingScore | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<"anchor" | "stability" | "whip" | null>(null);
   
   const currentVideoRef = useRef<HTMLVideoElement | null>(null);
   const compareVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -141,6 +148,23 @@ export function ComparisonModal({ isOpen, onClose, currentAnalysisId, playerId }
 
     setCurrentAnalysis(analysis || null);
     setCurrentScores(scores || null);
+
+    // Compute swing score
+    if (analysis) {
+      const [bodyRes, batRes, ballRes] = await Promise.all([
+        supabase.from('body_data').select('*').eq('analysis_id', currentAnalysisId).maybeSingle(),
+        supabase.from('bat_data').select('*').eq('analysis_id', currentAnalysisId).maybeSingle(),
+        supabase.from('ball_data').select('*').eq('analysis_id', currentAnalysisId).maybeSingle(),
+      ]);
+
+      const swingScore = computeSwingScore(
+        bodyRes.data,
+        batRes.data,
+        ballRes.data,
+        analysis
+      );
+      setCurrentSwingScore(swingScore);
+    }
   };
 
   const loadCompareAnalysis = async (id: string) => {
@@ -158,6 +182,23 @@ export function ComparisonModal({ isOpen, onClose, currentAnalysisId, playerId }
 
     setCompareAnalysis(analysis || null);
     setCompareScores(scores || null);
+
+    // Compute swing score
+    if (analysis) {
+      const [bodyRes, batRes, ballRes] = await Promise.all([
+        supabase.from('body_data').select('*').eq('analysis_id', id).maybeSingle(),
+        supabase.from('bat_data').select('*').eq('analysis_id', id).maybeSingle(),
+        supabase.from('ball_data').select('*').eq('analysis_id', id).maybeSingle(),
+      ]);
+
+      const swingScore = computeSwingScore(
+        bodyRes.data,
+        batRes.data,
+        ballRes.data,
+        analysis
+      );
+      setCompareSwingScore(swingScore);
+    }
   };
 
   const getScoreColor = (score: number | null | undefined): string => {
@@ -261,6 +302,15 @@ export function ComparisonModal({ isOpen, onClose, currentAnalysisId, playerId }
 
         {compareAnalysis && (
           <>
+            {/* 3-Pillar Comparison Metric Strip */}
+            {currentSwingScore && compareSwingScore && (
+              <ComparisonMetricStrip
+                athleteScore={currentSwingScore}
+                modelScore={compareSwingScore}
+                onCategoryClick={setSelectedCategory}
+              />
+            )}
+
             {/* Ghost Mode Toggle & Playback Controls */}
             <div className="flex items-center justify-between mt-4 mb-2 gap-4">
               <div className="flex items-center gap-3">
@@ -485,10 +535,16 @@ export function ComparisonModal({ isOpen, onClose, currentAnalysisId, playerId }
           </div>
         )}
 
-        {!selectedCompareId && (
-          <div className="py-12 text-center text-muted-foreground">
-            Select an analysis above to compare
-          </div>
+        {/* Category Breakdown Modal */}
+        {selectedCategory && currentSwingScore && (
+          <CategoryBreakdownModal
+            isOpen={selectedCategory !== null}
+            onClose={() => setSelectedCategory(null)}
+            title={selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}
+            category={currentSwingScore[selectedCategory]}
+            compareCategory={compareSwingScore ? compareSwingScore[selectedCategory] : null}
+            isComparison={true}
+          />
         )}
       </DialogContent>
     </Dialog>
