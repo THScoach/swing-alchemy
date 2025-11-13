@@ -78,14 +78,34 @@ export function CategoryBreakdownModal({
               >
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-2">
                         <h4 className="font-semibold text-foreground">{metric.label}</h4>
                         <Badge variant="outline" className={getSeverityColor(metric.severity)}>
                           {metric.severity}
                         </Badge>
                       </div>
-                      <p className="text-sm text-muted-foreground">{metric.description}</p>
+                      
+                      {/* Simple Description */}
+                      <p className="text-sm text-foreground font-medium">
+                        {metric.simpleDescription}
+                      </p>
+                      
+                      {/* Coach Rick Tip */}
+                      <div className="bg-[#0A0A0A] border border-[#FFD700]/20 rounded-lg p-3">
+                        <p className="text-xs font-semibold text-[#FFD700] mb-1">Coach Rick Says:</p>
+                        <p className="text-sm text-muted-foreground italic">
+                          {metric.coachRickTip}
+                        </p>
+                      </div>
+                      
+                      {/* Technical Description (smaller, less prominent) */}
+                      <details className="text-xs text-muted-foreground/70">
+                        <summary className="cursor-pointer hover:text-muted-foreground">
+                          Technical Details
+                        </summary>
+                        <p className="mt-1 pl-2 border-l border-border">{metric.description}</p>
+                      </details>
                     </div>
                     <div className="text-right">
                       <div className="text-2xl font-bold text-foreground">

@@ -5,7 +5,9 @@ export type SeverityLevel = "green" | "yellow" | "orange" | "red";
 export interface SubMetricScore {
   id: string;
   label: string;
-  description: string;
+  description: string; // Technical description
+  simpleDescription: string; // Coach Rick, 5th grade language
+  coachRickTip: string; // Actionable coaching cue
   score: number; // 0-100
   severity: SeverityLevel;
 }
