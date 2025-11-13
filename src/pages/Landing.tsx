@@ -42,16 +42,29 @@ export default function Landing() {
                 </Link>
               </div>
             </div>
-            <div className="relative">
+            <div className="relative aspect-video rounded-2xl shadow-2xl overflow-hidden border border-brand-gold/20 bg-gradient-to-br from-brand-gold/10 via-brand-black to-brand-gold/5">
+              {/* Animated gradient background as fallback */}
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(218,165,32,0.1),transparent_50%)] animate-pulse" />
+              
+              {/* Video Element */}
               <video 
                 autoPlay 
                 muted 
                 loop 
                 playsInline
-                className="aspect-video rounded-2xl shadow-2xl object-cover w-full border border-brand-gold/20"
+                className="relative w-full h-full object-cover"
+                poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3Crect fill='%23000000' width='16' height='9'/%3E%3Ctext x='50%25' y='50%25' fill='%23DAA520' font-family='monospace' font-size='1' text-anchor='middle' dominant-baseline='middle'%3E4B Analysis%3C/text%3E%3C/svg%3E"
               >
                 <source src="https://res.cloudinary.com/dzkwltgyd/video/upload/v1762974085/glif-run-outputs/b90klnjjxjnqj88cbrxt.mp4" type="video/mp4" />
               </video>
+              
+              {/* Overlay text for emphasis */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="text-center space-y-2 opacity-60">
+                  <div className="text-4xl font-orbitron font-bold text-brand-gold drop-shadow-lg">4B</div>
+                  <div className="text-sm font-montserrat text-foreground/80">Performance Science</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
