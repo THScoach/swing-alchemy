@@ -13,7 +13,7 @@ interface KineticSequencePanelProps {
 }
 
 export function KineticSequencePanel({ sequenceScore }: KineticSequencePanelProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
   
   const gradeColors: Record<string, string> = {
     'A': 'bg-green-500',
