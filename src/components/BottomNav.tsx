@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const playerNavItems = [
-  { icon: Home, label: "Feed", path: "/feed" },
+  { icon: Home, label: "Home", path: "/dashboard" },
   { icon: Video, label: "Analyze", path: "/analyze" },
   { icon: Target, label: "Drills", path: "/drills" },
   { icon: TrendingUp, label: "Progress", path: "/my-progress" },

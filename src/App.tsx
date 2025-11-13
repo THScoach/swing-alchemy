@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import Landing from "./pages/Landing";
 import Feed from "./pages/Feed";
+import Dashboard from "./pages/Dashboard";
 import Analyze from "./pages/Analyze";
 import AnalyzeResults from "./pages/AnalyzeResults";
 import Courses from "./pages/Courses";
@@ -80,6 +81,7 @@ const App = () => (
           <Route path="/team/join" element={<TeamJoin />} />
           
           {/* Protected routes */}
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
           <Route path="/analyze" element={<ProtectedRoute><Analyze /></ProtectedRoute>} />
           <Route path="/analyze/:id" element={<ProtectedRoute><AnalyzeResults /></ProtectedRoute>} />
