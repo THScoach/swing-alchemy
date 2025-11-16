@@ -520,38 +520,116 @@ export type Database = {
         }
         Relationships: []
       }
+      drill_recommendations: {
+        Row: {
+          created_at: string
+          id: string
+          player_id: string | null
+          prescription_notes: string | null
+          recommended_drills: Json
+          severity_context: Json | null
+          swing_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          player_id?: string | null
+          prescription_notes?: string | null
+          recommended_drills?: Json
+          severity_context?: Json | null
+          swing_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          player_id?: string | null
+          prescription_notes?: string | null
+          recommended_drills?: Json
+          severity_context?: Json | null
+          swing_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drill_recommendations_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drill_recommendations_swing_id_fkey"
+            columns: ["swing_id"]
+            isOneToOne: false
+            referencedRelation: "video_analyses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drills: {
         Row: {
+          archived: boolean | null
           category: string
+          checklist_items_trained: Json | null
+          coach_rick_says: string | null
+          coaching_cues: Json | null
+          contraindications: Json | null
           created_at: string
           description: string
           difficulty: string | null
           duration_minutes: number | null
           focus_metric: string
           id: string
+          prescription_triggers: Json | null
+          priority_level: string | null
+          progression: string | null
+          simple_explanation: string | null
+          targets: Json | null
           title: string
+          updated_at: string | null
           video_url: string | null
         }
         Insert: {
+          archived?: boolean | null
           category: string
+          checklist_items_trained?: Json | null
+          coach_rick_says?: string | null
+          coaching_cues?: Json | null
+          contraindications?: Json | null
           created_at?: string
           description: string
           difficulty?: string | null
           duration_minutes?: number | null
           focus_metric: string
           id?: string
+          prescription_triggers?: Json | null
+          priority_level?: string | null
+          progression?: string | null
+          simple_explanation?: string | null
+          targets?: Json | null
           title: string
+          updated_at?: string | null
           video_url?: string | null
         }
         Update: {
+          archived?: boolean | null
           category?: string
+          checklist_items_trained?: Json | null
+          coach_rick_says?: string | null
+          coaching_cues?: Json | null
+          contraindications?: Json | null
           created_at?: string
           description?: string
           difficulty?: string | null
           duration_minutes?: number | null
           focus_metric?: string
           id?: string
+          prescription_triggers?: Json | null
+          priority_level?: string | null
+          progression?: string | null
+          simple_explanation?: string | null
+          targets?: Json | null
           title?: string
+          updated_at?: string | null
           video_url?: string | null
         }
         Relationships: []
@@ -1726,6 +1804,8 @@ export type Database = {
       }
       video_analyses: {
         Row: {
+          anchor_score: number | null
+          anchor_submetrics: Json | null
           ball_scores: Json | null
           bat_scores: Json | null
           body_scores: Json | null
@@ -1743,6 +1823,7 @@ export type Database = {
           kinetic_sequence: Json | null
           metrics_reboot: Json | null
           mode: Database["public"]["Enums"]["analysis_mode"] | null
+          overall_swing_score: number | null
           pitch_type: string | null
           pitch_velocity: number | null
           player_id: string
@@ -1752,14 +1833,20 @@ export type Database = {
           session_notes: string | null
           skeleton_data: Json | null
           source_system: string | null
+          stability_score: number | null
+          stability_submetrics: Json | null
           swing_phases: Json | null
           thumbnail_url: string | null
           updated_at: string
           uploaded_by: string | null
           video_url: string
           weirdness_flags: Json | null
+          whip_score: number | null
+          whip_submetrics: Json | null
         }
         Insert: {
+          anchor_score?: number | null
+          anchor_submetrics?: Json | null
           ball_scores?: Json | null
           bat_scores?: Json | null
           body_scores?: Json | null
@@ -1777,6 +1864,7 @@ export type Database = {
           kinetic_sequence?: Json | null
           metrics_reboot?: Json | null
           mode?: Database["public"]["Enums"]["analysis_mode"] | null
+          overall_swing_score?: number | null
           pitch_type?: string | null
           pitch_velocity?: number | null
           player_id: string
@@ -1786,14 +1874,20 @@ export type Database = {
           session_notes?: string | null
           skeleton_data?: Json | null
           source_system?: string | null
+          stability_score?: number | null
+          stability_submetrics?: Json | null
           swing_phases?: Json | null
           thumbnail_url?: string | null
           updated_at?: string
           uploaded_by?: string | null
           video_url: string
           weirdness_flags?: Json | null
+          whip_score?: number | null
+          whip_submetrics?: Json | null
         }
         Update: {
+          anchor_score?: number | null
+          anchor_submetrics?: Json | null
           ball_scores?: Json | null
           bat_scores?: Json | null
           body_scores?: Json | null
@@ -1811,6 +1905,7 @@ export type Database = {
           kinetic_sequence?: Json | null
           metrics_reboot?: Json | null
           mode?: Database["public"]["Enums"]["analysis_mode"] | null
+          overall_swing_score?: number | null
           pitch_type?: string | null
           pitch_velocity?: number | null
           player_id?: string
@@ -1820,12 +1915,16 @@ export type Database = {
           session_notes?: string | null
           skeleton_data?: Json | null
           source_system?: string | null
+          stability_score?: number | null
+          stability_submetrics?: Json | null
           swing_phases?: Json | null
           thumbnail_url?: string | null
           updated_at?: string
           uploaded_by?: string | null
           video_url?: string
           weirdness_flags?: Json | null
+          whip_score?: number | null
+          whip_submetrics?: Json | null
         }
         Relationships: [
           {
