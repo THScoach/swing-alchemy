@@ -56,6 +56,7 @@ import TeamInvites from "./pages/coach/TeamInvites";
 import TeamReports from "./pages/coach/TeamReports";
 import TeamSettings from "./pages/coach/TeamSettings";
 import TeamJoin from "./pages/TeamJoin";
+import AthleteProfileDemo from "./pages/AthleteProfileDemo";
 
 const queryClient = new QueryClient();
 
@@ -79,6 +80,7 @@ const App = () => (
           <Route path="/contact" element={<Contact />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/team/join" element={<TeamJoin />} />
+          <Route path="/athlete-demo" element={<AthleteProfileDemo />} />
           
           {/* Protected routes */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
