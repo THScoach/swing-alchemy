@@ -7,6 +7,29 @@ import { Progress } from "@/components/ui/progress";
 import { Trophy, TrendingUp, Flame, Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { FourBHistoryChart } from "@/components/FourBHistoryChart";
+import { AthleteProfileCard } from "@/components/AthleteProfileCard";
+
+// Demo data for the athlete profile card
+const demoAthleteData = {
+  playerId: "123",
+  name: "John Doe",
+  fourB: {
+    catchBarrelScore: 62,
+    brain: 58,
+    body: 47,
+    bat: 72,
+    ball: 35
+  },
+  bodyDetails: {
+    groundFlow: 52,
+    coreFlow: 64
+  },
+  trainingPriorities: [
+    { area: "Ground Flow", score: 52 },
+    { area: "Ball Flight", score: 35 },
+    { area: "Decision Speed", score: 58 }
+  ]
+};
 
 export default function MyProgress() {
   const navigate = useNavigate();
@@ -92,6 +115,9 @@ export default function MyProgress() {
           <h1 className="text-3xl font-bold">My Progress</h1>
           <p className="text-muted-foreground">Track your journey to becoming an elite hitter</p>
         </div>
+
+        {/* Athlete Profile Card Demo */}
+        <AthleteProfileCard data={demoAthleteData} />
 
         {/* Stats Overview */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
